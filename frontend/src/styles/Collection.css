@@ -1,0 +1,81 @@
+body{
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: 'Cormorant Unicase', serif;
+    overflow-y: hidden;
+    max-height: 100vh;
+    background-color: #4f4239;
+}
+
+p {
+    margin: 5px;
+}
+
+.collection-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    margin-left: 100px;
+}
+
+.name-card {
+    display: flex;
+    flex-direction: column;
+    margin: 50px 20px;
+    background-color: transparent;
+    border: none;
+}
+
+.name-card-click{
+    box-shadow:  0px 0px 4px 4px #1a0401d7;
+}
+
+img {
+    height: 250px;
+    width: 250px;
+}
+
+.overlay {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100vw;
+    background: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    justify-content: center;
+    align-items: center;
+    background-color: 	#cbb19b;
+}
+
+.start-button {
+    background-color: #513721;
+    width: 5rem;
+    border-radius: 5px;
+    color: #cbb19b;
+    height: 2rem;
+}
+
+.back-button {
+    background-color: #9b7960;
+    width: 5rem;
+    border-radius: 5px;
+    color: #cbb19b;
+    height: 2rem;
+}

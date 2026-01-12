@@ -1,0 +1,110 @@
+[
+    {
+        "category": "warm drinks",
+        "name": "matcha latte",
+        "portion": "1",
+        "ingredients": ["matcha powder", "milk", "water"],
+        "amount":["3g", "200ml", "40ml"],
+        "steps": ["Sift matcha", "Steam milk", "Pour milk into a cup or glass", "Pour matcha in a cup with milk"],
+        "image": "matcha-latte.png"
+    },
+    {
+        "category": "cold drinks",
+        "name": "iced matcha latte",
+        "portion": "1",
+        "ingredients": ["matcha powder", "milk", "water", "ice"],
+        "amount":["3g", "200ml", "40ml"],
+        "steps": ["Sift matcha", "Whisk matcha powder with water", "Add ice into a cup", "Pour milk into a cup with ice", "Pour matcha in a cup with milk"],
+        "image": "carbonara.png"
+    },
+    {
+        "category": "warm drinks",
+        "name": "pumpkin spice latte",
+        "portion": "1",
+        "ingredients": ["espresso", "milk", "brown sugar", "pumpkin puree", "spices of choice"],
+        "amount":["2 shots", "200ml", "5g"],
+        "steps": ["Combine brown sugar with spice and pumpkin puree in a cup", "Steam milk", "Pour milk into the cup with mixture", "Pour espresso into the cup"],
+        "image": "pizza.png"
+    },
+    {
+        "category": "warm drinks",
+        "name": "matcha latte",
+        "portion": "1",
+        "ingredients": ["matcha powder", "milk", "water"],
+        "amount":["3g", "200ml", "40ml"],
+        "steps": ["Sift matcha", "Steam milk", "Pour milk into a cup or glass", "Pour matcha in a cup with milk"],
+        "image": "matcha-latte.png"
+    },
+    {
+        "category": "cold drinks",
+        "name": "iced matcha latte",
+        "portion": "1",
+        "ingredients": ["matcha powder", "milk", "water", "ice"],
+        "amount":["3g", "200ml", "40ml"],
+        "steps": ["Sift matcha", "Whisk matcha powder with water", "Add ice into a cup", "Pour milk into a cup with ice", "Pour matcha in a cup with milk"],
+        "image": "carbonara.png"
+    },
+    {
+        "category": "warm drinks",
+        "name": "pumpkin spice latte",
+        "portion": "1",
+        "ingredients": ["espresso", "milk", "brown sugar", "pumpkin puree", "spices of choice"],
+        "amount":["2 shots", "200ml", "5g"],
+        "steps": ["Combine brown sugar with spice and pumpkin puree in a cup", "Steam milk", "Pour milk into the cup with mixture", "Pour espresso into the cup"],
+        "image": "pizza.png"
+    },
+    {
+        "category": "warm drinks",
+        "name": "matcha latte",
+        "portion": "1",
+        "ingredients": ["matcha powder", "milk", "water"],
+        "amount":["3g", "200ml", "40ml"],
+        "steps": ["Sift matcha", "Steam milk", "Pour milk into a cup or glass", "Pour matcha in a cup with milk"],
+        "image": "matcha-latte.png"
+    },
+    {
+        "category": "cold drinks",
+        "name": "iced matcha latte",
+        "portion": "1",
+        "ingredients": ["matcha powder", "milk", "water", "ice"],
+        "amount":["3g", "200ml", "40ml"],
+        "steps": ["Sift matcha", "Whisk matcha powder with water", "Add ice into a cup", "Pour milk into a cup with ice", "Pour matcha in a cup with milk"],
+        "image": "carbonara.png"
+    },
+    {
+        "category": "warm drinks",
+        "name": "pumpkin spice latte",
+        "portion": "1",
+        "ingredients": ["espresso", "milk", "brown sugar", "pumpkin puree", "spices of choice"],
+        "amount":["2 shots", "200ml", "5g"],
+        "steps": ["Combine brown sugar with spice and pumpkin puree in a cup", "Steam milk", "Pour milk into the cup with mixture", "Pour espresso into the cup"],
+        "image": "pizza.png"
+    },
+    {
+        "category": "warm drinks",
+        "name": "matcha latte",
+        "portion": "1",
+        "ingredients": ["matcha powder", "milk", "water"],
+        "amount":["3g", "200ml", "40ml"],
+        "steps": ["Sift matcha", "Steam milk", "Pour milk into a cup or glass", "Pour matcha in a cup with milk"],
+        "image": "matcha-latte.png"
+    },
+    {
+        "category": "cold drinks",
+        "name": "iced matcha latte",
+        "portion": "1",
+        "ingredients": ["matcha powder", "milk", "water", "ice"],
+        "amount":["3g", "200ml", "40ml"],
+        "steps": ["Sift matcha", "Whisk matcha powder with water", "Add ice into a cup", "Pour milk into a cup with ice", "Pour matcha in a cup with milk"],
+        "image": "carbonara.png"
+    },
+    {
+        "category": "warm drinks",
+        "name": "pumpkin spice latte",
+        "portion": "1",
+        "ingredients": ["espresso", "milk", "brown sugar", "pumpkin puree", "spices of choice"],
+        "amount":["2 shots", "200ml", "5g"],
+        "steps": ["Combine brown sugar with spice and pumpkin puree in a cup", "Steam milk", "Pour milk into the cup with mixture", "Pour espresso into the cup"],
+        "image": "pizza.png"
+    }
+]
