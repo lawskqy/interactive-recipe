@@ -24,8 +24,7 @@ p {
     display: flex;
     grid-column: 1;
     justify-content: center;
-    align-items: center;
-    
+    background-color: aliceblue;
 }
 
 .recipe-container {
@@ -205,7 +204,7 @@ textarea {
     justify-content: flex-start;
     align-items: start;
     align-self: flex-start;
-    margin-top: 100px;
+    margin-top: 15px;
 }
 
 .ingredient-button {
@@ -220,11 +219,15 @@ textarea {
     box-shadow: 0px 0px 10px 2px #1a0401d7;
 }
 
-.board-container {
+.icon-container {
     display: flex;
     width: 100%;
     justify-content: center;
-    margin-left: 100px;
+    margin: 100px;
+    justify-content: flex-start;
+    align-items: start;
+    background-color: #4f4239;
+    border-radius: 10px;
 }
 
 button:hover {
@@ -239,12 +242,25 @@ button:hover {
     justify-content: flex-start;
     align-items: start;
     align-self: flex-start;
-    margin-top: 220px;
+    margin-top: 120px;
+    margin-left: 15px;
 }
 
 .glass-icon .ingredient-button {
     border: none;
     background-color: transparent;
     padding: 1rem 0;
+}
+
+.center-glass {
+    display: flex;
+    align-self: center;
+    justify-content: center;
+    margin-left: -350px;
+}
+
+.center-glass img {
+    width: 400px;
+    height: 600px;
 }
     
