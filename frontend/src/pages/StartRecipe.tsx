@@ -128,21 +128,22 @@ const StartRecipe = (/*{name}: {name: string}*/) => {
         }
     };
 
-    const generateImage = async (prompt: string) => {
-        const res = await fetch('http://localhost:8080/generate-image', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt })
-        });
-        const data = await res.json();
-        const imageSrc = `data:image/png;base64,${data.image}`;
-        return imageSrc;
+    const generateImage = async () => {
+        if (!recipe) return;
+        const prompt = `Mix ${recipe.ingredients.join(", ")} in a bowl`;
+        try {
+            const res = await fetch("http://localhost:8080/generate-image", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ prompt })
+            });
+            const data = await res.json();
+            setIcon(`data:image/png;base64,${data.image}`);
+        } catch (err) {
+            console.error("Image generation error:", err);
+        }
     }
 
-    const handleGenerate = async () => {
-        const img = await generateImage("Mix sugar with strawberry puree in a bowl");
-        setIcon(img);
-    };
 
     return (
         <div className="game-container">
@@ -181,7 +182,7 @@ const StartRecipe = (/*{name}: {name: string}*/) => {
                 </div>   
                 
                 <div>
-                    <button onClick={handleGenerate}>Try to generate image</button> 
+                    <button onClick={generateImage}>Try to generate image</button> 
                     {icon && (
                         <div>
                             <img src={icon} alt="generated"/>

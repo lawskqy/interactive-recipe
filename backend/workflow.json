@@ -1,0 +1,202 @@
+{
+  "3": {
+    "inputs": {
+      "seed": 981530808247508,
+      "steps": 30,
+      "cfg": 4,
+      "sampler_name": "res_multistep",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "11",
+        0
+      ],
+      "positive": [
+        "26:7",
+        0
+      ],
+      "negative": [
+        "25:7",
+        0
+      ],
+      "latent_image": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "4": {
+    "inputs": {
+      "ckpt_name": "NetaYumev35_pretrained_all_in_one.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "8": {
+    "inputs": {
+      "samples": [
+        "3",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "11": {
+    "inputs": {
+      "shift": 4,
+      "model": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "ModelSamplingAuraFlow"
+    }
+  },
+  "13": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "EmptySD3LatentImage"
+    }
+  },
+  "28": {
+    "inputs": {},
+    "class_type": "SaveImageWebsocket",
+    "_meta": {
+      "title": "SaveImageWebsocket"
+    }
+  },
+  "29": {
+    "inputs": {
+      "images": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "SaveImageWebsocket",
+    "_meta": {
+      "title": "SaveImageWebsocket"
+    }
+  },
+  "25:22": {
+    "inputs": {
+      "string_a": [
+        "25:23",
+        0
+      ],
+      "string_b": [
+        "25:24",
+        0
+      ],
+      "delimiter": ""
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "Concatenate"
+    }
+  },
+  "25:23": {
+    "inputs": {
+      "value": "You are an assistant designed to generate low-quality images based on textual prompts <Prompt Start> "
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "System prompt"
+    }
+  },
+  "25:24": {
+    "inputs": {
+      "value": "blurry, worst quality, low quality, jpeg artifacts, signature, watermark, username, error, deformed hands, bad anatomy, extra limbs, poorly drawn hands, poorly drawn face, mutation, deformed, extra eyes, extra arms, extra legs, malformed limbs, fused fingers, too many fingers, long neck, cross-eyed, bad proportions, missing arms, missing legs, extra digit, fewer digits, cropped, text"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "System prompt"
+    }
+  },
+  "25:7": {
+    "inputs": {
+      "text": [
+        "25:22",
+        0
+      ],
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Negative Prompt)"
+    }
+  },
+  "26:23": {
+    "inputs": {
+      "value": "You are an assistant designed to generate high quality anime images based on textual prompts. <Prompt Start> "
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "System prompt"
+    }
+  },
+  "26:24": {
+    "inputs": {
+      "value": "@comfyanonymous, \"An extremely detailed, high-quality 2D anime-style digital illustration of finely ground matcha powder contained inside a small traditional container, presented as a culinary ingredient study.\n\nThe matcha powder appears soft, velvety, and finely milled, forming a natural mound with delicate surface granularity and subtle uneven edges. The container is a simple, elegant ceramic or wooden vessel, inspired by classical tea ware — understated, academic, and functional, with no decorative symbols.\n\nThe container is rendered in muted brown, warm clay, or dark wood tones, complementing the deep moss-green and olive hues of the matcha. Material textures such as ceramic glaze, wood grain, or matte earthen surfaces are clearly visible and realistically stylized.\n\nThe composition is a tight, centered close-up, filling most of the frame, with the ingredient clearly readable and isolated. The perspective is slightly elevated or straight-on, suitable for a game ingredient asset, with clean edges and a strong silhouette.\n\nThe visual style follows a dark academia aesthetic — scholarly, refined, and calm — inspired by botanical studies, culinary manuscripts, and academic still-life illustration. The tone is mysterious but grounded, natural and intellectual rather than fantastical.\n\nThe color palette is muted greenish-brown, featuring moss green, olive, desaturated brown, parchment beige, and soft shadowed neutrals. Saturation is restrained, with no bright or glowing colors.\n\nLighting is soft studio lighting with even illumination and gentle shadows, designed to clearly reveal texture without dramatic contrast. The background is a plain, light neutral surface such as parchment, off-white paper, or muted beige, ensuring clarity and avoiding darkness.\n\nThe illustration is strictly 2D, with painterly shading, refined linework, subtle depth, and high texture fidelity. The image is game-ready, readable at small sizes, and suitable for later background removal.\n\nNo characters — purely a refined culinary ingredient illustration.\""
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "Prompt"
+    }
+  },
+  "26:22": {
+    "inputs": {
+      "string_a": [
+        "26:23",
+        0
+      ],
+      "string_b": [
+        "26:24",
+        0
+      ],
+      "delimiter": ""
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "Concatenate"
+    }
+  },
+  "26:7": {
+    "inputs": {
+      "text": [
+        "26:22",
+        0
+      ],
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  }
+}
