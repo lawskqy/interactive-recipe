@@ -1,7 +1,7 @@
 {
   "3": {
     "inputs": {
-      "seed": 981530808247508,
+      "seed": 538718597961449,
       "steps": 30,
       "cfg": 4,
       "sampler_name": "res_multistep",
@@ -78,23 +78,17 @@
       "title": "EmptySD3LatentImage"
     }
   },
-  "28": {
-    "inputs": {},
-    "class_type": "SaveImageWebsocket",
-    "_meta": {
-      "title": "SaveImageWebsocket"
-    }
-  },
-  "29": {
+  "30": {
     "inputs": {
+      "filename_prefix": "ComfyUI",
       "images": [
         "8",
         0
       ]
     },
-    "class_type": "SaveImageWebsocket",
+    "class_type": "SaveImage",
     "_meta": {
-      "title": "SaveImageWebsocket"
+      "title": "Save Image"
     }
   },
   "25:22": {

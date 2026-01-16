@@ -4,7 +4,7 @@ const axios = require("axios");
 const { spawn } = require("child_process");
 const path = require("path");
 const fs = require("fs");
-const WebSocket = require("ws");
+const crypto = require("crypto");
 
 const agentPath = path.join(__dirname, "my_agent", "agent.py");
 const app = express();
@@ -40,100 +40,102 @@ app.post("/send-message", (req, res) => {
 
 
 
+const COMFY_URL = "http://127.0.0.1:8188";
 const IMAGE_CACHE = path.join(__dirname, "image_cache");
 if (!fs.existsSync(IMAGE_CACHE)) fs.mkdirSync(IMAGE_CACHE, { recursive: true });
 
-const workflowPath = path.join(__dirname, "workflow.json");
-const workflow = JSON.parse(fs.readFileSync(workflowPath));
+const workflow = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "workflowAPI.json"), "utf8")
+);
 
-function findNodeByClass(classType) {
-    return Object.entries(workflow).find(([id, node]) => node.class_type === classType);
+
+
+function hashPrompt(prompt) {
+  return crypto.createHash("sha1").update(prompt).digest("hex");
 }
+
+
+function injectPrompt(workflow, prompt) {
+  const wf = JSON.parse(JSON.stringify(workflow));
+
+  for (const nodeId in wf) {
+    const node = wf[nodeId];
+    if (
+      node.class_type === "PrimitiveStringMultiline" &&
+      node._meta?.title === "Prompt"
+    ) {
+      node.inputs.value = prompt;
+    }
+  }
+
+  return wf;
+}
+
 
 async function generateImage(prompt) {
-    const safeName = prompt.replace(/\W+/g, "_").slice(0, 50);
-    const filePath = path.join(IMAGE_CACHE, safeName + ".png");
+  const hash = hashPrompt(prompt);
+  const cachedPath = path.join(IMAGE_CACHE, `${hash}.png`);
 
-    if (fs.existsSync(filePath)) {
-        console.log("Using cached image");
-        return fs.readFileSync(filePath).toString("base64");
+  if (fs.existsSync(cachedPath)) {
+    console.log(" cache hit");
+    return fs.readFileSync(cachedPath).toString("base64");
+  }
+
+  console.log(" generating image");
+
+  const workflowWithPrompt = injectPrompt(workflow, prompt);
+
+  const promptRes = await axios.post(`${COMFY_URL}/prompt`, {
+    prompt: workflowWithPrompt
+  });
+
+  const promptId = promptRes.data.prompt_id;
+
+  let history;
+  while (true) {
+    await new Promise(r => setTimeout(r, 1000));
+    const h = await axios.get(`${COMFY_URL}/history/${promptId}`);
+    if (h.data[promptId]) {
+      history = h.data[promptId];
+      break;
     }
+  }
 
-    const nodesCopy = JSON.parse(JSON.stringify(workflow));
+  const outputs = Object.values(history.outputs);
+  const images = outputs.flatMap(o => o.images || []);
 
-    const positivePromptNodeEntry = Object.entries(nodesCopy).find(([id, n]) =>
-        n.class_type === "PrimitiveStringMultiline" && n._meta.title === "Prompt"
-    );
+  if (!images.length) {
+    throw new Error("No images generated");
+  }
 
-    if (!positivePromptNodeEntry) throw new Error("Positive prompt node not found in workflow.json");
+  const img = images[0];
 
-    const [positivePromptId, positivePromptNode] = positivePromptNodeEntry;
-    positivePromptNode.inputs.value = prompt;
+  const imgRes = await axios.get(`${COMFY_URL}/view`, {
+    params: {
+      filename: img.filename,
+      subfolder: img.subfolder,
+      type: img.type
+    },
+    responseType: "arraybuffer"
+  });
 
-    const saveNodeEntry = Object.entries(nodesCopy).find(([id, n]) => n.class_type === "SaveImageWebsocket");
-    if (!saveNodeEntry) throw new Error("SaveImageWebsocket node not found in workflow.json");
-    const [saveNodeId, saveNode] = saveNodeEntry;
-    saveNode.inputs.path = filePath;
+  fs.writeFileSync(cachedPath, imgRes.data);
 
-    return new Promise((resolve, reject) => {
-        const ws = new WebSocket("ws://127.0.0.1:8188/ws");
-
-        ws.on("open", () => {
-            console.log("Connected to ComfyUI, sending workflow");
-            ws.send(JSON.stringify({
-                type: "new_session"
-            }));
-        });
-
-        ws.on("message", (data) => {
-            let msg;
-            try {
-                msg = JSON.parse(data.toString());
-            } catch (err) {
-                return; 
-            }
-
-            if (msg.type === "session_created") {
-                const sid = msg.sid;
-                ws.send(JSON.stringify({
-                    type: "process_nodes",
-                    sid: sid,
-                    nodes: nodesCopy,
-                    outputs: [saveNodeId] 
-                }));
-            }
-
-            if (msg.type === "process_nodes_done") {
-                if (fs.existsSync(filePath)) {
-                    const img = fs.readFileSync(filePath);
-                    resolve(img.toString("base64"));
-                    ws.close();
-                } else {
-                    reject(new Error(" Image file not found after workflow finished"));
-                    ws.close();
-                }
-            }
-
-            if (msg.type === "error") {
-                reject(new Error(msg.error));
-                ws.close();
-            }
-        });
-
-        ws.on("error", (err) => reject(err));
-    });
+  return Buffer.from(imgRes.data).toString("base64");
 }
 
 
-app.post('/generate-image', async (req, res) => {
-    try {
-        const prompt = req.body.prompt;
-        const imageBase64 = await generateImage(prompt);
-        res.json({ image: imageBase64 });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Error generating image');
-    }
+app.post("/generate-image", async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt) return res.status(400).send("No prompt");
+
+    const image = await generateImage(prompt);
+    res.json({ image });
+  } catch (e) {
+    console.error(e);
+    res.status(500).send("Generation error");
+  }
 });
 
 
