@@ -25,7 +25,7 @@ const StartRecipe = (/*{name}: {name: string}*/) => {
     const container = useRef<HTMLDivElement>(null);
     const { name } = useParams<{name: string}>();
     const [glass, setGlass] = useState<boolean>(false);
-    const [icon, setIcon] = useState<string | null>(null);
+    const [ingredientImages, setIngredientImages] = useState<Record<string, string>>({});
 
 
     const handleTabClick = (tabName :string) => {
@@ -56,7 +56,7 @@ const StartRecipe = (/*{name}: {name: string}*/) => {
         if (activeTab === "Chat"){
             Scroll();
         }
-    }, [messages]);
+    }, [messages, activeTab]);
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setUserMessage(e.target.value);
@@ -128,21 +128,37 @@ const StartRecipe = (/*{name}: {name: string}*/) => {
         }
     };
 
-    const generateImage = async () => {
-        if (!recipe) return;
-        const prompt = `Mix ${recipe.ingredients.join(", ")} in a bowl`;
+    const generateImage = async (ingredientName:string) => {
+        if (ingredientImages[ingredientName]) return;
+
+        const prompt = `Generate a 2d style picture of ${ingredientName}`;
         try {
             const res = await fetch("http://localhost:8080/generate-image", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ prompt })
             });
+
             const data = await res.json();
-            setIcon(`data:image/png;base64,${data.image}`);
+            
+            setIngredientImages(prev => ({
+                ...prev,
+                [ingredientName]: `data:image/png;base64,${data.image}`
+            }));
         } catch (err) {
             console.error("Image generation error:", err);
         }
     }
+
+    useEffect (() => {
+        if (!recipe) return;
+
+        recipe.ingredients.forEach(ingredient => {
+            if (!ingredientImages[ingredient]) {
+                generateImage(ingredient);
+            }
+        });
+    }, [recipe?.ingredients]);
 
 
     return (
@@ -165,10 +181,11 @@ const StartRecipe = (/*{name}: {name: string}*/) => {
                         {recipe?.ingredients.map((ingredient, index) => {
                             console.log(`/public/${ingredient}.png`);
                             return (
-                                <button className="ingredient-button">
-                                    <img key={index}
-                                    src={`/public/${ingredient}.png`}
-                                    alt={ingredient}></img>
+                                <button className="ingredient-button" key={ingredient}>
+                                    <img 
+                                        src={ingredientImages[ingredient] || "/public/matcha-latte.png"}
+                                        alt={ingredient}
+                                    />
                                     <p>{ingredient}</p>
                                 </button>
                             )
@@ -181,14 +198,6 @@ const StartRecipe = (/*{name}: {name: string}*/) => {
                     </div>   
                 </div>   
                 
-                <div>
-                    <button onClick={generateImage}>Try to generate image</button> 
-                    {icon && (
-                        <div>
-                            <img src={icon} alt="generated"/>
-                        </div>
-                    )}
-                </div>
             </div>
 
             <div className="recipe-container">
@@ -253,3 +262,13 @@ const StartRecipe = (/*{name}: {name: string}*/) => {
 }
 
 export default StartRecipe;
+
+
+/*<div>
+                    <button onClick={generateImage}>Try to generate image</button> 
+                    {icon && (
+                        <div>
+                            <img src={icon} alt="generated"/>
+                        </div>
+                    )}
+                </div>*/

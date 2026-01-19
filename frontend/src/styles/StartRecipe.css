@@ -5,6 +5,7 @@ body{
     font-family: 'Cormorant Unicase', serif;
     overflow-y: hidden;
     max-height: 100vh;
+    color:#d3dec3;
 }
 
 p {
@@ -24,7 +25,6 @@ p {
     display: flex;
     grid-column: 1;
     justify-content: center;
-    background-color: aliceblue;
 }
 
 .recipe-container {
@@ -158,7 +158,7 @@ textarea {
     max-height: 15vh;
     background-color: transparent;
     transition: height 0.2s ease;
-    color: #ffff;
+    color:#d3dec3;
     padding: 5px 15px 0px 15px;
     width: 350px;
     outline: none;

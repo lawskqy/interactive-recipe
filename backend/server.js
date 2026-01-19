@@ -38,22 +38,13 @@ app.post("/send-message", (req, res) => {
   pythonProcess.stdin.end();
 });
 
-
-
 const COMFY_URL = "http://127.0.0.1:8188";
 const IMAGE_CACHE = path.join(__dirname, "image_cache");
 if (!fs.existsSync(IMAGE_CACHE)) fs.mkdirSync(IMAGE_CACHE, { recursive: true });
 
 const workflow = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "workflowAPI.json"), "utf8")
+  fs.readFileSync(path.join(__dirname, "flux_schnell.json"), "utf8")
 );
-
-
-
-function hashPrompt(prompt) {
-  return crypto.createHash("sha1").update(prompt).digest("hex");
-}
-
 
 function injectPrompt(workflow, prompt) {
   const wf = JSON.parse(JSON.stringify(workflow));
@@ -71,52 +62,60 @@ function injectPrompt(workflow, prompt) {
   return wf;
 }
 
+function makeSafeName(str) {
+  return str
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_]/g, "")
+    .slice(0, 50);
+}
 
 async function generateImage(prompt) {
-  const hash = hashPrompt(prompt);
-  const cachedPath = path.join(IMAGE_CACHE, `${hash}.png`);
+  const name = makeSafeName(prompt);
+  const cachedPath = path.join(IMAGE_CACHE, `${name}.png`);
 
   if (fs.existsSync(cachedPath)) {
-    console.log(" cache hit");
+    console.log("cache hit");
     return fs.readFileSync(cachedPath).toString("base64");
   }
 
-  console.log(" generating image");
+  console.log(" generating image", name);
 
   const workflowWithPrompt = injectPrompt(workflow, prompt);
 
   const promptRes = await axios.post(`${COMFY_URL}/prompt`, {
-    prompt: workflowWithPrompt
+      prompt: workflowWithPrompt
   });
 
   const promptId = promptRes.data.prompt_id;
 
   let history;
   while (true) {
-    await new Promise(r => setTimeout(r, 1000));
-    const h = await axios.get(`${COMFY_URL}/history/${promptId}`);
-    if (h.data[promptId]) {
+      await new Promise(r => setTimeout(r, 1000));
+      const h = await axios.get(`${COMFY_URL}/history/${promptId}`);
+      if (h.data[promptId]) {
       history = h.data[promptId];
       break;
-    }
+      }
   }
 
   const outputs = Object.values(history.outputs);
   const images = outputs.flatMap(o => o.images || []);
 
   if (!images.length) {
-    throw new Error("No images generated");
+      throw new Error("No images generated");
   }
 
   const img = images[0];
 
   const imgRes = await axios.get(`${COMFY_URL}/view`, {
-    params: {
+      params: {
       filename: img.filename,
       subfolder: img.subfolder,
       type: img.type
-    },
-    responseType: "arraybuffer"
+      },
+      responseType: "arraybuffer"
   });
 
   fs.writeFileSync(cachedPath, imgRes.data);
@@ -124,19 +123,44 @@ async function generateImage(prompt) {
   return Buffer.from(imgRes.data).toString("base64");
 }
 
+const IN_FLIGHT = new Map();
+let imageQueue = Promise.resolve();
 
-app.post("/generate-image", async (req, res) => {
-  try {
-    const { prompt } = req.body;
-    if (!prompt) return res.status(400).send("No prompt");
+app.post("/generate-image", (req, res) => {
+  const { prompt } = req.body;
+  if (!prompt) return res.status(400).send("No prompt");
 
-    const image = await generateImage(prompt);
-    res.json({ image });
-  } catch (e) {
-    console.error(e);
-    res.status(500).send("Generation error");
+  const key = crypto.createHash("sha256").update(prompt).digest("hex");
+
+  if (IN_FLIGHT.has(key)) {
+    return IN_FLIGHT.get(key)
+      .then(image => res.json({ image }))
+      .catch(() => {
+        if (!res.headersSent) res.status(500).send("Generation error");
+      });
   }
+
+  const job = async () => {
+    try {
+      const image = await generateImage(prompt);
+      return image;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    } finally {
+      IN_FLIGHT.delete(key);
+    }
+  };
+
+  const promise = imageQueue = imageQueue.then(job, job);
+  IN_FLIGHT.set(key, promise);
+
+  promise.then(image => res.json({ image }))
+         .catch(() => {
+           if (!res.headersSent) res.status(500).send("Generation error");
+         });
 });
 
-
 app.listen(port, () => console.log(`Server running at http://localhost:${port}`));
+
+
