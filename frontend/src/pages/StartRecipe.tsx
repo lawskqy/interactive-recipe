@@ -131,12 +131,11 @@ const StartRecipe = (/*{name}: {name: string}*/) => {
     const generateImage = async (ingredientName:string) => {
         if (ingredientImages[ingredientName]) return;
 
-        const prompt = `Generate a 2d style picture of ${ingredientName}`;
         try {
             const res = await fetch("http://localhost:8080/generate-image", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ prompt })
+                body: JSON.stringify({ ingredient: ingredientName })
             });
 
             const data = await res.json();
@@ -150,15 +149,18 @@ const StartRecipe = (/*{name}: {name: string}*/) => {
         }
     }
 
-    useEffect (() => {
+    useEffect(() => {
         if (!recipe) return;
 
-        recipe.ingredients.forEach(ingredient => {
-            if (!ingredientImages[ingredient]) {
-                generateImage(ingredient);
-            }
-        });
-    }, [recipe?.ingredients]);
+        const run = async () => {
+            await Promise.all(
+                recipe.ingredients.map(ingredient => generateImage(ingredient))
+            );
+        };
+
+        run();
+    }, [recipe]);
+
 
 
     return (
