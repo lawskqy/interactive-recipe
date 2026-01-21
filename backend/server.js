@@ -7,6 +7,7 @@ const fs = require("fs");
 const crypto = require("crypto");
 
 const agentPath = path.join(__dirname, "my_agent", "agent.py");
+const imageAgentPath = path.join(__dirname, "my_agent", "image_agent.py");
 const app = express();
 const port = 8080;
 
@@ -47,7 +48,7 @@ const workflow = JSON.parse(fs.readFileSync(WORKFLOW_PATH, "utf8"));
 
 function runImageAgent(ingredient) {
   return new Promise((resolve, reject) => {
-    const python = spawn("python", [agentPath], {
+    const python = spawn("python", [imageAgentPath], {
       stdio: ["pipe", "pipe", "pipe"]
     });
 
