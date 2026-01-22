@@ -20,15 +20,16 @@ app.post("/send-message", (req, res) => {
   const pythonProcess = spawn("python", [agentPath], {
     stdio: ["pipe", "pipe", "pipe"],
     env: { 
-      ...process.env, 
-      GOOGLE_API_KEY: "AIzaSyBaW8N7yDFq3_DzkVK-yQcq_P5u1LN5SUk" 
+      ...process.env,  
     }
   });
 
   let output = "";
 
   pythonProcess.stdout.on("data", (data) => output += data.toString());
-  pythonProcess.stderr.on("data", (data) => console.error("Python error:", data.toString()));
+  pythonProcess.stderr.on("data", (data) => 
+    console.error("Python error:", data.toString())
+  );
 
   pythonProcess.on("close", () => {
     const safeOutput = output.replace(/AIzaSy\w{32}/g, "").trim();
@@ -49,7 +50,10 @@ const workflow = JSON.parse(fs.readFileSync(WORKFLOW_PATH, "utf8"));
 function runImageAgent(ingredient) {
   return new Promise((resolve, reject) => {
     const python = spawn("python", [imageAgentPath], {
-      stdio: ["pipe", "pipe", "pipe"]
+      stdio: ["pipe", "pipe", "pipe"],
+      env: { 
+        ...process.env,  
+      }
     });
 
     let stdout = "";
