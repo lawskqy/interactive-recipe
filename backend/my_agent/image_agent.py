@@ -8,6 +8,7 @@ from google.adk.sessions import InMemorySessionService
 from google.genai import types
 import sys, json, time, requests, asyncio, re
 from pathlib import Path
+import base64
 
 COMFY_URL = "http://127.0.0.1:8188"
 COMFY_OUTPUT_DIR = Path("D:/ComfyUI/output")
@@ -41,7 +42,13 @@ async def main():
     safe_name = ingredient.replace(" ", "_").lower()
     cached = IMAGE_CACHE / f"{safe_name}.png"
     if cached.exists():
-        print(json.dumps({"path": str(cached)}))
+        img_bytes = cached.read_bytes()
+        img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+
+        print(json.dumps({
+            "image": img_b64,
+            "ingredient": ingredient
+        }))
         return
 
     await session_service.create_session(app_name="recipe-game", user_id="user1", session_id="image")
@@ -98,7 +105,14 @@ async def main():
 
     latest = pngs[0]
     cached.write_bytes(latest.read_bytes())
-    print(json.dumps({"path": str(cached)}))
+
+    img_bytes = cached.read_bytes()
+    img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+
+    print(json.dumps({
+        "image": img_b64,
+        "ingredient": ingredient
+    }))
 
 asyncio.run(main())
 

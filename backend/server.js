@@ -4,7 +4,6 @@ const axios = require("axios");
 const { spawn } = require("child_process");
 const path = require("path");
 const fs = require("fs");
-const crypto = require("crypto");
 
 const agentPath = path.join(__dirname, "my_agent", "agent.py");
 const imageAgentPath = path.join(__dirname, "my_agent", "image_agent.py");
@@ -41,9 +40,6 @@ app.post("/send-message", (req, res) => {
 });
 
 const WORKFLOW_PATH = path.join(__dirname, "flux_schnell.json");
-const IMAGE_CACHE = path.join(__dirname, "image_cache");
-
-if (!fs.existsSync(IMAGE_CACHE)) fs.mkdirSync(IMAGE_CACHE, { recursive: true });
 
 const workflow = JSON.parse(fs.readFileSync(WORKFLOW_PATH, "utf8"));
 
@@ -80,17 +76,11 @@ app.post("/generate-image", async (req, res) => {
   const { ingredient } = req.body;
   if (!ingredient) return res.status(400).send("No ingredient");
 
-  const safe = ingredient.replace(/\s+/g, "_").toLowerCase();
-  const cached = path.join(IMAGE_CACHE, `${safe}.png`);
-
-  if (fs.existsSync(cached)) {
-    return res.json({ path: cached });
-  }
-
   try {
-    const generatedPath = await runImageAgent(ingredient);
-    fs.copyFileSync(generatedPath, cached);
-    res.json({ path: cached });
+    const raw = await runImageAgent(ingredient);
+    const parsed = JSON.parse(raw);
+
+    res.json(parsed);
   } catch (e) {
     console.error(e);
     res.status(500).send("Generation error");
