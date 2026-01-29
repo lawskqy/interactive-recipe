@@ -16,7 +16,7 @@ interface Messages {
     text: string;
 }
 
-const StartRecipe = (/*{name}: {name: string}*/) => {
+const StartRecipe = () => {
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [activeTab, setActiveTab] = useState("Recipe");
     const [userMessage, setUserMessage] = useState("");
@@ -139,11 +139,12 @@ const StartRecipe = (/*{name}: {name: string}*/) => {
             });
 
             const data = await res.json();
+            const newImage = `data:image/png;base64,${data.image}`;
             
-            setIngredientImages(prev => ({
-                ...prev,
-                [ingredientName]: `data:image/png;base64,${data.image}`
-            }));
+            setIngredientImages(prev => {
+                const updated = {...prev, [ingredientName]: newImage};
+                return updated;
+            });
         } catch (err) {
             console.error("Image generation error:", err);
         }
@@ -161,6 +162,10 @@ const StartRecipe = (/*{name}: {name: string}*/) => {
         run();
     }, [recipe]);
 
+    useEffect(() => {
+        const savedImages = JSON.parse(localStorage.getItem("ingredientImages") || "{}");
+        setIngredientImages(savedImages);
+    }, []);
 
 
     return (
@@ -184,10 +189,11 @@ const StartRecipe = (/*{name}: {name: string}*/) => {
                             console.log(`/public/${ingredient}.png`);
                             return (
                                 <button className="ingredient-button" key={ingredient}>
-                                    <img 
-                                        src={ingredientImages[ingredient] || "/public/matcha-latte.png"}
-                                        alt={ingredient}
-                                    />
+                                    {ingredientImages[ingredient] ? (
+                                        <img src={ingredientImages[ingredient]} alt={ingredient} />
+                                        ) : (
+                                        <div className="loader"></div>
+                                    )}
                                     <p>{ingredient}</p>
                                 </button>
                             )
