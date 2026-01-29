@@ -19,14 +19,19 @@ image_agent = LlmAgent(
     model="gemini-2.5-flash-lite",
     name="image_agent",
     description="Generates ingredient images via ComfyUI",
-    instruction=(
+    instruction = (
         "You receive a JSON workflow and the name of a single ingredient. "
-        "Modify only the promptb part in the workflow to generate a transparent, isolated, 2D image of that ingredient. "
-        "Enhance style, lighting, composition, but do not change the ingredient. "
-        "Return the full modified workflow as the same JSON which was before to the script. Do not attempt to POST to ComfyUI."
-        "You must return valid JSON containing the modified workflow ONLY, "
-        "no extra text, no commentary, no code fences."
+        "You must ONLY modify the 'text' input in the existing node whose id is '#ingredient'. "
+        "You must insert the ingredient and adapt a text suxh that it describes a transparent, isolated, 2D image of the ingredient, but leaves overalll description. "
+        "Adapt the prompt based on the ingredient type: "
+        "- If the ingredient is a liquid, mention a suitable container (e.g., glass, bottle). "
+        "- If it is a powder, show it in a bowl, spoon, or pile. "
+        "- If it is solid (like fruit or vegetable), place it naturally on a surface. "
+        "Enhance style, lighting, and composition, but do NOT change any other nodes. "
+        "Return the workflow JSON exactly as it was, with only this 'text' value modified. "
+        "Do NOT add, remove, or rename nodes, and do not add any extra text or commentary."
     )
+
 )
 
 session_service = InMemorySessionService()

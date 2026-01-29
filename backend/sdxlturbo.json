@@ -1,0 +1,135 @@
+{
+  "5": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "Empty Latent Image"
+    }
+  },
+  "6": {
+    "inputs": {
+      "text": "A flat minimalist 2D illustration of a single object of [INGREDIENT].\nThe object is shown at a fixed three-quarter view, rotated approximately 35 degrees to the right.\nStrictly non-realistic, non-photographic, no depth realism.\n\nGraphic shape-based illustration, strong simplified silhouette.\nThe object is constructed from large, clean color shapes with very limited internal detail.\nNo visible texture, no skin pores, no gradients simulating realism.\n\nDark but muted pastel color palette.\nLow contrast overall, soft tonal transitions.\nColor harmony inspired by dark academia and storybook illustration.\nSubtle occult or magical mood suggested only through color balance and abstract form, not symbols.\n\nFlat lighting, no light source.\nNo shadows (no cast shadows, no ambient occlusion).\nNo highlights, no reflections.\n\n2D illustration only, absolutely no 3D appearance.\nNo painterly brush strokes, no sketch lines.\nClean vector-like edges, slightly organic but controlled line quality.\n\nCentered composition.\nSingle object only.\nIsolated on a flat neutral background or transparent background.\nNo environment, no surface, no horizon line.\n\nCozy, calm, mysterious, understated mood.\nChildren’s storybook meets minimalist editorial illustration.\n\nUltra-consistent framing and proportions.\nNo text, no logos, no watermark.",
+      "clip": [
+        "20",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "7": {
+    "inputs": {
+      "text": "photorealistic, realism, hyperrealism,\n3d render, 3d, blender, octane, unreal engine,\ndramatic lighting, strong shadows, rim light, backlight,\nhigh contrast, neon colors, saturated colors,\ntextures, skin texture, noise, grain,\nbrush strokes, painterly style, oil painting, watercolor,\nsketch, pencil, charcoal, line art, comic style,\nbackground, environment, table, surface, scene,\nmultiple objects, duplicated objects,\ntext, letters, logo, watermark, signature,\nglossy, shiny, reflections, highlights,\ndepth of field, blur, bokeh,\ncinematic, \n",
+      "clip": [
+        "20",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "8": {
+    "inputs": {
+      "samples": [
+        "13",
+        0
+      ],
+      "vae": [
+        "20",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "13": {
+    "inputs": {
+      "add_noise": true,
+      "noise_seed": 12,
+      "cfg": 1.7,
+      "model": [
+        "20",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "sampler": [
+        "14",
+        0
+      ],
+      "sigmas": [
+        "22",
+        0
+      ],
+      "latent_image": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "SamplerCustom",
+    "_meta": {
+      "title": "SamplerCustom"
+    }
+  },
+  "14": {
+    "inputs": {
+      "sampler_name": "euler_ancestral"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "KSamplerSelect"
+    }
+  },
+  "20": {
+    "inputs": {
+      "ckpt_name": "sd_xl_turbo_1.0_fp16.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "22": {
+    "inputs": {
+      "steps": 6,
+      "denoise": 1,
+      "model": [
+        "20",
+        0
+      ]
+    },
+    "class_type": "SDTurboScheduler",
+    "_meta": {
+      "title": "SDTurboScheduler"
+    }
+  },
+  "27": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  }
+}

@@ -9,6 +9,8 @@ const agentPath = path.join(__dirname, "my_agent", "agent.py");
 const imageAgentPath = path.join(__dirname, "my_agent", "image_agent.py");
 const app = express();
 const port = 8080;
+const PYTHON = "C:\\Users\\devil\\AppData\\Local\\Programs\\Python\\Python314\\python.exe";
+
 
 app.use(cors());
 app.use(express.json());
@@ -16,7 +18,7 @@ app.use(express.json());
 app.post("/send-message", (req, res) => {
   const payload = JSON.stringify({ message: req.body });
 
-  const pythonProcess = spawn("python", [agentPath], {
+  const pythonProcess = spawn(PYTHON, [agentPath], {
     stdio: ["pipe", "pipe", "pipe"],
     env: { 
       ...process.env,  
@@ -39,13 +41,13 @@ app.post("/send-message", (req, res) => {
   pythonProcess.stdin.end();
 });
 
-const WORKFLOW_PATH = path.join(__dirname, "flux_schnell.json");
+const WORKFLOW_PATH = path.join(__dirname, "sdxlturbo.json");
 
 const workflow = JSON.parse(fs.readFileSync(WORKFLOW_PATH, "utf8"));
 
 function runImageAgent(ingredient) {
   return new Promise((resolve, reject) => {
-    const python = spawn("python", [imageAgentPath], {
+    const python = spawn(PYTHON, [imageAgentPath], {
       stdio: ["pipe", "pipe", "pipe"],
       env: { 
         ...process.env,  
