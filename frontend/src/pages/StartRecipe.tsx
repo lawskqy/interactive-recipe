@@ -167,6 +167,15 @@ const StartRecipe = () => {
         setIngredientImages(savedImages);
     }, []);
 
+    const addToGlass = (ingredient: string) => {
+        if (!glass) {
+            alert("You must select a glass first");
+        } else {
+            const prompt = `${ingredient} in a glass`
+            generateImage(prompt);
+        }
+    }
+
 
     return (
         <div className="game-container">
@@ -185,10 +194,10 @@ const StartRecipe = () => {
                     </div>
 
                     <div className="ingredients-icon">
-                        {recipe?.ingredients.map((ingredient, index) => {
+                        {recipe?.ingredients.map((ingredient) => {
                             console.log(`/public/${ingredient}.png`);
                             return (
-                                <button className="ingredient-button" key={ingredient}>
+                                <button className="ingredient-button" key={ingredient} onClick={() => addToGlass(ingredient)}>
                                     {ingredientImages[ingredient] ? (
                                         <img src={ingredientImages[ingredient]} alt={ingredient} />
                                         ) : (
@@ -270,13 +279,3 @@ const StartRecipe = () => {
 }
 
 export default StartRecipe;
-
-
-/*<div>
-                    <button onClick={generateImage}>Try to generate image</button> 
-                    {icon && (
-                        <div>
-                            <img src={icon} alt="generated"/>
-                        </div>
-                    )}
-                </div>*/

@@ -22,11 +22,13 @@ image_agent = LlmAgent(
     instruction = (
         "You receive a JSON workflow and the name of a single ingredient. "
         "You must ONLY modify the 'text' input in the existing node whose id is '#ingredient'. "
-        "You must insert the ingredient and adapt a text suxh that it describes a transparent, isolated, 2D image of the ingredient, but leaves overalll description. "
+        "You must insert the ingredient and adapt a text such that it describes flat 2D illustration, vector style, cartoon, no realism, no photography, no shadows, no reflections, simple shapes, solid colors, game asset, UI icon. "
+        "The style MUST be flat 2D illustration. Explicitly forbid realism, photography, 3D, cinematic lighting, depth of field.Use keywords: flat, vector, cartoon, game asset, UI icon."
         "Adapt the prompt based on the ingredient type: "
-        "- If the ingredient is a liquid, mention a suitable container (e.g., glass, bottle). "
-        "- If it is a powder, show it in a bowl, spoon, or pile. "
+        "- If the ingredient is a liquid, mention a suitable container (preferably jug with a text on it which names the liquid). "
+        "- If it is a powder, show it in a wooden tin with a small pile. "
         "- If it is solid (like fruit or vegetable), place it naturally on a surface. "
+        "If it is ice then picture a few cubes(3 to 5) in a bowl"
         "Enhance style, lighting, and composition, but do NOT change any other nodes. "
         "Return the workflow JSON exactly as it was, with only this 'text' value modified. "
         "Do NOT add, remove, or rename nodes, and do not add any extra text or commentary."
@@ -64,6 +66,7 @@ async def main():
     events = runner.run(user_id="user1", session_id="image", new_message=content)
 
     updated_workflow_text = None
+
     try:
         async for e in events:
             if e.is_final_response():
@@ -120,4 +123,3 @@ async def main():
     }))
 
 asyncio.run(main())
-
