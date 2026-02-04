@@ -19,6 +19,7 @@ interface Messages {
 const StartRecipe = () => {
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [activeTab, setActiveTab] = useState("Recipe");
+    const [activeBoardTab, setActiveBoardTab] = useState("Recipe tutorial");
     const [userMessage, setUserMessage] = useState("");
     const [messages, setMessages] = useState<Array<Messages>>([]);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -26,6 +27,7 @@ const StartRecipe = () => {
     const { name } = useParams<{name: string}>();
     const [glass, setGlass] = useState<boolean>(false);
     const [ingredientImages, setIngredientImages] = useState<Record<string, string>>({});
+    const [activeTutTab, setActiveTutTab] = useState(0);
 
 
     const handleTabClick = (tabName :string) => {
@@ -33,6 +35,14 @@ const StartRecipe = () => {
             setActiveTab("Recipe");
         } else {
             setActiveTab("Chat");
+        }
+    };
+
+    const handleBoardTabClick = (tabName :string) => {
+        if (tabName === "Quizz") {
+            setActiveBoardTab("Quizz");
+        } else {
+            setActiveBoardTab("Recipe tutorial");
         }
     };
     
@@ -180,41 +190,64 @@ const StartRecipe = () => {
     return (
         <div className="game-container">
             <div className="board-container">
-                <div className="icon-container">
-                    <div className="glass-icon">
-                        <button className="ingredient-button" onClick={() => setGlass(true)}>
-                            <img src="/public/glass1.png"></img>
-                        </button>
-                        <button className="ingredient-button">
-                            <img src="/public/glass2.png"></img>
-                        </button>
-                        <button className="ingredient-button">
-                            <img src="/public/glass2.png"></img>
-                        </button>
+                <div className="board-card">
+                    <div className="tab-title">
+                        <h2 className={activeBoardTab==="Recipe tutorial"? "active-recipe-tab" : "inactive-tab"} onClick={() => handleBoardTabClick("Recipe tutorial")}>Recipe tutorial</h2>
+                        <h2 className={activeBoardTab==="Quizz"? "active-quizz-tab" : "inactive-tab"} onClick={() => handleBoardTabClick("Quizz")}>Quizz</h2>
                     </div>
+                    <div style={{width: "100%"}}>
+                        { 
+                        activeBoardTab === "Quizz"?
+                            <>
+                                <div className="icon-container">
+                                    <div className="glass-icon">
+                                        <button className="ingredient-button" onClick={() => setGlass(true)}>
+                                            <img src="/public/glass1.png"></img>
+                                        </button>
+                                        <button className="ingredient-button">
+                                            <img src="/public/glass2.png"></img>
+                                        </button>
+                                        <button className="ingredient-button">
+                                            <img src="/public/glass2.png"></img>
+                                        </button>
+                                    </div>
 
-                    <div className="ingredients-icon">
-                        {recipe?.ingredients.map((ingredient) => {
-                            console.log(`/public/${ingredient}.png`);
-                            return (
-                                <button className="ingredient-button" key={ingredient} onClick={() => addToGlass(ingredient)}>
-                                    {ingredientImages[ingredient] ? (
-                                        <img src={ingredientImages[ingredient]} alt={ingredient} />
-                                        ) : (
-                                        <div className="loader"></div>
-                                    )}
-                                    <p>{ingredient}</p>
-                                </button>
-                            )
-                        })}
-                    </div>  
+                                    <div className="ingredients-icon">
+                                        {recipe?.ingredients.map((ingredient) => {
+                                            return (
+                                                <button className="ingredient-button" key={ingredient} onClick={() => addToGlass(ingredient)}>
+                                                    {ingredientImages[ingredient] ? (
+                                                        <img src={ingredientImages[ingredient]} alt={ingredient} />
+                                                        ) : (
+                                                        <div className="loader"></div>
+                                                    )}
+                                                    <p>{ingredient}</p>
+                                                </button>
+                                            )
+                                        })}
+                                    </div>  
 
-                    <div className="center-glass">
-                        {glass? 
-                            <img src="/public/glass.png"></img> : <div></div>}
-                    </div>   
-                </div>   
-                
+                                    <div className="center-glass">
+                                        {glass? 
+                                            <img src="/public/glass.png"></img> : <div></div>}
+                                    </div>   
+                                </div> 
+                            </> :
+                            <>
+                                <div className="step-tabs">
+                                    {recipe?.steps.map((step, index) => {
+                                        return (
+                                            <div className="tabs">
+                                                <h3 key={index} 
+                                                className={activeTutTab === index? "active-tab" : "inactive-tab"} onClick={() => setActiveTutTab(index)}>Step {index + 1}</h3>
+                                            </div>
+                                    )})
+                                    }
+                                </div>
+                            </>
+                        }  
+                    </div>
+                </div>
             </div>
 
             <div className="recipe-container">
