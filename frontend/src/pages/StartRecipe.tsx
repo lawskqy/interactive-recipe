@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef} from "react";
 import { useParams } from 'react-router-dom';
 import '../styles/StartRecipe.css';
+import Canvas from "../assets/Canvas";
 
 
 interface Recipe {
@@ -16,6 +17,27 @@ interface Messages {
     text: string;
 }
 
+interface Ingredients {
+    name: string;
+    image?: string; 
+}
+
+interface Tools {
+    name: string;
+    image?: string;
+}
+
+interface Actions {
+    name: string; 
+}
+
+interface StepData {
+    ingredients: Ingredients[];
+    tools: Tools[];
+    actions: Actions[];
+}
+
+
 const StartRecipe = () => {
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [activeTab, setActiveTab] = useState("Recipe");
@@ -28,7 +50,54 @@ const StartRecipe = () => {
     const [glass, setGlass] = useState<boolean>(false);
     const [ingredientImages, setIngredientImages] = useState<Record<string, string>>({});
     const [activeTutTab, setActiveTutTab] = useState(0);
+    const [stepIngredients, setStepIngredients] = useState<Array<Ingredients>>([]);
+    const [stepTools, setStepTools] = useState<Array<Tools>>([]);
+    const [stepActions, setStepActions] = useState<Array<Actions>>([]);
+    const [stepData, setStepData] = useState<Record<number, StepData>>({});
 
+
+    const stepSeparator = (step) => {
+
+        fetch("http://localhost:8080/separate", {
+            method: "POST",
+            body: JSON.stringify({step}),
+            headers: { "Content-Type": "application/json" }
+        })
+        .then(response => response.json())
+        .then (data => {
+
+            setStepIngredients(data.ingredients  || []);
+            setStepTools(data.tools || []);
+            setStepActions(data.actions || []);
+
+            setStepData(prev => ({
+                ...prev,
+                [activeTutTab]: {
+                    ingredients: data.ingredients || [],
+                    tools: data.tools || [],
+                    actions: data.actions || []
+                }
+            }));
+        }) 
+        .catch(error => console.error("Step separation error:", error));
+
+        
+
+    };
+
+    useEffect (() => {
+        if (!recipe) return;
+
+        const stepText = recipe.steps[activeTutTab];
+
+        if (stepData[activeTutTab]) {
+            setStepIngredients(stepData[activeTutTab].ingredients);
+            setStepTools(stepData[activeTutTab].tools);
+            setStepActions(stepData[activeTutTab].actions);
+        } else {
+            stepSeparator(stepText);
+        }
+    }, [activeTutTab, recipe]);
 
     const handleTabClick = (tabName :string) => {
         if (tabName === "Recipe") {
@@ -243,6 +312,15 @@ const StartRecipe = () => {
                                             </div>
                                     )})
                                     }
+                                </div>
+
+                                <div className="canvas">
+                                    <h3>{recipe?.steps[activeTutTab]}</h3>
+                                    <Canvas
+                                        ingredients={stepIngredients}
+                                        tools={stepTools}
+                                        actions={stepActions}
+                                    />
                                 </div>
                             </>
                         }  
