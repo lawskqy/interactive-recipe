@@ -56,16 +56,18 @@ const StartRecipe = () => {
     const [stepData, setStepData] = useState<Record<number, StepData>>({});
 
 
-    const stepSeparator = (step) => {
+    const stepSeparator = (step: string) => {
 
         fetch("http://localhost:8080/separate", {
             method: "POST",
             body: JSON.stringify({step}),
             headers: { "Content-Type": "application/json" }
         })
+        
         .then(response => response.json())
         .then (data => {
-
+            console.log(step);
+            console.log("Ответ агента:", data);
             setStepIngredients(data.ingredients  || []);
             setStepTools(data.tools || []);
             setStepActions(data.actions || []);
@@ -80,9 +82,6 @@ const StartRecipe = () => {
             }));
         }) 
         .catch(error => console.error("Step separation error:", error));
-
-        
-
     };
 
     useEffect (() => {
@@ -253,8 +252,7 @@ const StartRecipe = () => {
             const prompt = `${ingredient} in a glass`
             generateImage(prompt);
         }
-    }
-
+    };
 
     return (
         <div className="game-container">
@@ -307,16 +305,17 @@ const StartRecipe = () => {
                                     {recipe?.steps.map((step, index) => {
                                         return (
                                             <div className="tabs">
-                                                <h3 key={index} 
-                                                className={activeTutTab === index? "active-tab" : "inactive-tab"} onClick={() => setActiveTutTab(index)}>Step {index + 1}</h3>
+                                                <div key={index} className={activeTutTab === index? "active-tab" : "inactive-tab"} onClick={() => setActiveTutTab(index)}>
+                                                    <h3>Step {index + 1}</h3>
+                                                </div>
                                             </div>
-                                    )})
-                                    }
+                                        )
+                                    })}
                                 </div>
 
                                 <div className="canvas">
                                     <h3>{recipe?.steps[activeTutTab]}</h3>
-                                    <Canvas
+                                    <Canvas className="canvas-board"
                                         ingredients={stepIngredients}
                                         tools={stepTools}
                                         actions={stepActions}
