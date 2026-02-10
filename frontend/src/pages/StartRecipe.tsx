@@ -56,6 +56,15 @@ const StartRecipe = () => {
     const [stepData, setStepData] = useState<Record<number, StepData>>({});
 
 
+    const toImagePath = (name: string) => {
+        return `/${name
+            .toLowerCase()
+            .replace(/\s+/g, "_")
+            .replace(/[^\w_]/g, "")
+        }.png`;
+    };
+
+
     const stepSeparator = (step: string) => {
 
         fetch("http://localhost:8080/separate", {
@@ -67,17 +76,22 @@ const StartRecipe = () => {
         .then(response => response.json())
         .then (data => {
             console.log(step);
-            console.log("Ответ агента:", data);
-            setStepIngredients(data.ingredients  || []);
-            setStepTools(data.tools || []);
-            setStepActions(data.actions || []);
+            console.log("Agent response:", data);
+
+            const ingredientImages = (data.ingredients || []).map(toImagePath);
+            const toolImages = (data.tools || []).map(toImagePath);
+            const actionImages = (data.actions || []).map(toImagePath);
+
+            setStepIngredients(ingredientImages);
+            setStepTools(toolImages);
+            setStepActions(actionImages);
 
             setStepData(prev => ({
                 ...prev,
                 [activeTutTab]: {
-                    ingredients: data.ingredients || [],
-                    tools: data.tools || [],
-                    actions: data.actions || []
+                    ingredients: ingredientImages,
+                    tools: toolImages,
+                    actions: actionImages
                 }
             }));
         }) 

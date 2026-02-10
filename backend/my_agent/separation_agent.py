@@ -22,15 +22,21 @@ separation_agent = LlmAgent(
         - Extract ingredients used in this step
         - Extract tools used in this step
         - Extract actions performed in this step
-        - If there is no tool named in step just make a tool out of action, example: step is sift matcha, there is no tool, but there is action sift so it is understandable that a tool is a sifter
+        - If no tool is explicitly mentioned, infer a reasonable tool from the action and include it in the tools array, example: step is sift matcha, there is no tool, but there is action sift so it is understandable that a tool is a sifter
 
         Example: 
             Step: "Sift matcha"
             Expected JSON: {"ingredients":["matcha"], "tools":["sifter"], "actions":["sift"]}
 
-        
+            Step: "Whisk matcha powder with water"
+            Expected JSON: {"ingredients":["matcha powder","water"], "tools":["whisk"], "actions":["whisk"]}
+
+            Step: "Sift flour into bowl"
+            Expected JSON: {"ingredients":["flour"], "tools":["sifter","bowl"], "actions":["sift"]}
+
+
         Rules:
-        - Return ONLY valid JSON
+        - Always return valid JSON with non-empty arrays if you detect anything, and return empty arrays only if truly nothing is present.
         - Do NOT include explanations
         - Do NOT include markdown
         - Do NOT include any text outside JSON
@@ -44,3 +50,48 @@ separation_agent = LlmAgent(
         }
     """
 )
+
+async def main():
+    raw_input = sys.stdin.read()
+
+    if not raw_input:
+        print(json.dumps({
+            "ingredients": [],
+            "tools": [],
+            "actions": []
+        }))
+        return
+
+    try:
+        data = json.loads(raw_input)
+        step = data.get("step") or data.get("message") or ""
+    except Exception:
+        step = ""
+
+    if not step:
+        print(json.dumps({
+            "ingredients": [],
+            "tools": [],
+            "actions": []
+        }))
+        return
+
+    try:
+        response = await separation_agent.arun(step)
+
+        if isinstance(response, str):
+            print(response)
+        else:
+            print(json.dumps(response))
+
+    except Exception as e:
+        print(json.dumps({
+            "ingredients": [],
+            "tools": [],
+            "actions": []
+        }))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+
