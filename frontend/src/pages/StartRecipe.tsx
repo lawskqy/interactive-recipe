@@ -17,24 +17,10 @@ interface Messages {
     text: string;
 }
 
-interface Ingredients {
-    name: string;
-    image?: string; 
-}
-
-interface Tools {
-    name: string;
-    image?: string;
-}
-
-interface Actions {
-    name: string; 
-}
-
 interface StepData {
-    ingredients: Ingredients[];
-    tools: Tools[];
-    actions: Actions[];
+    ingredients: string[];
+    tools: string[];
+    actions: string[];
 }
 
 
@@ -50,9 +36,9 @@ const StartRecipe = () => {
     const [glass, setGlass] = useState<boolean>(false);
     const [ingredientImages, setIngredientImages] = useState<Record<string, string>>({});
     const [activeTutTab, setActiveTutTab] = useState(0);
-    const [stepIngredients, setStepIngredients] = useState<Array<Ingredients>>([]);
-    const [stepTools, setStepTools] = useState<Array<Tools>>([]);
-    const [stepActions, setStepActions] = useState<Array<Actions>>([]);
+    const [stepIngredients, setStepIngredients] = useState<Array<string>>([]);
+    const [stepTools, setStepTools] = useState<Array<string>>([]);
+    const [stepActions, setStepActions] = useState<Array<string>>([]);
     const [stepData, setStepData] = useState<Record<number, StepData>>({});
 
 
@@ -86,9 +72,11 @@ const StartRecipe = () => {
             setStepTools(toolImages);
             setStepActions(actionImages);
 
+            const currentStep = activeTutTab;
+            
             setStepData(prev => ({
                 ...prev,
-                [activeTutTab]: {
+                [currentStep]: {
                     ingredients: ingredientImages,
                     tools: toolImages,
                     actions: actionImages

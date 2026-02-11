@@ -2,9 +2,9 @@ import React, { useRef, useEffect } from "react";
 
 
 interface CanvasProps extends React.CanvasHTMLAttributes<HTMLCanvasElement> {
-    ingredients: { name: string; image?: string }[];
-    tools: { name: string; image?: string }[];
-    actions: { name: string }[];
+    ingredients: string[];
+    tools: string[];
+    actions: string[];
 }
 
 interface AnimatedItem {
@@ -57,7 +57,7 @@ const Canvas: React.FC<CanvasProps> = (props) => {
         ];
 
         items.forEach((item, index) => {
-            const src = props.ingredients[index]?.image || props.tools[index - props.ingredients.length]?.image || "";
+            const src = props.ingredients[index] || props.tools[index - props.ingredients.length] || "";
             if (src) {
                 item.img.src = src;
             }

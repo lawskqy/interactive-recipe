@@ -91,7 +91,7 @@ app.post("/generate-image", async (req, res) => {
 });
 
 app.post("/separate", (req, res) => {
-    const payload = JSON.stringify({ step: req.body.step });
+    const payload = req.body.step;
 
     const pythonProcess = spawn(PYTHON, [separationAgentPath], {
         stdio: ["pipe", "pipe", "pipe"],
@@ -109,7 +109,7 @@ app.post("/separate", (req, res) => {
     });
 
     pythonProcess.on("close", () => {
-        const safeOutput = output.replace(/AIzaSy\w{32}/g, "").trim();
+        const safeOutput = output.trim();
 
         let parsed;
         console.log("RAW output from Python:", output);

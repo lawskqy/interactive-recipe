@@ -16,7 +16,7 @@ separation_agent = LlmAgent(
     name="separation_agent",
     description="Separates ingredients, tools and actions in a recieved step",
     instruction = """
-        You receive ONE step of a cooking recipe.
+        You receive a string which represents one step of a cooking recipe.
 
         Your task:
         - Extract ingredients used in this step
@@ -40,58 +40,45 @@ separation_agent = LlmAgent(
         - Do NOT include explanations
         - Do NOT include markdown
         - Do NOT include any text outside JSON
-
-        The JSON MUST follow exactly this schema:
-
-        {
-        "ingredients": [],
-        "tools": [],
-        "actions": []
-        }
     """
 )
 
 async def main():
     raw_input = sys.stdin.read()
 
-    if not raw_input:
-        print(json.dumps({
-            "ingredients": [],
-            "tools": [],
-            "actions": []
-        }))
-        return
+    
+    session_service = InMemorySessionService()
+    runner = Runner(agent=separation_agent, session_service=session_service, app_name="recipe_game")
 
     try:
-        data = json.loads(raw_input)
-        step = data.get("step") or data.get("message") or ""
-    except Exception:
-        step = ""
+        response = await runner.run(step)  
 
-    if not step:
-        print(json.dumps({
-            "ingredients": [],
-            "tools": [],
-            "actions": []
-        }))
-        return
-
-    try:
-        response = await separation_agent.arun(step)
-
-        if isinstance(response, str):
-            print(response)
+        if hasattr(response, "output_text"):
+            text = response.output_text
+        elif hasattr(response, "text"):
+            text = response.text
+        elif isinstance(response, str):
+            text = response
         else:
-            print(json.dumps(response))
+            text = str(response)
 
-    except Exception as e:
-        print(json.dumps({
-            "ingredients": [],
-            "tools": [],
-            "actions": []
-        }))
+        text = text.strip()
+        text = text.replace("```json", "").replace("```", "").strip()
+
+        print("RAW MODEL RESPONSE:", text, file=sys.stderr)
+
+        try:
+            json_start = text.index("{")
+            json_text = text[json_start:]
+            parsed = json.loads(json_text)
+            print(json.dumps(parsed))
+        except:
+            print(json.dumps({"ingredients": [], "tools": [], "actions": []}))
+
+    except:
+        print(json.dumps({"ingredients": [], "tools": [], "actions": []}))
 
 if __name__ == "__main__":
+    import asyncio
     asyncio.run(main())
-
 
