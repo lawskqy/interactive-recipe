@@ -10,73 +10,107 @@ import sys, json, time, requests
 import asyncio
 
 from pathlib import Path
+from pydantic import BaseModel
+from typing import List
+
+schema = types.Schema(
+    type="object",
+    properties={
+        "ingredients": types.Schema(
+            type="array",
+            items=types.Schema(type="string")
+        ),
+        "tools": types.Schema(
+            type="array",
+            items=types.Schema(type="string")
+        ),
+        "actions": types.Schema(
+            type="array",
+            items=types.Schema(type="string")
+        ),
+    },
+    required=["ingredients", "tools", "actions"],
+)
 
 separation_agent = LlmAgent(
     model="gemini-2.5-flash-lite",
     name="separation_agent",
     description="Separates ingredients, tools and actions in a recieved step",
     instruction = """
-        You receive a string which represents one step of a cooking recipe.
+        You receive ONE cooking recipe step as plain text.
 
-        Your task:
-        - Extract ingredients used in this step
-        - Extract tools used in this step
-        - Extract actions performed in this step
-        - If no tool is explicitly mentioned, infer a reasonable tool from the action and include it in the tools array, example: step is sift matcha, there is no tool, but there is action sift so it is understandable that a tool is a sifter
+You MUST extract:
 
-        Example: 
-            Step: "Sift matcha"
-            Expected JSON: {"ingredients":["matcha"], "tools":["sifter"], "actions":["sift"]}
+1. Ingredients mentioned in the step
+2. Tools mentioned or implied
+3. Actions (verbs describing cooking actions)
 
-            Step: "Whisk matcha powder with water"
-            Expected JSON: {"ingredients":["matcha powder","water"], "tools":["whisk"], "actions":["whisk"]}
+Rules:
 
-            Step: "Sift flour into bowl"
-            Expected JSON: {"ingredients":["flour"], "tools":["sifter","bowl"], "actions":["sift"]}
+- Ingredients are food items (matcha powder, water, flour, sugar, etc.)
+- Tools are physical kitchen objects (whisk, bowl, knife, pan, sifter, spoon, etc.)
+- If a tool is not explicitly mentioned but clearly implied by the action,
+  you MUST infer it.
 
+Examples:
 
-        Rules:
-        - Always return valid JSON with non-empty arrays if you detect anything, and return empty arrays only if truly nothing is present.
-        - Do NOT include explanations
-        - Do NOT include markdown
-        - Do NOT include any text outside JSON
+Step: Whisk matcha powder with water
+Output:
+{
+  "ingredients": ["matcha powder", "water"],
+  "tools": ["whisk"],
+  "actions": ["whisk"]
+}
+
+Step: Sift flour into bowl
+Output:
+{
+  "ingredients": ["flour"],
+  "tools": ["sifter", "bowl"],
+  "actions": ["sift"]
+}
+
+You MUST NOT return empty arrays if entities are clearly present.
+Return valid JSON only.
     """
+)
+
+session_service = InMemorySessionService()
+runner = Runner(
+    agent=separation_agent,
+    session_service=session_service,
+    app_name="recipe_game"
+)
+
+generation_config = types.GenerationConfig(
+    response_mime_type="application/json",
+    response_schema=schema,
 )
 
 async def main():
     raw_input = sys.stdin.read()
 
-    
-    session_service = InMemorySessionService()
-    runner = Runner(agent=separation_agent, session_service=session_service, app_name="recipe_game")
-
     try:
-        response = await runner.run(step)  
-
-        if hasattr(response, "output_text"):
-            text = response.output_text
-        elif hasattr(response, "text"):
-            text = response.text
-        elif isinstance(response, str):
-            text = response
-        else:
-            text = str(response)
-
-        text = text.strip()
-        text = text.replace("```json", "").replace("```", "").strip()
-
-        print("RAW MODEL RESPONSE:", text, file=sys.stderr)
-
-        try:
-            json_start = text.index("{")
-            json_text = text[json_start:]
-            parsed = json.loads(json_text)
-            print(json.dumps(parsed))
-        except:
-            print(json.dumps({"ingredients": [], "tools": [], "actions": []}))
-
+        data = json.loads(raw_input)
+        step = data.get("step", "")
     except:
         print(json.dumps({"ingredients": [], "tools": [], "actions": []}))
+        return
+
+    try:
+        response = await runner.run(
+            step,
+            generation_config=generation_config
+        )
+
+        structured = response.output  # 🔥 Уже dict
+        print(json.dumps(structured))
+
+    except Exception as e:
+        print("ERROR:", str(e), file=sys.stderr)
+        print(json.dumps({"ingredients": [], "tools": [], "actions": []}))
+
+
 
 if __name__ == "__main__":
     import asyncio
