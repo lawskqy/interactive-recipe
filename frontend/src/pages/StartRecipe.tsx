@@ -53,15 +53,20 @@ const StartRecipe = () => {
 
     const stepSeparator = (step: string) => {
 
+        const payload = {
+            step: step,
+            context: recipe?.ingredients
+        }
+
         fetch("http://localhost:8080/separate", {
             method: "POST",
-            body: JSON.stringify({step}),
+            body: JSON.stringify(payload),
             headers: { "Content-Type": "application/json" }
         })
         
         .then(response => response.json())
         .then (data => {
-            console.log(step);
+            console.log(payload);
             console.log("Agent response:", data);
 
             const ingredientImages = (data.ingredients || []).map(toImagePath);

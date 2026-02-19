@@ -75,7 +75,7 @@ function runImageAgent(ingredient) {
     });
 }
 
-app.post("/generate-image", async (req, res) => {
+/*app.post("/generate-image", async (req, res) => {
     const { ingredient } = req.body;
     if (!ingredient) return res.status(400).send("No ingredient");
 
@@ -88,10 +88,10 @@ app.post("/generate-image", async (req, res) => {
         console.error(e);
         res.status(500).send("Generation error");
     }
-});
+});*/
 
 app.post("/separate", (req, res) => {
-    const payload = req.body.step;
+    const payload = JSON.stringify(req.body);
 
     const pythonProcess = spawn(PYTHON, [separationAgentPath], {
         stdio: ["pipe", "pipe", "pipe"],
@@ -102,6 +102,7 @@ app.post("/separate", (req, res) => {
 
     pythonProcess.stdout.on("data", (data) => {
         output += data.toString();
+        console.log("RAW output from Python:", output);
     });
 
     pythonProcess.stderr.on("data", (data) => {
@@ -112,7 +113,7 @@ app.post("/separate", (req, res) => {
         const safeOutput = output.trim();
 
         let parsed;
-        console.log("RAW output from Python:", output);
+        
         try {
             parsed = JSON.parse(safeOutput);
         } catch (e) {
