@@ -36,14 +36,17 @@ const Canvas: React.FC<CanvasProps> = (props) => {
             return;
         }
 
-        const centerX = canvas.width / 2 - 40;
-        const centerY = canvas.height / 2 - 40;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const gridSpacing = 10;
+        let row = 0;
+        let col = 0;
 
         const items: AnimatedItem[] = [
             ...props.ingredients.map (i => ({
                 img: new Image (),
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
+                x: col * gridSpacing + 10,
+                y: row * gridSpacing + 10,
                 targetX: centerX,
                 targetY: centerY,
             })),
@@ -69,8 +72,8 @@ const Canvas: React.FC<CanvasProps> = (props) => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             items.forEach(item => {
-                item.x += (item.targetX - item.x) * 0.05;
-                item.y += (item.targetY - item.y) * 0.05;
+                item.x += (item.targetX - item.x) * 0.55;
+                item.y += (item.targetY - item.y) * 0.55;
                 ctx.drawImage(item.img, item.x, item.y, 80, 80);
             });
 

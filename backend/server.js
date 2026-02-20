@@ -110,7 +110,7 @@ app.post("/separate", (req, res) => {
     });
 
     pythonProcess.on("close", () => {
-        const safeOutput = output.trim();
+        const safeOutput = output.replace(/AIzaSy\w{32}/g, "").trim();
 
         let parsed;
         

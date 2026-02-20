@@ -14,6 +14,14 @@ session_service = InMemorySessionService()
 USER_ID = "user1"
 SESSION_ID = "session1"
 
+async def init_session():
+    await session_service.create_session(
+        app_name="recipe_game",
+        user_id="user1",
+        session_id="session1"
+    )
+
+asyncio.run(init_session())
 
 separator_agent = LlmAgent(
     name="separator_agent",
@@ -66,73 +74,25 @@ separator_agent = LlmAgent(
         "actions": ["sift"]
         }
 
+        Return ONLY valid JSON.
+        Do not explain anything.
+        Do not add text before or after JSON.
         You MUST NOT return empty arrays if entities are clearly present.
-        You always return a valid JSON.
+        Your entire response MUST be valid JSON.
+        Do not wrap it in markdown.
+        Do not add ```json.
     """
 )
 
 
-
-validator_agent=LlmAgent(
-    name="validator_agent",
-    model="gemini-2.5-flash-lite",
-    instruction="""
-    You recieve an output from separator_agent.
-    You must check if it is a valid JSON.
-    The structure of JSON file should meet these expectations:
-
-    {
-        "ingredients": [],
-        "tools": [],
-        "actions": []
-    }
-
-    It has to be a non empty object containing 3 arrays of strings.
-    You must return ONLY the validated JSON as text. Do not use function_call.
-    """
-)
-
-
-orchestrator = LlmAgent(
-    name="orchestrator",
-    model="gemini-2.5-flash-lite",
-    instruction="""
-        You are the orchestrator of a multi-agent recipe pipeline.
-
-        You MUST follow this strict sequence:
-
-        STEP 1:
-        Call separator_agent with the user's recipe step.
-        Do NOT generate extraction yourself.
-
-        STEP 2:
-        Take the JSON returned by separator_agent.
-        Call validator_agent and pass that JSON as input.
-
-        STEP 3:
-        Return ONLY the final JSON returned by validator_agent.
-
-        You are NOT allowed to skip steps.
-        You are NOT allowed to generate the JSON directly.
-        You MUST use the tools.
-    """,
-    sub_agents=[separator_agent, validator_agent]
-)
-
-orchestrator_runner = Runner(
-    agent=orchestrator,
+runner = Runner(
+    agent=separator_agent,
     session_service=session_service,
     app_name="recipe_game"
 )
 
 
-async def main():
-
-    await session_service.create_session(
-        app_name="recipe_game",
-        user_id=USER_ID,
-        session_id=SESSION_ID
-    )
+def main():
 
     raw_input = sys.stdin.read()
 
@@ -145,18 +105,52 @@ async def main():
 
         content = types.Content(role="user", parts=[types.Part(text=payload)])
 
-        events = orchestrator_runner.run(
+        events = runner.run(
             user_id=USER_ID,
             session_id=SESSION_ID,
             new_message=content
         )
 
         result = None
+
         for event in events:
             if event.is_final_response():
-                result = event.content.parts[0].text
-                print(result)
+
+                if event.content and event.content.parts:
+                    texts = []
+
+                    for part in event.content.parts:
+                        if hasattr(part, "text") and part.text:
+                            texts.append(part.text)
+
+                    if texts:
+                        result = "".join(texts)
+
                 break
+
+        if not result:
+            result = json.dumps({
+                "ingredients": [],
+                "tools": [],
+                "actions": []
+            })
+
+
+        result = result.strip()
+
+        start = result.find("{")
+        end = result.rfind("}")
+
+        if start != -1 and end != -1 and end > start:
+            result = result[start:end+1]
+        else:
+            result = json.dumps({
+                "ingredients": [],
+                "tools": [],
+                "actions": []
+            })
+
+        print(result)
 
     except Exception as e:
         print("Error:", e)
@@ -170,4 +164,4 @@ async def main():
         parsed = {"ingredients": [], "tools": [], "actions": []}
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
