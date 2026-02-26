@@ -279,10 +279,10 @@ const StartRecipe = () => {
                                             <img src="/public/glass1.png"></img>
                                         </button>
                                         <button className="ingredient-button">
-                                            <img src="/public/glass2.png"></img>
+                                            <img src="/public/glass1.png"></img>
                                         </button>
                                         <button className="ingredient-button">
-                                            <img src="/public/glass2.png"></img>
+                                            <img src="/public/glass1.png"></img>
                                         </button>
                                     </div>
 
@@ -326,6 +326,7 @@ const StartRecipe = () => {
                                         ingredients={stepIngredients}
                                         tools={stepTools}
                                         actions={stepActions}
+                                        resultImgSrc="result.png"
                                     />
                                 </div>
                             </>
