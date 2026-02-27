@@ -17,18 +17,21 @@ interface AnimatedItem {
     targetY: number;
 }
 
-type AnimationState = "IDLE" | "ANIMATING" | "EXPLODING" | "SHOW_RESULT" | "PAUSED";
+type AnimationState = "IDLE" | "TOOL_MOVING" | "INGREDIENTS_MOVING" | "EXPLODING" | "SHOW_RESULT" | "PAUSED";
 
 const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...props }) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-    const [state, setState] = useState<AnimationState>("IDLE");
+    const state = useRef<AnimationState>("IDLE");
     const [resultImg, setResultImg] = useState<HTMLImageElement | null>(null);
 
     const staticItems = useRef<AnimatedItem[]>([]);
     const animatedItems = useRef<AnimatedItem[]>([]);
     const explosionTimer = useRef<number | null>(null);
     const isPaused = useRef(false);
+
+    const toolItem = useRef<AnimatedItem | null>(null);
+    const ingredientItem = useRef<AnimatedItem []>([]);
 
     useEffect(() => {
         if (!ingredients.length && !tools.length) return;
@@ -41,7 +44,7 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
 
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
-        const gridSpacing = 100;
+        const gridSpacing = 200;
         const columns = 5;
         const allImages = [...ingredients, ...tools];
 
@@ -64,24 +67,37 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
             return item;
         });
 
-        animatedItems.current = staticItems.current.map(item => ({
-            ...item,
+        const toolStatic = staticItems.current[staticItems.current.length-1];
+
+        toolItem.current = {
+            img: new Image(),
+            x: toolStatic.startX,
+            y: toolStatic.startY,
+            startX: toolStatic.startX,
+            startY: toolStatic.startY,
+            targetX: centerX - 40,
+            targetY: centerY - 40,
+        };
+        toolItem.current.img.src = toolStatic.img.src;
+
+
+        ingredientItem.current = staticItems.current.slice(0, -1).map((item) => ({
             img: new Image(),
             x: item.startX,
             y: item.startY,
+            startX: item.startX,
+            startY: item.startY,
+            targetX: centerX - 40,
+            targetY: centerY - 40,
         }));
-
-        animatedItems.current.forEach((item, i) => {
-            item.img.src = allImages[i];
-        });
-
-        setState("ANIMATING");
 
         if (resultImgSrc) {
             const res = new Image();
             res.src = resultImgSrc;
             res.onload = () => setResultImg(res);
         }
+
+        state.current = "TOOL_MOVING";
 
         let animationFrameId: number;
 
@@ -90,36 +106,55 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
 
             staticItems.current.forEach(item => {
                 if (item.img.complete && item.img.naturalWidth !== 0) {
-                ctx.drawImage(item.img, item.x, item.y, 30, 30);
+                ctx.drawImage(item.img, item.x, item.y, 80, 80);
                 }
             });
 
-            if (!isPaused.current && state === "ANIMATING") {
-                let allReachedCenter = true;
-                animatedItems.current.forEach(item => {
-                    item.x += (item.targetX - item.x) * 0.05;
-                    item.y += (item.targetY - item.y) * 0.05;
+            if (toolItem.current) {
+                ctx.drawImage(toolItem.current.img, toolItem.current.x, toolItem.current.y, 80, 80);
+            }
 
-                    if (item.img.complete && item.img.naturalWidth !== 0) {
-                        ctx.drawImage(item.img, item.x, item.y, 30, 30);
-                    }
-
-                    const distance = Math.hypot(item.x - item.targetX, item.y - item.targetY);
-                    if (distance > 1) allReachedCenter = false;
-                });
-
-                if (allReachedCenter) {
-                    setState("EXPLODING");
-                    explosionTimer.current = window.setTimeout(() => {
-                    setState("SHOW_RESULT");
-                    }, 1000);
+            ingredientItem.current.forEach(item => {
+                if (item.img.complete && item.img.naturalWidth !== 0) {
+                    ctx.drawImage(item.img, item.x, item.y, 80, 80);
                 }
-            } else if (state === "EXPLODING") {
+            });
+
+            if (!isPaused.current) {
+                let allReachedCenter = true;
+
+                if (state.current === "TOOL_MOVING" && toolItem.current) {
+                    toolItem.current.x += (toolItem.current.targetX - toolItem.current.x) * 0.01;
+                    toolItem.current.y += (toolItem.current.targetY - toolItem.current.y) * 0.01;
+
+                    const distance = Math.hypot(toolItem.current.x - toolItem.current.targetX, toolItem.current.y - toolItem.current.targetY);
+                    if (distance < 1) {
+                        state.current = "INGREDIENTS_MOVING";
+                    }
+                } 
+                
+                if(state.current === "INGREDIENTS_MOVING") {
+                    ingredientItem.current.forEach(item => {
+                        item.x += (item.targetX - item.x) * 0.01;
+                        item.y += (item.targetY - item.y) * 0.01;
+
+                        const distance = Math.hypot(item.x - item.targetX, item.y - item.targetY);
+                        if (distance > 1) allReachedCenter = false;
+                    });
+
+                    if (allReachedCenter) {
+                        state.current = ("EXPLODING");
+                        explosionTimer.current = window.setTimeout(() => {
+                        state.current = ("SHOW_RESULT");
+                        }, 1000);
+                    }
+                }
+            } else if (state.current === "EXPLODING") {
                 ctx.fillStyle = "rgba(255,255,255,0.3)";
                 ctx.beginPath();
                 ctx.arc(canvas.width / 2, canvas.height / 2, 50, 0, Math.PI * 2);
                 ctx.fill();
-            } else if (state === "SHOW_RESULT" && resultImg) {
+            } else if (state.current === "SHOW_RESULT" && resultImg) {
                 ctx.drawImage(resultImg, canvas.width / 2 - 40, canvas.height / 2 - 40, 80, 80);
             }
 
@@ -132,7 +167,7 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
         cancelAnimationFrame(animationFrameId);
         if (explosionTimer.current) clearTimeout(explosionTimer.current);
         };
-    }, [ingredients, tools, resultImgSrc, state]);
+    }, [ingredients, tools, resultImgSrc]);
 
     const pauseAnimation = () => { isPaused.current = true; };
     const resumeAnimation = () => { isPaused.current = false; };
@@ -142,7 +177,7 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
         item.x = item.startX;
         item.y = item.startY;
         });
-        setState("ANIMATING");
+        state.current = ("TOOL_MOVING");
     };
 
     return (

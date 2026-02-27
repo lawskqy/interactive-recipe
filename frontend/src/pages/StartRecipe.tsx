@@ -323,6 +323,8 @@ const StartRecipe = () => {
                                 <div className="canvas">
                                     <h3>{recipe?.steps[activeTutTab]}</h3>
                                     <Canvas className="canvas-board"
+                                        width={950}
+                                        height={750}
                                         ingredients={stepIngredients}
                                         tools={stepTools}
                                         actions={stepActions}
