@@ -328,7 +328,7 @@ const StartRecipe = () => {
                                         ingredients={stepIngredients}
                                         tools={stepTools}
                                         actions={stepActions}
-                                        resultImgSrc="result.png"
+                                        resultImgSrc="/result.png"
                                     />
                                 </div>
                             </>

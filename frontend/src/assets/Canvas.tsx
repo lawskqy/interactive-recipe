@@ -81,15 +81,19 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
         toolItem.current.img.src = toolStatic.img.src;
 
 
-        ingredientItem.current = staticItems.current.slice(0, -1).map((item) => ({
-            img: new Image(),
-            x: item.startX,
-            y: item.startY,
-            startX: item.startX,
-            startY: item.startY,
-            targetX: centerX - 40,
-            targetY: centerY - 40,
-        }));
+        ingredientItem.current = staticItems.current.slice(0, -1).map((item) => {
+            const img = new Image();
+            img.src = item.img.src;
+            return {
+                img,
+                x: item.startX,
+                y: item.startY,
+                startX: item.startX,
+                startY: item.startY,
+                targetX: centerX - 40,
+                targetY: centerY - 40,
+            };
+        });
 
         if (resultImgSrc) {
             const res = new Image();
@@ -129,9 +133,10 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
 
                     const distance = Math.hypot(toolItem.current.x - toolItem.current.targetX, toolItem.current.y - toolItem.current.targetY);
                     if (distance < 1) {
-                        state.current = "INGREDIENTS_MOVING";
+                        state.current = ("INGREDIENTS_MOVING");
                     }
                 } 
+
                 
                 if(state.current === "INGREDIENTS_MOVING") {
                     ingredientItem.current.forEach(item => {
@@ -148,16 +153,15 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
                         state.current = ("SHOW_RESULT");
                         }, 1000);
                     }
+                } else if (state.current === "EXPLODING") {
+                    ctx.fillStyle = "rgba(255,255,255,0.3)";
+                    ctx.beginPath();
+                    ctx.arc(canvas.width / 2, canvas.height / 2, 50, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (state.current === "SHOW_RESULT" && resultImg) {
+                    ctx.drawImage(resultImg, canvas.width / 2 - 40, canvas.height / 2 - 40, 80, 80);
                 }
-            } else if (state.current === "EXPLODING") {
-                ctx.fillStyle = "rgba(255,255,255,0.3)";
-                ctx.beginPath();
-                ctx.arc(canvas.width / 2, canvas.height / 2, 50, 0, Math.PI * 2);
-                ctx.fill();
-            } else if (state.current === "SHOW_RESULT" && resultImg) {
-                ctx.drawImage(resultImg, canvas.width / 2 - 40, canvas.height / 2 - 40, 80, 80);
-            }
-
+            } 
             animationFrameId = requestAnimationFrame(render);
         };
 
