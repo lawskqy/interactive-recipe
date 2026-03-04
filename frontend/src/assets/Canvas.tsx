@@ -24,14 +24,13 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
 
     const state = useRef<AnimationState>("IDLE");
     const [resultImg, setResultImg] = useState<HTMLImageElement | null>(null);
-
     const staticItems = useRef<AnimatedItem[]>([]);
-    const animatedItems = useRef<AnimatedItem[]>([]);
     const explosionTimer = useRef<number | null>(null);
     const isPaused = useRef(false);
 
     const toolItem = useRef<AnimatedItem | null>(null);
     const ingredientItem = useRef<AnimatedItem []>([]);
+    const resultTimer = useRef<number | null>(null);
 
     useEffect(() => {
         if (!ingredients.length && !tools.length) return;
@@ -105,14 +104,14 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
 
         let animationFrameId: number;
 
-        const render = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            staticItems.current.forEach(item => {
+        staticItems.current.forEach(item => {
                 if (item.img.complete && item.img.naturalWidth !== 0) {
                 ctx.drawImage(item.img, item.x, item.y, 80, 80);
                 }
-            });
+        });
+
+        const render = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             if (toolItem.current) {
                 ctx.drawImage(toolItem.current.img, toolItem.current.x, toolItem.current.y, 80, 80);
@@ -147,18 +146,26 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
                         if (distance > 1) allReachedCenter = false;
                     });
 
-                    if (allReachedCenter) {
+                    if (allReachedCenter && !explosionTimer.current) {
                         state.current = ("EXPLODING");
                         explosionTimer.current = window.setTimeout(() => {
-                        state.current = ("SHOW_RESULT");
-                        }, 1000);
+                            state.current = "SHOW_RESULT";
+
+                            resultTimer.current = window.setTimeout(() => {
+                                resetPositions();
+                                state.current = "TOOL_MOVING";
+                            }, 3500)
+                        }, 1500);
                     }
-                } else if (state.current === "EXPLODING") {
-                    ctx.fillStyle = "rgba(255,255,255,0.3)";
+                } 
+                if (state.current === "EXPLODING") {
+                    ctx.fillStyle = "rgb(212, 24, 24)";
                     ctx.beginPath();
                     ctx.arc(canvas.width / 2, canvas.height / 2, 50, 0, Math.PI * 2);
                     ctx.fill();
-                } else if (state.current === "SHOW_RESULT" && resultImg) {
+                } 
+                
+                if (state.current === "SHOW_RESULT" && resultImg) {
                     ctx.drawImage(resultImg, canvas.width / 2 - 40, canvas.height / 2 - 40, 80, 80);
                 }
             } 
@@ -168,20 +175,31 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
         render();
 
         return () => {
-        cancelAnimationFrame(animationFrameId);
-        if (explosionTimer.current) clearTimeout(explosionTimer.current);
+            cancelAnimationFrame(animationFrameId);
+            if (explosionTimer.current) clearTimeout(explosionTimer.current);
+            if (resultTimer.current) clearTimeout(resultTimer.current);
         };
     }, [ingredients, tools, resultImgSrc]);
 
     const pauseAnimation = () => { isPaused.current = true; };
     const resumeAnimation = () => { isPaused.current = false; };
 
-    const restartAnimation = () => {
-        animatedItems.current.forEach(item => {
-        item.x = item.startX;
-        item.y = item.startY;
+    const resetPositions = () => {
+        ingredientItem.current.forEach(item => {
+            item.x = item.startX;
+            item.y = item.startY;
         });
+
+        if (toolItem.current) {
+            toolItem.current.x = toolItem.current?.startX;
+            toolItem.current.y = toolItem.current?.startY;
+        }
+    };
+
+    const restartAnimation = () => {
+        resetPositions();
         state.current = ("TOOL_MOVING");
+        resumeAnimation();
     };
 
     return (
