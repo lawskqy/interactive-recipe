@@ -311,8 +311,8 @@ const StartRecipe = () => {
                                 <div className="step-tabs">
                                     {recipe?.steps.map((step, index) => {
                                         return (
-                                            <div className="tabs">
-                                                <div key={index} className={activeTutTab === index? "active-tab" : "inactive-tab"} onClick={() => setActiveTutTab(index)}>
+                                            <div className="tabs" key={index}>
+                                                <div className={activeTutTab === index? "active-tab" : "inactive-tab"} onClick={() => setActiveTutTab(index)}>
                                                     <h3>Step {index + 1}</h3>
                                                 </div>
                                             </div>

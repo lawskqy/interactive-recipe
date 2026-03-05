@@ -1,0 +1,30 @@
+.button-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+.buttons {
+    border-radius: 1px;
+    border: 1px solid #4f4239;
+    box-shadow:  5px 6px 6px 0px #1a0401d7;
+    background-color: transparent;
+    font-size: 1rem;
+    padding: 5px 50px;
+    margin: 0 10px 0 10px;
+    justify-content: center;
+    text-align: center;
+    color:#d3dec3;
+}
+
+.buttons:active {
+    transform: scale(0.97);
+    box-shadow: 2px 3px 3px 0px #1a0401d7;
+}
+
+.pressed {
+    border: 1px solid #4e3f27d5;
+    box-shadow:  5px 6px 6px 0px #1a0401cb;
+    background-color: #1a04019a;
+}

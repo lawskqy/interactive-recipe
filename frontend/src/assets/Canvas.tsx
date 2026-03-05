@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
+import '../styles/canvas.css';
 
 interface CanvasProps extends React.CanvasHTMLAttributes<HTMLCanvasElement> {
     ingredients: string[];
@@ -31,6 +32,8 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
     const toolItem = useRef<AnimatedItem | null>(null);
     const ingredientItem = useRef<AnimatedItem []>([]);
     const resultTimer = useRef<number | null>(null);
+
+    const [pressed, setPressed] = useState<boolean>(false);
 
     useEffect(() => {
         if (!ingredients.length && !tools.length) return;
@@ -205,10 +208,19 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
     return (
         <>
         <canvas ref={canvasRef} {...props} />
-        <div style={{ marginTop: 10 }}>
-            <button onClick={pauseAnimation}>Pause</button>
-            <button onClick={resumeAnimation}>Resume</button>
-            <button onClick={restartAnimation}>Restart</button>
+        <div className="button-container">
+            <button className={`buttons ${pressed? "pressed" : ""}`} onClick={() => {
+                pauseAnimation;
+                setPressed(true);
+            }}>Pause</button>
+            <button className="buttons" onClick={() => {
+                resumeAnimation;
+                setPressed(false);
+            }}>Resume</button>
+            <button className="buttons" onClick={() => {
+                restartAnimation;
+                setPressed(false);
+            }}>Restart</button>
         </div>
         </>
     );
