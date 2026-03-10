@@ -1,15 +1,17 @@
 body{
-    height: 100%;
     margin: 0;
     padding: 0;
     font-family: 'Cormorant Unicase', serif;
-    overflow-y: hidden;
-    max-height: 100vh;
     background-color: #4f4239;
+    color:#d3dec3;
 }
 
 p {
+    font-family: 'Cormorant Unicase', serif;
     margin: 5px;
+    color:#d3dec3;
+    font-size: 1rem;
+    font-weight: 500;
 }
 
 .collection-container {
@@ -23,13 +25,14 @@ p {
 .name-card {
     display: flex;
     flex-direction: column;
-    margin: 50px 20px;
+    margin: 30px 20px;
     background-color: transparent;
     border: none;
 }
 
 .name-card-click{
     box-shadow:  0px 0px 4px 4px #1a0401d7;
+    border-radius: 3px;
 }
 
 img {
@@ -59,9 +62,13 @@ img {
     max-width: 800px;
     max-height: 80vh;
     overflow-y: auto;
-    justify-content: center;
-    align-items: center;
-    background-color: 	#cbb19b;
+    background-color: 	#FFF5EE;
+    color: #6F4E37;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: space-between;
 }
 
 .start-button {
@@ -70,12 +77,32 @@ img {
     border-radius: 5px;
     color: #cbb19b;
     height: 2rem;
+    font-family: 'Cormorant Unicase', serif;
+    font-size: 1rem;
+    font-weight: 700;
 }
 
 .back-button {
-    background-color: #9b7960;
+    background-color: #cbb19b;
     width: 5rem;
     border-radius: 5px;
-    color: #cbb19b;
+    color: #513721;
     height: 2rem;
+    font-family: 'Cormorant Unicase', serif;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+::-webkit-scrollbar {
+    width: 15px;
+    background-color: transparent;
+    border-radius: 10px;
+    border: 1px solid #4f4239;
+    box-shadow:  5px 6px 6px 0px #1a0401d7;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #4f4239;
+  border-radius: 10px;
+  border: 3px solid transparent;
 }

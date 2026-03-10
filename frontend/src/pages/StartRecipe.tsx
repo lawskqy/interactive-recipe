@@ -269,7 +269,7 @@ const StartRecipe = () => {
                         <h2 className={activeBoardTab==="Recipe tutorial"? "active-recipe-tab" : "inactive-tab"} onClick={() => handleBoardTabClick("Recipe tutorial")}>Recipe tutorial</h2>
                         <h2 className={activeBoardTab==="Quizz"? "active-quizz-tab" : "inactive-tab"} onClick={() => handleBoardTabClick("Quizz")}>Quizz</h2>
                     </div>
-                    <div style={{width: "100%"}}>
+                    <div style={{width: "100%"}} className="show-part">
                         { 
                         activeBoardTab === "Quizz"?
                             <>
@@ -362,31 +362,33 @@ const StartRecipe = () => {
                                 </div>
                             </> :
                             <>
-                                <div className="messages-window" ref={container}>
-                                    {messages.map((msg, index) => (
-                                        <p 
-                                            key={index} 
-                                            className={msg.sender === "user" ? "user-message" : "agent-message"}
-                                        >
-                                            {msg.text}
-                                        </p>
-                                    ))}
-                                </div>
+                                <div className="chat-container">
+                                    <div className="messages-window" ref={container}>
+                                        {messages.map((msg, index) => (
+                                            <p 
+                                                key={index} 
+                                                className={msg.sender === "user" ? "user-message" : "agent-message"}
+                                            >
+                                                {msg.text}
+                                            </p>
+                                        ))}
+                                    </div>
 
-                                <div className="input-container">
-                                    <textarea
-                                        ref={textareaRef}
-                                        value={userMessage}
-                                        onChange={handleChange}
-                                        className="chat-input"
-                                        onKeyDown={(event) => {
-                                            if (event.key === 'Enter' && !event.shiftKey) {
-                                                event.preventDefault(); 
-                                                handleSend();
-                                            }
-                                        }}
-                                    />
-                                    <button onClick={handleSend} className="button">↑</button>
+                                    <div className="input-container">
+                                        <textarea
+                                            ref={textareaRef}
+                                            value={userMessage}
+                                            onChange={handleChange}
+                                            className="chat-input"
+                                            onKeyDown={(event) => {
+                                                if (event.key === 'Enter' && !event.shiftKey) {
+                                                    event.preventDefault(); 
+                                                    handleSend();
+                                                }
+                                            }}
+                                        />
+                                        <button onClick={handleSend} className="button">↑</button>
+                                    </div>
                                 </div>
                             </>
                         }

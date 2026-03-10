@@ -3,7 +3,6 @@ body{
     margin: 0;
     padding: 0;
     font-family: 'Cormorant Unicase', serif;
-    overflow-y: hidden;
     max-height: 100vh;
     color:#d3dec3;
 }
@@ -16,8 +15,8 @@ p {
     display: grid;
     grid-template-columns: 1fr 1fr;
     background: url(../assets/menu-back.png) no-repeat center / cover;
-    overflow-y: hidden;
     max-height: 100vh;
+    overflow-y: hidden;
 }
 
 .board-container{
@@ -32,7 +31,7 @@ p {
 .board-card {
     display: flex;
     flex-direction: column;
-    width: 80%;
+    max-width: 950px;
     height: 80%;
     border: 2px solid #4f4239;
     box-shadow: 0px 0px 20px 10px  #1a0401;
@@ -42,6 +41,13 @@ p {
     font-size: 2rem;
     padding-top: 20px;
     padding-bottom: 20px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.show-part {
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .step-tabs {
@@ -108,14 +114,17 @@ p {
     grid-column: 2;
     padding: 100px;
     align-items: center;
-    height: 100vh;
+    min-height: 100vh;
+    overflow-y: auto;
 }
 
 .recipe-card {
     display: flex;
     flex-direction: column;
-    width: 80%;
+    max-width: 950px;
     height: 80%;
+    overflow-y: auto;
+    overflow-x: hidden;
     border: 2px solid #4f4239;
     box-shadow: 0px 0px 20px 10px  #1a0401;
     align-items: center;
@@ -135,6 +144,10 @@ p {
     font-size: 1.5rem;
     line-height: 1.5rem;
 }
+.ingredient-list p {
+    font-size: 1.5rem;
+}
+
 
 .step-list {
     display: flex;
@@ -144,6 +157,10 @@ p {
     font-weight: 700;
     font-size: 1.5rem;
     line-height: 1.5rem;
+}
+
+.step-list p {
+    font-size: 1.5rem;
 }
 
 .tab-title {
@@ -199,16 +216,22 @@ p {
         rgba(26, 4, 1, 0.52) -9px 0px 16px 8px;
 }
 
+.chat-container {
+    width: 950px;
+    display: flex;
+    flex-direction: column;
+    height: 980px;
+}
 
 .messages-window {
+    flex: 1;
     display: flex;
     flex-direction: column;
     margin: 3rem;
-    overflow: auto;
+    overflow-y: auto;
     scroll-behavior: smooth;
     justify-content: flex-start;
     max-height: 65vh;
-    width: 90%;
 }
 
 .user-message {
@@ -237,7 +260,6 @@ p {
     display: flex;
     flex-direction: row;
     justify-content: center;
-    align-self: center;
 }
 
 textarea {

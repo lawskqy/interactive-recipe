@@ -57,9 +57,10 @@ const Collection = () => {
                             <img src={currentRecipe.image}></img>
                             <h2>{currentRecipe.name}</h2>
                             <h3>{currentRecipe.description}</h3>
-                            <p>Estimated preparation time: {currentRecipe.time}</p>
-                            <button onClick={handleClose} className="back-button">Back</button>
-                            <button className="start-button" onClick={() => navigate(`/start/${currentRecipe.name}`)}>Start</button>
+                            <div className="modal-buttons">
+                                <button onClick={handleClose} className="back-button">Back</button>
+                                <button className="start-button" onClick={() => navigate(`/start/${currentRecipe.name}`)}>Start</button>
+                            </div>
                         </div>
                     </div>
                 )}
