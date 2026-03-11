@@ -4,6 +4,7 @@ import '../styles/Collection.css'
 
 
 interface Recipe {
+    category: string;
     name: string;
     steps: string[];
     ingredients: string[];
@@ -19,26 +20,52 @@ const Collection = () => {
     const [currentRecipe, setCurrentRecipe] = useState <Recipe | null>(null);
 
     const [recipe, setRecipe] = useState<Array<Recipe>>([]);
+    const [filteredRecipe, setFilteredRecipe] = useState<Array<Recipe>>(recipe);
     
     useEffect (() => {
         fetch('../recipes.json')
             .then(response => response.json())
-            .then(recipe => setRecipe(recipe))
+            .then(recipe => {
+                setRecipe(recipe);
+                setFilteredRecipe(recipe);
+            })
             .catch(error => console.error('Error fetching data', error));
     }, []);
 
+    
+
     const recipeInfo = (recipe: Recipe) => {
         setCurrentRecipe(recipe);
-    }
+    };
 
     const handleClose = () => {
         setCurrentRecipe(null);
-    }
+    };
+    
+    const filtering = (value: string) => {
+        if (value === "default") {
+            setFilteredRecipe(recipe);
+        } else if (value === "warm") {
+             const temp = recipe.filter(item => item.category === "warm drinks");
+            setFilteredRecipe(temp);
+        } else if (value === "cold") {
+            const temp = recipe.filter(item => item.category === "cold drinks");
+            setFilteredRecipe(temp);
+        }
+    };
 
     return (
         <div>
+            <div className="filter-sort">
+                <select className="selection" onChange={(e) => filtering(e.target.value)}>
+                    <option value="default">All items</option>
+                    <option value="warm">Warm drinks</option>
+                    <option value="cold">Cold drinks</option>
+                </select>
+            </div>
+            
             <div className="collection-container">
-                {recipe.map((recipe, index) => {
+                {filteredRecipe.map((recipe, index) => {
                     return (
                         <div key={index} className="name-card">
                             <button className="name-card name-card-click" onClick={() => recipeInfo(recipe)}>

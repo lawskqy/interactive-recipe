@@ -35,6 +35,25 @@ p {
     border-radius: 3px;
 }
 
+.filter-sort {
+    border-bottom: 1px solid #4f4239;
+    margin-left: 130px;
+    margin-top: 20px;
+}
+
+select {
+    border-radius: 1px;
+    border: 1px solid #1a0401d7;
+    box-shadow:  3px 2px 8px 0px #1a0401d7;
+    background-color: transparent;
+    font-size: 1rem;
+    padding: 5px 50px;
+    margin: 0 10px 0 10px;
+    justify-content: center;
+    text-align: center;
+    color:#d3dec3;
+}
+
 img {
     height: 250px;
     width: 250px;
