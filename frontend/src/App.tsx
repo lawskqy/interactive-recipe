@@ -10,6 +10,7 @@ function App() {
     <>
       <Router>
         <Routes>
+          <Route path="/" element={<Collection />} />
           <Route path="/collection" element={<Collection/>} />
           <Route path="/start/:name" element={<StartRecipe/>} />
         </Routes>
@@ -18,4 +19,4 @@ function App() {
   )
 }
 
-export default App;
+export default App;  
