@@ -10,6 +10,7 @@ interface CanvasProps extends React.CanvasHTMLAttributes<HTMLCanvasElement> {
 
 interface AnimatedItem {
     img: HTMLImageElement;
+    label: string;
     x: number;
     y: number;
     startX: number;
@@ -48,16 +49,24 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
         const centerY = canvas.height / 2;
         const gridSpacing = 200;
         const columns = 5;
-        const allImages = [...ingredients, ...tools];
 
+        const allImages = [...ingredients, ...tools];
 
         staticItems.current = allImages.map((src, index) => {
             const col = index % columns;
             const row = Math.floor(index / columns);
             const x = col * gridSpacing + 20;
             const y = row * gridSpacing + 20;
+
+            const label = src
+                .split("/")
+                .pop()
+                ?.replace(".png", "")
+                ?.replaceAll("_", " ") ?? "";
+
             const item: AnimatedItem = {
                 img: new Image(),
+                label,
                 x,
                 y,
                 startX: x,
@@ -73,6 +82,7 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
 
         toolItem.current = {
             img: new Image(),
+            label: toolStatic.label,
             x: toolStatic.startX,
             y: toolStatic.startY,
             startX: toolStatic.startX,
@@ -82,12 +92,13 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
         };
         toolItem.current.img.src = toolStatic.img.src;
 
-
         ingredientItem.current = staticItems.current.slice(0, -1).map((item) => {
             const img = new Image();
             img.src = item.img.src;
+
             return {
                 img,
+                label: item.label,
                 x: item.startX,
                 y: item.startY,
                 startX: item.startX,
@@ -108,21 +119,31 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
         let animationFrameId: number;
 
         staticItems.current.forEach(item => {
-                if (item.img.complete && item.img.naturalWidth !== 0) {
+            if (item.img.complete && item.img.naturalWidth !== 0) {
                 ctx.drawImage(item.img, item.x, item.y, 80, 80);
-                }
+                ctx.font = "14px sans-serif";
+                ctx.fillStyle = "#3a2a20";
+                ctx.textAlign = "center";
+                ctx.fillText(item.label, item.x + 40, item.y + 100);
+            }
         });
 
         const render = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            ctx.font = "14px sans-serif";
+            ctx.fillStyle = "#3a2a20";
+            ctx.textAlign = "center";
+
             if (toolItem.current) {
                 ctx.drawImage(toolItem.current.img, toolItem.current.x, toolItem.current.y, 80, 80);
+                ctx.fillText(toolItem.current.label, toolItem.current.x + 40, toolItem.current.y + 100);
             }
 
             ingredientItem.current.forEach(item => {
                 if (item.img.complete && item.img.naturalWidth !== 0) {
                     ctx.drawImage(item.img, item.x, item.y, 80, 80);
+                    ctx.fillText(item.label, item.x + 40, item.y + 100);
                 }
             });
 
@@ -135,11 +156,10 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
 
                     const distance = Math.hypot(toolItem.current.x - toolItem.current.targetX, toolItem.current.y - toolItem.current.targetY);
                     if (distance < 1) {
-                        state.current = ("INGREDIENTS_MOVING");
+                        state.current = "INGREDIENTS_MOVING";
                     }
                 } 
 
-                
                 if(state.current === "INGREDIENTS_MOVING") {
                     ingredientItem.current.forEach(item => {
                         item.x += (item.targetX - item.x) * 0.01;
@@ -150,7 +170,7 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
                     });
 
                     if (allReachedCenter && !explosionTimer.current) {
-                        state.current = ("EXPLODING");
+                        state.current = "EXPLODING";
                         explosionTimer.current = window.setTimeout(() => {
                             state.current = "SHOW_RESULT";
 
@@ -161,17 +181,19 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
                         }, 1500);
                     }
                 } 
+
                 if (state.current === "EXPLODING") {
                     ctx.fillStyle = "rgb(212, 24, 24)";
                     ctx.beginPath();
                     ctx.arc(canvas.width / 2, canvas.height / 2, 50, 0, Math.PI * 2);
                     ctx.fill();
                 } 
-                
+
                 if (state.current === "SHOW_RESULT" && resultImg) {
                     ctx.drawImage(resultImg, canvas.width / 2 - 40, canvas.height / 2 - 40, 80, 80);
                 }
             } 
+
             animationFrameId = requestAnimationFrame(render);
         };
 
@@ -194,14 +216,14 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
         });
 
         if (toolItem.current) {
-            toolItem.current.x = toolItem.current?.startX;
-            toolItem.current.y = toolItem.current?.startY;
+            toolItem.current.x = toolItem.current.startX;
+            toolItem.current.y = toolItem.current.startY;
         }
     };
 
     const restartAnimation = () => {
         resetPositions();
-        state.current = ("TOOL_MOVING");
+        state.current = "TOOL_MOVING";
         resumeAnimation();
     };
 
@@ -209,16 +231,16 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
         <>
         <canvas ref={canvasRef} {...props} />
         <div className="button-container">
-            <button className={`buttons ${pressed? "pressed" : ""}`} onClick={() => {
-                pauseAnimation;
+            <button className={`buttons ${pressed ? "pressed" : ""}`} onClick={() => {
+                pauseAnimation();
                 setPressed(true);
             }}>Pause</button>
             <button className="buttons" onClick={() => {
-                resumeAnimation;
+                resumeAnimation();
                 setPressed(false);
             }}>Resume</button>
             <button className="buttons" onClick={() => {
-                restartAnimation;
+                restartAnimation();
                 setPressed(false);
             }}>Restart</button>
         </div>

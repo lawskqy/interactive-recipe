@@ -52,6 +52,13 @@ select {
     justify-content: center;
     text-align: center;
     color:#d3dec3;
+    cursor: pointer;
+}
+
+option {
+    background-color: #4f4239;
+    color:#d3dec3;
+    cursor: pointer;
 }
 
 img {
@@ -83,6 +90,17 @@ img {
     overflow-y: auto;
     background-color: 	#FFF5EE;
     color: #6F4E37;
+}
+
+.modal-info {
+    display: flex;
+    flex-direction: column;
+    max-width: 280px;
+    justify-content: space-between;
+}
+
+h4 {
+    margin-top: -30px;
 }
 
 .modal-buttons {

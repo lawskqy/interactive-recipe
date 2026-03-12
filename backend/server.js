@@ -75,7 +75,7 @@ function runImageAgent(ingredient) {
     });
 }
 
-/*app.post("/generate-image", async (req, res) => {
+app.post("/generate-image", async (req, res) => {
     const { ingredient } = req.body;
     if (!ingredient) return res.status(400).send("No ingredient");
 
@@ -88,7 +88,7 @@ function runImageAgent(ingredient) {
         console.error(e);
         res.status(500).send("Generation error");
     }
-});*/
+});
 
 app.post("/separate", (req, res) => {
     const payload = JSON.stringify(req.body);

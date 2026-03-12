@@ -2,6 +2,7 @@
    {
         "category": "cold drinks",
         "name": "iced matcha latte",
+        "description": "A smooth and refreshing iced drink made with matcha, milk, and a touch of honey for natural sweetness.",
         "portion": "1",
         "ingredients": ["matcha powder", "water", "milk", "honey", "ice"],
         "amount": ["2g", "80ml", "180ml", "10ml", "120g"],
@@ -18,6 +19,7 @@
     {
         "category": "warm drinks",
         "name": "hot matcha latte",
+        "description": "A warm and creamy matcha latte balanced with honey, vanilla, and a small pinch of sea salt.",
         "portion": "1",
         "ingredients": ["matcha powder", "hot water", "milk", "honey", "vanilla extract", "sea salt"],
         "amount": ["2g", "20ml", "240ml", "10ml", "1ml", "pinch"],
@@ -33,6 +35,7 @@
     {
         "category": "cold drinks",
         "name": "mango matcha latte",
+        "description": "A tropical layered drink that blends sweet mango with creamy milk and earthy matcha.",
         "portion": "1",
         "ingredients": ["matcha powder", "warm water", "mango pulp", "milk", "honey or maple syrup", "ice"],
         "amount": ["2g", "80ml", "120ml", "120ml", "10ml", "few cubes"],
@@ -49,6 +52,7 @@
     {
         "category": "cold drinks",
         "name": "pumpkin spice maple matcha latte",
+        "description": "A cozy autumn-inspired iced matcha drink with pumpkin spice, maple sweetness, and creamy foam.",
         "portion": "1",
         "ingredients": ["matcha powder", "pumpkin spice", "pumpkin puree", "maple syrup", "hot water", "non-dairy milk", "heavy cream", "milk", "maple syrup (foam)", "ice", "ground cinnamon"],
         "amount": ["4g", "0.5g", "15g", "15ml", "60ml", "60ml", "45ml", "15ml", "5ml", "few cubes", "pinch"],
@@ -66,6 +70,7 @@
     {
         "category": "warm drinks",
         "name": "matcha mocha latte",
+        "description": "A rich and comforting latte combining earthy matcha with smooth cacao and warm milk.",
         "portion": "1",
         "ingredients": ["matcha powder", "cacao powder", "hot water", "milk", "maple syrup or coconut sugar"],
         "amount": ["2g", "1g", "60ml", "180ml", "5ml"],
@@ -80,6 +85,7 @@
     {
         "category": "cold drinks",
         "name": "tropical matcha",
+        "description": "A bright and refreshing matcha drink mixed with sweet pineapple juice for a tropical twist.",
         "portion": "1",
         "ingredients": ["matcha powder", "hot water", "pineapple juice", "ice", "pineapple slice or mint"],
         "amount": ["2g", "120ml", "240ml", "few cubes", "1 piece or leaf"],
@@ -95,6 +101,7 @@
     {
         "category": "cold drinks",
         "name": "blueberry matcha fizz",
+        "description": "A sparkling matcha drink with muddled blueberries, lemon juice, and refreshing soda water.",
         "portion": "1",
         "ingredients": ["matcha powder", "blueberries", "water", "syrup", "fresh lemon juice", "soda water", "ice"],
         "amount":["3g", "20g", "40ml", "30ml", "60ml", "150ml", "few cubes"],
@@ -111,6 +118,7 @@
     {
         "category": "cold drinks",
         "name": "coconut matcha refresher",
+        "description": "A light and hydrating drink made with coconut water, matcha, and a touch of creamy coconut.",
         "portion": "1",
         "ingredients": ["matcha powder", "warm water", "coconut water", "water", "coconut cream", "honey or sweetener", "ice", "lime juice", "mint"],
         "amount": ["3g", "40ml", "180ml", "60ml", "10ml", "5ml", "few cubes", "optional squeeze", "optional"],
@@ -128,6 +136,7 @@
     {
         "category": "cold drinks",
         "name": "iced raspberry matcha latte",
+        "description": "A fruity iced matcha latte layered with fresh raspberries, milk, and smooth matcha.",
         "portion": "1",
         "ingredients": ["matcha powder", "water", "milk", "raspberries", "ice"],
         "amount": ["2g", "120ml", "120ml", "25g", "few cubes"],
@@ -144,6 +153,7 @@
     {
         "category": "warm drinks",
         "name": "warm vanilla matcha",
+        "description": "A comforting matcha drink with warm milk, gentle vanilla flavor, and light sweetness.",
         "portion": "1",
         "ingredients": ["matcha powder", "warm water", "milk", "vanilla extract", "honey or maple syrup"],
         "amount": ["3g", "30ml", "180ml", "2ml", "5–10ml"],
@@ -160,6 +170,7 @@
     {
         "category": "warm drinks",
         "name": "tiramisu matcha latte",
+        "description": "A dessert-style latte that blends matcha, coffee, creamy milk, and mascarpone topping.",
         "portion": "1",
         "ingredients": ["matcha powder", "hot water", "milk", "espresso or strong coffee", "mascarpone", "sugar or maple syrup"],
         "amount": ["2g", "40ml", "180ml", "60ml", "35g", "5–10ml"],
@@ -176,6 +187,7 @@
     {
         "category": "warm drinks",
         "name": "salted caramel latte",
+        "description": "A rich coffee drink blended with butter, coconut oil, honey, and a hint of salt.",
         "portion": "1",
         "ingredients": ["brewed coffee", "coconut oil or MCT oil", "butter", "salt", "vanilla extract", "honey", "milk"],
         "amount": ["240ml", "15ml", "5g", "pinch", "2ml", "5ml", "120ml"],
@@ -191,6 +203,7 @@
     {
         "category": "warm drinks",
         "name": "pistachio creamy latte",
+        "description": "A smooth latte flavored with pistachio paste and lightly sweetened for a nutty, creamy taste.",
         "portion": "1",
         "ingredients": ["espresso or strong coffee", "milk", "pistachio paste", "honey or sugar", "vanilla extract"],
         "amount": ["60ml", "200ml", "15g", "5–10ml", "1ml"],
@@ -206,6 +219,7 @@
     {
         "category": "warm drinks",
         "name": "spanish latte",
+        "description": "A sweet and creamy espresso drink made with milk and condensed milk.",
         "portion": "1",
         "ingredients": ["espresso", "milk", "sweetened condensed milk"],
         "amount": ["60ml", "180ml", "30ml"],
@@ -221,6 +235,7 @@
     {
         "category": "warm drinks",
         "name": "white mocha coffee",
+        "description": "A creamy coffee drink combining espresso, milk, and melted white chocolate.",
         "portion": "1",
         "ingredients": ["espresso", "milk", "white chocolate", "vanilla extract"],
         "amount": ["60ml", "180ml", "20g", "1ml"],
@@ -236,6 +251,7 @@
     {
         "category": "cold drinks",
         "name": "iced coconut coffee",
+        "description": "A refreshing iced coffee with coconut milk and a hint of sweetness.",
         "portion": "1",
         "ingredients": ["strong brewed coffee", "coconut milk", "coconut syrup or honey", "ice"],
         "amount": ["180ml", "120ml", "10ml", "few cubes"],
@@ -251,6 +267,7 @@
     {
         "category": "warm drinks",
         "name": "irish latte",
+        "description": "A warm espresso drink mixed with Irish whiskey, brown sugar, milk, and whipped cream.",
         "portion": "1",
         "ingredients": ["espresso", "irish whiskey", "brown sugar", "milk", "whipped cream"],
         "amount": ["60ml", "30ml", "5g", "150ml", "20g"],
@@ -266,6 +283,7 @@
     {
         "category": "cold drinks",
         "name": "strawberry cold foam hojicha",
+        "description": "A refreshing iced hojicha drink topped with sweet strawberry cold foam.",
         "portion": "1",
         "ingredients": ["hojicha powder", "water", "ice", "milk", "strawberry syrup", "red food coloring"],
         "amount": ["2g", "120ml", "120g", "60ml", "15ml", "optional few drops"],
@@ -282,6 +300,7 @@
     {
         "category": "cold drinks",
         "name": "coconut hojicha cloud",
+        "description": "A tropical iced drink with coconut water and a creamy hojicha foam layer.",
         "portion": "1",
         "ingredients": ["ice", "coconut water", "hojicha powder", "coconut cream", "milk", "vanilla syrup"],
         "amount": ["120g", "180ml", "2g", "60g", "45ml", "22ml"],
@@ -297,6 +316,7 @@
     {
         "category": "cold drinks",
         "name": "strawberry hojicha latte",
+        "description": "A layered drink combining sweet strawberries, creamy milk, and roasted hojicha tea.",
         "portion": "1",
         "ingredients": ["strawberries", "sugar", "ice", "milk", "hojicha powder", "cold water"],
         "amount": ["45g", "4g", "120g", "180ml", "2g", "60ml"],
@@ -313,6 +333,7 @@
     {
         "category": "warm drinks",
         "name": "maple hojicha latte macchiato",
+        "description": "A layered latte with maple-sweetened milk and roasted hojicha poured through the foam.",
         "portion": "1",
         "ingredients": ["milk", "maple syrup", "hojicha powder", "filtered water"],
         "amount": ["180ml", "15ml", "2g", "60ml"],
@@ -328,6 +349,7 @@
     {
         "category": "warm drinks",
         "name": "hojicha rose tea latte",
+        "description": "A floral latte combining fragrant rose tea with smooth roasted hojicha and milk.",
         "portion": "1",
         "ingredients": ["dried rose buds", "filtered water", "hojicha powder", "maple syrup", "milk", "dried rose petals"],
         "amount": ["2g", "100ml", "2g", "5ml", "140ml", "1g"],
@@ -344,6 +366,7 @@
     {
         "category": "warm drinks",
         "name": "lavender hojicha latte",
+        "description": "A calming latte made with roasted hojicha tea and fragrant lavender infusion.",
         "portion": "1",
         "ingredients": ["dried lavender buds", "filtered water", "hojicha powder", "maple syrup", "milk", "dried lavender buds (garnish)"],
         "amount": ["2g", "100ml", "2g", "5ml", "140ml", "1g"],

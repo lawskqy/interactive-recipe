@@ -82,11 +82,14 @@ const Collection = () => {
                     <div className="overlay" onClick={handleClose}>
                         <div className="modal-content" onClick={e => e.stopPropagation()}>
                             <img src={currentRecipe.image}></img>
-                            <h2>{currentRecipe.name}</h2>
-                            <h3>{currentRecipe.description}</h3>
-                            <div className="modal-buttons">
-                                <button onClick={handleClose} className="back-button">Back</button>
-                                <button className="start-button" onClick={() => navigate(`/start/${currentRecipe.name}`)}>Start</button>
+                            <div className="modal-info">
+                                <h2>{currentRecipe.name}</h2>
+                                <h4>{currentRecipe.description}</h4>
+                            
+                                <div className="modal-buttons">
+                                    <button onClick={handleClose} className="back-button">Back</button>
+                                    <button className="start-button" onClick={() => navigate(`/start/${currentRecipe.name}`)}>Start</button>
+                                </div>
                             </div>
                         </div>
                     </div>

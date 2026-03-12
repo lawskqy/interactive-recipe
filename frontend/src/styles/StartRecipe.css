@@ -103,7 +103,7 @@ p {
 }
 
 .canvas-board {
-    background-color: aliceblue;
+    background-color: transparent;
     width: 100%;
     height: 750px;
 }
@@ -139,7 +139,7 @@ p {
     display: flex;
     flex-direction: column;
     padding: 0 100px 0 100px;
-    align-items: center;
+    align-items: start;
     font-weight: 700;
     font-size: 1.5rem;
     line-height: 1.5rem;
@@ -148,12 +148,16 @@ p {
     font-size: 1.5rem;
 }
 
+.recipe-tab h2 {
+    text-align: left;
+    padding: 0 100px;
+}
 
 .step-list {
     display: flex;
     flex-direction: column;
     padding: 30px 100px 10px 100px;
-    align-items: center;
+    align-items: start;
     font-weight: 700;
     font-size: 1.5rem;
     line-height: 1.5rem;
@@ -162,6 +166,7 @@ p {
 .step-list p {
     font-size: 1.5rem;
 }
+
 
 .tab-title {
     display: grid;

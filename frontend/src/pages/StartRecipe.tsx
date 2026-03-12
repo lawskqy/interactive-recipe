@@ -33,13 +33,13 @@ const StartRecipe = () => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const container = useRef<HTMLDivElement>(null);
     const { name } = useParams<{name: string}>();
-    const [glass, setGlass] = useState<boolean>(false);
     const [ingredientImages, setIngredientImages] = useState<Record<string, string>>({});
     const [activeTutTab, setActiveTutTab] = useState(0);
     const [stepIngredients, setStepIngredients] = useState<Array<string>>([]);
     const [stepTools, setStepTools] = useState<Array<string>>([]);
     const [stepActions, setStepActions] = useState<Array<string>>([]);
     const [stepData, setStepData] = useState<Record<number, StepData>>({});
+    const [createdItems, setCreatedItems] = useState<string[]>([]);
 
 
     const toImagePath = (name: string) => {
@@ -54,8 +54,10 @@ const StartRecipe = () => {
     const stepSeparator = (step: string) => {
 
         const payload = {
-            step: step,
-            context: recipe?.ingredients
+            current_step: step,
+            ingredients: recipe?.ingredients,
+            created_items: createdItems,
+            all_steps: recipe?.steps
         }
 
         fetch("http://localhost:8080/separate", {
@@ -68,6 +70,10 @@ const StartRecipe = () => {
         .then (data => {
             console.log(payload);
             console.log("Agent response:", data);
+
+            if (data.creates) {
+                setCreatedItems(prev => [...prev, data.creates]);
+            }
 
             const ingredientImages = (data.ingredients || []).map(toImagePath);
             const toolImages = (data.tools || []).map(toImagePath);
@@ -252,15 +258,6 @@ const StartRecipe = () => {
         setIngredientImages(savedImages);
     }, []);
 
-    const addToGlass = (ingredient: string) => {
-        if (!glass) {
-            alert("You must select a glass first");
-        } else {
-            const prompt = `${ingredient} in a glass`
-            generateImage(prompt);
-        }
-    };
-
     return (
         <div className="game-container">
             <div className="board-container">
@@ -273,38 +270,8 @@ const StartRecipe = () => {
                         { 
                         activeBoardTab === "Quizz"?
                             <>
-                                <div className="icon-container">
-                                    <div className="glass-icon">
-                                        <button className="ingredient-button" onClick={() => setGlass(true)}>
-                                            <img src="/public/glass1.png"></img>
-                                        </button>
-                                        <button className="ingredient-button">
-                                            <img src="/public/glass1.png"></img>
-                                        </button>
-                                        <button className="ingredient-button">
-                                            <img src="/public/glass1.png"></img>
-                                        </button>
-                                    </div>
-
-                                    <div className="ingredients-icon">
-                                        {recipe?.ingredients.map((ingredient) => {
-                                            return (
-                                                <button className="ingredient-button" key={ingredient} onClick={() => addToGlass(ingredient)}>
-                                                    {ingredientImages[ingredient] ? (
-                                                        <img src={ingredientImages[ingredient]} alt={ingredient} />
-                                                        ) : (
-                                                        <div className="loader"></div>
-                                                    )}
-                                                    <p>{ingredient}</p>
-                                                </button>
-                                            )
-                                        })}
-                                    </div>  
-
-                                    <div className="center-glass">
-                                        {glass? 
-                                            <img src="/public/glass.png"></img> : <div></div>}
-                                    </div>   
+                                <div >
+                                    Currently not available
                                 </div> 
                             </> :
                             <>
@@ -346,7 +313,7 @@ const StartRecipe = () => {
                     <div>
                         {
                         activeTab === "Recipe" ? 
-                            <>
+                            <div className="recipe-tab">
                                 <h2>{name}</h2>
 
                                 <div className="ingredient-list">
@@ -360,7 +327,7 @@ const StartRecipe = () => {
                                     {recipe && recipe.steps && recipe.steps.map((step, index) => (
                                         <p key={index}>Step {index + 1}: {step}</p>))}
                                 </div>
-                            </> :
+                            </div> :
                             <>
                                 <div className="chat-container">
                                     <div className="messages-window" ref={container}>

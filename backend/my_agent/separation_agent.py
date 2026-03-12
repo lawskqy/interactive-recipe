@@ -30,8 +30,16 @@ separator_agent = LlmAgent(
     instruction = """
         You receive ONE cooking recipe step.
         You also receive a list of ingredients which are used in that recipe.
+        You may also receive a list of created ingredients from previous steps.
+        If the step refers to one of these items (for example "the matcha",
+        "the batter", "the mixture"), you MUST return that item in the
+        ingredients array instead of the base ingredients.
         You MUST match ingredients from the step to the closest ingredient
         from the ingredients list.
+
+        If the step refers to an existing created ingredient
+        (e.g. "the matcha", "the batter", "the sauce"),
+        you MUST return that item in the ingredients array.
 
         If the step contains a shortened form (e.g. "matcha"),
         map it to the closest allowed ingredient ("matcha powder").
@@ -40,8 +48,16 @@ separator_agent = LlmAgent(
         {
             "ingredients": [],
             "tools": [],
-            "actions": []
+            "actions": [],
+            "creates": <name of created ingredient or null>
         }
+
+        If the step produces a new mixture, batter, dough, sauce, drink,
+        or transformed ingredient, you MUST include a "creates" field.
+
+        If nothing new is created, return:
+
+        "creates": null
 
         You MUST extract:
 
@@ -63,7 +79,8 @@ separator_agent = LlmAgent(
         {
         "ingredients": ["matcha powder", "water"],
         "tools": ["whisk"],
-        "actions": ["whisk"]
+        "actions": ["whisk"],
+        "creates": "matcha"
         }
 
         Step: Sift flour into bowl
@@ -71,7 +88,21 @@ separator_agent = LlmAgent(
         {
         "ingredients": ["flour"],
         "tools": ["sifter", "bowl"],
-        "actions": ["sift"]
+        "actions": ["sift"],
+        "creates": "sifted flour"
+        }
+
+        Created ingredients:
+        matcha
+
+        Step: Pour the matcha into the glass
+
+        Output:
+        {
+        "ingredients": ["matcha"],
+        "tools": ["glass"],
+        "actions": ["pour"],
+        "creates": null
         }
 
         Return ONLY valid JSON.
@@ -98,10 +129,26 @@ def main():
 
     try:
         data = json.loads(raw_input)
-        step = data.get("step", "")
-        context = data.get("context", [])
+        step = data.get("current_step", "")
+        ingredients = data.get("ingredients", [])
+        all_steps = data.get("all_steps", [])
+        step_index = data.get("step_index", 0)
+        previous_steps = all_steps[:step_index]
+        created_items = data.get("created_items", [])
 
-        payload = f"Recipe ingredients list: {', '.join(context)}\nUser step: {step}"
+        payload = f"""
+        Recipe ingredients list:
+        {', '.join(ingredients)}
+
+        Created ingredients:
+        {', '.join(created_items)}  
+
+        Current recipe step:
+        {step}
+
+        Full recipe steps for context:
+        {' | '.join(previous_steps)}
+        """
 
         content = types.Content(role="user", parts=[types.Part(text=payload)])
 
@@ -132,7 +179,8 @@ def main():
             result = json.dumps({
                 "ingredients": [],
                 "tools": [],
-                "actions": []
+                "actions": [],
+                "creates": None
             })
 
 
@@ -147,21 +195,22 @@ def main():
             result = json.dumps({
                 "ingredients": [],
                 "tools": [],
-                "actions": []
+                "actions": [],
+                "creates" : None
             })
 
         print(result)
 
     except Exception as e:
         print("Error:", e)
-        print(json.dumps({"ingredients": [], "tools": [], "actions": []}))
+        print(json.dumps({"ingredients": [], "tools": [], "actions": [], "creates": None}))
         return
 
     try:
         parsed = json.loads(result)
     except Exception as e:
         print("Error:", e)
-        parsed = {"ingredients": [], "tools": [], "actions": []}
+        parsed = {"ingredients": [], "tools": [], "actions": [], "creates": None}
 
 if __name__ == "__main__":
     main()
