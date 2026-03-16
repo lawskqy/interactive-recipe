@@ -144,8 +144,28 @@ p {
     font-size: 1.5rem;
     line-height: 1.5rem;
 }
-.ingredient-list p {
+
+.recipe-tab h2 {
+    color: #C1E1D1;
+}
+
+.ingredient-list h3 {
+    color: #D1C1E1;
+}
+
+.ingredients-colors {
+    display: flex;
+    flex-direction: row;
+}
+
+.ingred-color {
     font-size: 1.5rem;
+    color: #C1E1C1;
+}
+
+.amount-color {
+    font-size: 1.5rem;
+    color: #E1C1D1;
 }
 
 .recipe-tab h2 {
@@ -163,10 +183,9 @@ p {
     line-height: 1.5rem;
 }
 
-.step-list p {
-    font-size: 1.5rem;
+.step-list h3 {
+    color: #D1C1E1;
 }
-
 
 .tab-title {
     display: grid;
@@ -300,6 +319,16 @@ textarea {
   background-color: #4f4239;
   border-radius: 10px;
   border: 3px solid transparent;
+}
+
+.button-back {
+    border-radius: 3px;
+    border: 2px solid #4f4239;
+    box-shadow:  5px 6px 6px 0px #1a0401d7;
+    width: 70px;
+    height: 30px;
+    margin: 20px 0 -70px 160px;
+    background-color: transparent;
 }
 
 .button {

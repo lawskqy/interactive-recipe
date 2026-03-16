@@ -69,7 +69,7 @@ const Collection = () => {
                     return (
                         <div key={index} className="name-card">
                             <button className="name-card name-card-click" onClick={() => recipeInfo(recipe)}>
-                                <img src={recipe.image}></img>
+                                <img src={`/images/${recipe.image}`}></img>
                                 <p>{recipe.name}</p>
                             </button>
                         </div>
@@ -81,7 +81,7 @@ const Collection = () => {
                 {currentRecipe && (
                     <div className="overlay" onClick={handleClose}>
                         <div className="modal-content" onClick={e => e.stopPropagation()}>
-                            <img src={currentRecipe.image}></img>
+                            <img src={`/images/${currentRecipe.image}`}></img>
                             <div className="modal-info">
                                 <h2>{currentRecipe.name}</h2>
                                 <h4>{currentRecipe.description}</h4>

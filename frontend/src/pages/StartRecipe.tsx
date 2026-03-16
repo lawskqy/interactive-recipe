@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef} from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from 'react-router-dom';
 import '../styles/StartRecipe.css';
 import Canvas from "../assets/Canvas";
+import { useNavigate } from "react-router-dom";
 
 
 interface Recipe {
@@ -25,6 +26,7 @@ interface StepData {
 
 
 const StartRecipe = () => {
+    const navigate = useNavigate();
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [activeTab, setActiveTab] = useState("Recipe");
     const [activeBoardTab, setActiveBoardTab] = useState("Recipe tutorial");
@@ -260,6 +262,7 @@ const StartRecipe = () => {
 
     return (
         <div className="game-container">
+            <div><button className="button-back" onClick={() => navigate(`/collection/`)}>←</button></div>
             <div className="board-container">
                 <div className="board-card">
                     <div className="tab-title">
@@ -319,13 +322,13 @@ const StartRecipe = () => {
                                 <div className="ingredient-list">
                                     <h3>Ingredients for {recipe? (Number(recipe.portion) === 1 ? `${recipe.portion} portion` : `${recipe.portion} portions`) : ''}</h3>
                                     {recipe && recipe.ingredients && recipe.amount && recipe.ingredients.map((ingredient, index) => (
-                                        <p key={index}>{ingredient} - {recipe.amount[index]}</p>))}
+                                        <div className="ingredients-colors"><p key={index} className="ingred-color">{ingredient}</p> <p>-</p> <p className="amount-color">{recipe.amount[index]}</p></div>))}
                                 </div>
 
                                 <div className="step-list">
                                     <h3>Steps</h3>
                                     {recipe && recipe.steps && recipe.steps.map((step, index) => (
-                                        <p key={index}>Step {index + 1}: {step}</p>))}
+                                        <div className="ingredients-colors"><p key={index} className="amount-color">Step {index + 1}:</p> <p className="ingred-color">{step}</p></div>))}
                                 </div>
                             </div> :
                             <>
