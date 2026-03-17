@@ -10,52 +10,64 @@ import sys, json, time, requests, asyncio, re
 from pathlib import Path
 import base64
 
+import mimetypes
+import os
+from google import genai
+from google.genai import types
+
+def save_binary_file(file_name, data):
+    f = open(file_name, "wb")
+    f.write(data)
+    f.close()
+
 COMFY_URL = "http://127.0.0.1:8188"
 COMFY_OUTPUT_DIR = Path("D:/ComfyUI/output")
 IMAGE_CACHE = Path(__file__).parent.parent / "image_cache"
 IMAGE_CACHE.mkdir(exist_ok=True)
+FRONTEND_IMAGE_DIR = Path(__file__).parent.parent / "../frontend/public/images"
+FRONTEND_IMAGE_DIR.mkdir(exist_ok=True)
 
 image_agent = LlmAgent(
     model="gemini-2.5-flash-lite",
     name="image_agent",
-    description="Generates ingredient images via ComfyUI",
+    description="Generates prompt for image generation",
     instruction = (
-        "You receive a JSON workflow and the name of a single ingredient. "
-        "You must ONLY modify the 'text' input in the existing node whose id is '#ingredient'. "
-        "You must insert the ingredient and adapt a text such that it describes flat 2D illustration, vector style, cartoon, no realism, no photography, no shadows, no reflections, simple shapes, solid colors, game asset, UI icon. "
-        "The style MUST be flat 2D illustration. Explicitly forbid realism, photography, 3D, cinematic lighting, depth of field.Use keywords: flat, vector, cartoon, game asset, UI icon."
-        "Adapt the prompt based on the ingredient type: "
-        "- If the ingredient is a liquid, mention a suitable container (preferably jug with a text on it which names the liquid). "
-        "- If it is a powder, show it in a wooden tin with a small pile. "
-        "- If it is solid (like fruit or vegetable), place it naturally on a surface. "
-        "If it is ice then picture a few cubes(3 to 5) in a bowl"
-        "Enhance style, lighting, and composition, but do NOT change any other nodes. "
-        "Return the workflow JSON exactly as it was, with only this 'text' value modified. "
-        "Do NOT add, remove, or rename nodes, and do not add any extra text or commentary."
-    )
+    "You receive the name of a food ingredient or tool. "
+    "Your task is to generate a high-quality but brief prompt for image generation. "
 
+    "The style MUST be: flat 2D illustration, vector, cartoon, game asset, white background, single centered object. "
+    "No realism, no photography, no 3D, no shadows, no reflections. "
+
+    "Adapt the representation depending on the ingredient type: "
+    "- Liquids → in a container (bottle, jug, glass) with label if appropriate. "
+    "- Powders → in a small wooden bowl or container, optionally a small pile visible. "
+    "- Solids (fruits, vegetables) → placed naturally on a surface. "
+    "- Ice → 3–5 cubes in a simple bowl. "
+
+    "Keep shapes simple, clean, minimal, with solid colors. "
+
+    "Return ONLY the final prompt text. No JSON, no explanation."
+    )
 )
 
 session_service = InMemorySessionService()
 runner = Runner(agent=image_agent, app_name="recipe-game", session_service=session_service)
 
 async def main():
-    raw = sys.stdin.read().strip()
+    raw = sys.stdin.readline().strip()
     if not raw:
         raise RuntimeError("No input received from stdin!")
+
     data = json.loads(raw)
     ingredient = data["ingredient"]
-    workflow = data["workflow"]
-    safe_name = ingredient.replace(" ", "_").lower()
-    cached = IMAGE_CACHE / f"{safe_name}.png"
-    if cached.exists():
-        img_bytes = cached.read_bytes()
-        img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+    workflow = data.get("workflow", {})
 
-        print(json.dumps({
-            "image": img_b64,
-            "ingredient": ingredient
-        }))
+    safe_name = ingredient.replace(" ", "_").lower()
+    cached_path = IMAGE_CACHE / f"{safe_name}.png"
+    frontend_path = FRONTEND_IMAGE_DIR / f"{safe_name}.png"
+
+    if cached_path.exists() and frontend_path.exists():
+        print(json.dumps({"image_path": str(frontend_path), "ingredient": ingredient}))
         return
 
     await session_service.create_session(app_name="recipe-game", user_id="user1", session_id="image")
@@ -65,61 +77,52 @@ async def main():
     )
     events = runner.run(user_id="user1", session_id="image", new_message=content)
 
-    updated_workflow_text = None
-
+    updated_prompt = None
     try:
         async for e in events:
             if e.is_final_response():
-                updated_workflow_text = e.content.parts[0].text
+                updated_prompt = e.content.parts[0].text
                 break
     except TypeError:
         for e in events:
             if e.is_final_response():
-                updated_workflow_text = e.content.parts[0].text
+                updated_prompt = e.content.parts[0].text
                 break
 
-    if not updated_workflow_text or updated_workflow_text.strip() == "":
-        raise RuntimeError("LLM agent did not return any workflow!")
+    if not updated_prompt or updated_prompt.strip() == "":
+        raise RuntimeError("LLM agent did not return any prompt!")
 
-    cleaned_text = re.sub(r"^```json\s*|\s*```$", "", updated_workflow_text.strip(), flags=re.MULTILINE)
+    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+    part = types.Part(updated_prompt)
+    contents = [types.Content(parts=[part])]
 
-    def extract_first_json(text: str):
-        text = text.strip()
-        decoder = json.JSONDecoder()
-        try:
-            obj, idx = decoder.raw_decode(text)
-            return obj
-        except json.JSONDecodeError as e:
-            raise RuntimeError(f"Cannot decode JSON: {e}\nText: {text}")
+    config = types.GenerateContentConfig(
+        image_config=types.ImageConfig(aspect_ratio="1:1", image_size="512x512"),
+        response_modalities=["IMAGE"]
+    )
 
-    updated_workflow = extract_first_json(cleaned_text)
-
-    resp = requests.post(f"{COMFY_URL}/prompt", json={"prompt": updated_workflow})
-    resp.raise_for_status()
-    prompt_id = resp.json()["prompt_id"]
-
-    for _ in range(60):
-        hist = requests.get(f"{COMFY_URL}/history/{prompt_id}").json()
-        item = hist.get(prompt_id, {})
-        if item.get("status", {}).get("completed"):
+    image_data = None
+    for chunk in client.models.generate_content_stream(
+        model="gemini-2.5-flash-image",
+        contents=contents,
+        config=config,
+    ):
+        if chunk.parts is None:
+            continue
+        part_chunk = chunk.parts[0]
+        if part_chunk.inline_data and part_chunk.inline_data.data:
+            image_data = part_chunk.inline_data.data
             break
-        time.sleep(1)
-    else:
-        raise RuntimeError("Image generation timed out")
 
-    pngs = sorted(COMFY_OUTPUT_DIR.glob("*.png"), key=lambda p: p.stat().st_mtime, reverse=True)
-    if not pngs:
-        raise RuntimeError("No PNGs found in Comfy output directory!")
+    if image_data is None:
+        raise RuntimeError("No image data returned from Gemini API!")
 
-    latest = pngs[0]
-    cached.write_bytes(latest.read_bytes())
+    save_binary_file(cached_path, image_data)
+    save_binary_file(frontend_path, image_data)
+    
+    public_path = f"/images/{safe_name}.png"
+    print(json.dumps({"image_path": public_path, "ingredient": ingredient}))
 
-    img_bytes = cached.read_bytes()
-    img_b64 = base64.b64encode(img_bytes).decode("utf-8")
-
-    print(json.dumps({
-        "image": img_b64,
-        "ingredient": ingredient
-    }))
-
+import asyncio
 asyncio.run(main())
+

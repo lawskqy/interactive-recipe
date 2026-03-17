@@ -118,7 +118,16 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
 
         let animationFrameId: number;
 
-        staticItems.current.forEach(item => {
+        
+
+        const render = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.font = "14px sans-serif";
+            ctx.fillStyle = "#bd9a85";
+            ctx.textAlign = "center";
+
+            staticItems.current.forEach(item => {
             if (item.img.complete && item.img.naturalWidth !== 0) {
                 ctx.drawImage(item.img, item.x, item.y, 80, 80);
                 ctx.font = "14px sans-serif";
@@ -127,13 +136,6 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
                 ctx.fillText(item.label, item.x + 40, item.y + 100);
             }
         });
-
-        const render = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            ctx.font = "14px sans-serif";
-            ctx.fillStyle = "#3a2a20";
-            ctx.textAlign = "center";
 
             if (toolItem.current) {
                 ctx.drawImage(toolItem.current.img, toolItem.current.x, toolItem.current.y, 80, 80);

@@ -45,13 +45,12 @@ const StartRecipe = () => {
 
 
     const toImagePath = (name: string) => {
-        return `/${name
+        return `/images/${name
             .toLowerCase()
             .replace(/\s+/g, "_")
             .replace(/[^\w_]/g, "")
         }.png`;
     };
-
 
     const stepSeparator = (step: string) => {
 
@@ -221,8 +220,24 @@ const StartRecipe = () => {
         }
     };
 
+
     const generateImage = async (ingredientName:string) => {
+        console.log("generateImage called:", ingredientName);
         if (ingredientImages[ingredientName]) return;
+
+        const safeName = ingredientName.toLowerCase().replace(/\s+/g, "_").replace(/[^\w_]/g, "");
+        const publicPath = `/images/${safeName}.png`;
+
+        try {
+            console.log("BEFORE FETCH");
+            const res = await fetch(publicPath, { method: "HEAD" });
+            if (res.ok) {
+                setIngredientImages(prev => ({ ...prev, [ingredientName]: publicPath }));
+                //return
+            }
+        } catch (err) {
+            console.log("error")
+        }
 
         try {
             const res = await fetch("http://localhost:8080/generate-image", {
@@ -230,14 +245,12 @@ const StartRecipe = () => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ingredient: ingredientName })
             });
+            console.log("response status:", res.status);
 
             const data = await res.json();
-            const newImage = `data:image/png;base64,${data.image}`;
-            
-            setIngredientImages(prev => {
-                const updated = {...prev, [ingredientName]: newImage};
-                return updated;
-            });
+            console.log("image response", data);
+
+            setIngredientImages(prev => ({ ...prev, [ingredientName]: publicPath }));
         } catch (err) {
             console.error("Image generation error:", err);
         }

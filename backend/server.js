@@ -47,6 +47,7 @@ const WORKFLOW_PATH = path.join(__dirname, "sdxlturbo.json");
 const workflow = JSON.parse(fs.readFileSync(WORKFLOW_PATH, "utf8"));
 
 function runImageAgent(ingredient) {
+    console.log("runimage");
     return new Promise((resolve, reject) => {
         const python = spawn(PYTHON, [imageAgentPath], {
             stdio: ["pipe", "pipe", "pipe"],
@@ -54,12 +55,13 @@ function runImageAgent(ingredient) {
               ...process.env,  
             }
         });
-
+        console.log("works")
         let stdout = "";
         let stderr = "";
 
         python.stdout.on("data", d => stdout += d.toString());
         python.stderr.on("data", d => stderr += d.toString());
+
 
         python.on("close", code => {
             if (code !== 0) return reject(stderr);
@@ -70,7 +72,7 @@ function runImageAgent(ingredient) {
             type: "image",
             ingredient,
             workflow
-        }));
+        }) + "\n");
         python.stdin.end();
     });
 }
@@ -82,6 +84,7 @@ app.post("/generate-image", async (req, res) => {
     try {
         const raw = await runImageAgent(ingredient);
         const parsed = JSON.parse(raw);
+        console.log(raw)
 
         res.json(parsed);
     } catch (e) {
