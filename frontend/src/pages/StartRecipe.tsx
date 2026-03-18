@@ -22,6 +22,7 @@ interface StepData {
     ingredients: string[];
     tools: string[];
     actions: string[];
+    creates: string[];
 }
 
 
@@ -35,18 +36,22 @@ const StartRecipe = () => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const container = useRef<HTMLDivElement>(null);
     const { name } = useParams<{name: string}>();
-    const [ingredientImages, setIngredientImages] = useState<Record<string, string>>({});
+    const [ingredientImages, setIngredientImages] = useState<Record<string, string>>(() => {
+        return JSON.parse(localStorage.getItem("ingredientImages") || "{}")
+    });
     const [activeTutTab, setActiveTutTab] = useState(0);
     const [stepIngredients, setStepIngredients] = useState<Array<string>>([]);
     const [stepTools, setStepTools] = useState<Array<string>>([]);
     const [stepActions, setStepActions] = useState<Array<string>>([]);
+    const [stepResult, setStepResult] = useState<Array<string>>([]);
     const [stepData, setStepData] = useState<Record<number, StepData>>({});
     const [createdItems, setCreatedItems] = useState<string[]>([]);
+    const requestedRef = useRef(new Set<string>());
 
 
     const toImagePath = (name: string) => {
         return `/images/${name
-            .toLowerCase()
+            .toLowerCase() 
             .replace(/\s+/g, "_")
             .replace(/[^\w_]/g, "")
         }.png`;
@@ -72,17 +77,27 @@ const StartRecipe = () => {
             console.log(payload);
             console.log("Agent response:", data);
 
+            const toolsRaw = data.tools || [];
+            let newCreatedItems = createdItems;
+
             if (data.creates) {
-                setCreatedItems(prev => [...prev, data.creates]);
+                newCreatedItems = [...createdItems, data.creates];
+                setCreatedItems(newCreatedItems);
             }
 
+            const createsRaw = data.creates ? [data.creates] : [];
+
+            [...toolsRaw, ...createsRaw].forEach(generateImage);
+
             const ingredientImages = (data.ingredients || []).map(toImagePath);
-            const toolImages = (data.tools || []).map(toImagePath);
+            const toolImages = (toolsRaw.map(toImagePath));
             const actionImages = (data.actions || []).map(toImagePath);
+            const resultImages = createdItems.map(toImagePath);
 
             setStepIngredients(ingredientImages);
             setStepTools(toolImages);
             setStepActions(actionImages);
+            setStepResult(resultImages);
 
             const currentStep = activeTutTab;
             
@@ -91,7 +106,8 @@ const StartRecipe = () => {
                 [currentStep]: {
                     ingredients: ingredientImages,
                     tools: toolImages,
-                    actions: actionImages
+                    actions: actionImages,
+                    creates: createsRaw
                 }
             }));
         }) 
@@ -107,6 +123,7 @@ const StartRecipe = () => {
             setStepIngredients(stepData[activeTutTab].ingredients);
             setStepTools(stepData[activeTutTab].tools);
             setStepActions(stepData[activeTutTab].actions);
+            setStepResult(stepData[activeTutTab].creates);
         } else {
             stepSeparator(stepText);
         }
@@ -224,20 +241,9 @@ const StartRecipe = () => {
     const generateImage = async (ingredientName:string) => {
         console.log("generateImage called:", ingredientName);
         if (ingredientImages[ingredientName]) return;
+        if (requestedRef.current.has(ingredientName)) return;
 
-        const safeName = ingredientName.toLowerCase().replace(/\s+/g, "_").replace(/[^\w_]/g, "");
-        const publicPath = `/images/${safeName}.png`;
-
-        try {
-            console.log("BEFORE FETCH");
-            const res = await fetch(publicPath, { method: "HEAD" });
-            if (res.ok) {
-                setIngredientImages(prev => ({ ...prev, [ingredientName]: publicPath }));
-                //return
-            }
-        } catch (err) {
-            console.log("error")
-        }
+        requestedRef.current.add(ingredientName);
 
         try {
             const res = await fetch("http://localhost:8080/generate-image", {
@@ -248,34 +254,38 @@ const StartRecipe = () => {
             console.log("response status:", res.status);
 
             const data = await res.json();
-            console.log("image response", data);
 
-            setIngredientImages(prev => ({ ...prev, [ingredientName]: publicPath }));
+            setIngredientImages(prev => ({ ...prev, [ingredientName]: data.image_path }));
         } catch (err) {
             console.error("Image generation error:", err);
         }
-    }
+    };
+
+    useEffect(() => {
+        Object.keys(ingredientImages).forEach(key => {
+            requestedRef.current.add(key);
+        });
+    }, [ingredientImages]);
 
     useEffect(() => {
         if (!recipe) return;
 
         const run = async () => {
-            await Promise.all(
-                recipe.ingredients.map(ingredient => generateImage(ingredient))
-            );
+            for (const ingredient of recipe.ingredients) {
+                await generateImage(ingredient);
+            }
         };
 
         run();
     }, [recipe]);
 
     useEffect(() => {
-        const savedImages = JSON.parse(localStorage.getItem("ingredientImages") || "{}");
-        setIngredientImages(savedImages);
-    }, []);
+        localStorage.setItem("ingredientImages", JSON.stringify(ingredientImages));
+    }, [ingredientImages]);
 
     return (
         <div className="game-container">
-            <div><button className="button-back" onClick={() => navigate(`/collection/`)}>←</button></div>
+            <div><button className="button-back" onClick={() => {setStepData([]); navigate(`/collection/`)}}>←</button></div>
             <div className="board-container">
                 <div className="board-card">
                     <div className="tab-title">
@@ -311,7 +321,7 @@ const StartRecipe = () => {
                                         ingredients={stepIngredients}
                                         tools={stepTools}
                                         actions={stepActions}
-                                        resultImgSrc="/result.png"
+                                        resultImgSrc={"."}
                                     />
                                 </div>
                             </>

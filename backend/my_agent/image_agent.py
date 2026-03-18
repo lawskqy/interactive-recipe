@@ -32,21 +32,21 @@ image_agent = LlmAgent(
     name="image_agent",
     description="Generates prompt for image generation",
     instruction = (
-    "You receive the name of a food ingredient or tool. "
-    "Your task is to generate a high-quality but brief prompt for image generation. "
+        "You receive the name of a food ingredient or tool. "
+        "Your task is to generate a high-quality but brief prompt for image generation. "
 
-    "The style MUST be: flat 2D illustration, vector, cartoon, game asset, white background, single centered object. "
-    "No realism, no photography, no 3D, no shadows, no reflections. "
+        "The style MUST be: flat 2D illustration, vector, cartoon, dark academia vibe game asset, white background, single centered object. Consistent style."
+        "No realism, no photography, no 3D, no shadows, no reflections. "
 
-    "Adapt the representation depending on the ingredient type: "
-    "- Liquids → in a container (bottle, jug, glass) with label if appropriate. "
-    "- Powders → in a small wooden bowl or container, optionally a small pile visible. "
-    "- Solids (fruits, vegetables) → placed naturally on a surface. "
-    "- Ice → 3–5 cubes in a simple bowl. "
+        "Adapt the representation depending on the ingredient type: "
+        "- Liquids → in a container (bottle, jug, glass) with label if appropriate. "
+        "- Powders → in a small wooden bowl or container, optionally a small pile visible. "
+        "- Solids (fruits, vegetables) → placed naturally on a surface. "
+        "- Ice → 3–5 cubes in a simple bowl. "
 
-    "Keep shapes simple, clean, minimal, with solid colors. "
+        "Keep shapes simple, clean, minimal, with solid colors. "
 
-    "Return ONLY the final prompt text. No JSON, no explanation."
+        "Return ONLY the final prompt text. No JSON, no explanation."
     )
 )
 
