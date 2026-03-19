@@ -43,7 +43,7 @@ const StartRecipe = () => {
     const [stepIngredients, setStepIngredients] = useState<Array<string>>([]);
     const [stepTools, setStepTools] = useState<Array<string>>([]);
     const [stepActions, setStepActions] = useState<Array<string>>([]);
-    const [stepResult, setStepResult] = useState<Array<string>>([]);
+    const [stepResult, setStepResult] = useState<Record<string, string>>({});
     const [stepData, setStepData] = useState<Record<number, StepData>>({});
     const [createdItems, setCreatedItems] = useState<string[]>([]);
     const requestedRef = useRef(new Set<string>());
@@ -92,12 +92,10 @@ const StartRecipe = () => {
             const ingredientImages = (data.ingredients || []).map(toImagePath);
             const toolImages = (toolsRaw.map(toImagePath));
             const actionImages = (data.actions || []).map(toImagePath);
-            const resultImages = createdItems.map(toImagePath);
 
             setStepIngredients(ingredientImages);
             setStepTools(toolImages);
             setStepActions(actionImages);
-            setStepResult(resultImages);
 
             const currentStep = activeTutTab;
             
@@ -123,7 +121,6 @@ const StartRecipe = () => {
             setStepIngredients(stepData[activeTutTab].ingredients);
             setStepTools(stepData[activeTutTab].tools);
             setStepActions(stepData[activeTutTab].actions);
-            setStepResult(stepData[activeTutTab].creates);
         } else {
             stepSeparator(stepText);
         }
@@ -261,6 +258,40 @@ const StartRecipe = () => {
         }
     };
 
+
+    useEffect(() => {
+        if (!recipe) return;
+
+        const run = async () => {
+            let previousResult = null;
+            
+            for (let i = 0; i < recipe.steps.length; i++) {
+                const step = recipe.steps[i];
+                const res = await fetch("http://localhost:8080/generate-result-image", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        step,
+                        previous: previousResult,
+                        index: i + 1,
+                        name: recipe.name
+                    }),
+                });
+           
+                const data = await res.json();
+
+                setStepResult(prev => ({
+                    ...prev,
+                    [i]: data.image_path
+                }));
+
+                previousResult = data.image_path;
+            }
+        };
+
+        run();
+    }, [recipe]);
+
     useEffect(() => {
         Object.keys(ingredientImages).forEach(key => {
             requestedRef.current.add(key);
@@ -321,7 +352,7 @@ const StartRecipe = () => {
                                         ingredients={stepIngredients}
                                         tools={stepTools}
                                         actions={stepActions}
-                                        resultImgSrc={"."}
+                                        resultImgSrc={stepResult[activeTutTab]}
                                     />
                                 </div>
                             </>

@@ -37,6 +37,13 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
     const [pressed, setPressed] = useState<boolean>(false);
 
     useEffect(() => {
+            if (!resultImgSrc) return;
+            const res = new Image();
+            res.src = resultImgSrc;
+            res.onload = () => setResultImg(res);
+    }, [resultImgSrc]);
+
+    useEffect(() => {
         if (!ingredients.length && !tools.length) return;
 
         const canvas = canvasRef.current;
@@ -108,11 +115,6 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
             };
         });
 
-        if (resultImgSrc) {
-            const res = new Image();
-            res.src = resultImgSrc;
-            res.onload = () => setResultImg(res);
-        }
 
         state.current = "TOOL_MOVING";
 

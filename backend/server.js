@@ -1,16 +1,24 @@
 const express = require("express");
 const cors = require("cors");
-const axios = require("axios");
 const { spawn } = require("child_process");
 const path = require("path");
-const fs = require("fs");
+const dotenv = require("dotenv");
 
+dotenv.config({ path: path.join(__dirname, ".env") }); 
+const fs = require("fs");
 const agentPath = path.join(__dirname, "my_agent", "agent.py");
 const imageAgentPath = path.join(__dirname, "my_agent", "image_agent.py");
 const separationAgentPath = path.join(__dirname, "my_agent", "separation_agent.py")
 const app = express();
 const port = 8080;
 const PYTHON = "C:\\Users\\devil\\AppData\\Local\\Programs\\Python\\Python314\\python.exe";
+const { GoogleGenAI } = require("@google/genai");
+
+const FRONTEND_IMAGE_DIR = path.join(__dirname, "../frontend/public/images");
+
+const ai = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY
+});
 
 
 app.use(cors());
@@ -90,6 +98,63 @@ app.post("/generate-image", async (req, res) => {
     } catch (e) {
         console.error(e);
         res.status(500).send("Generation error");
+    }
+});
+
+const toFileName = (text) => {
+    return text
+        .toLowerCase()
+        .replace(/\s+/g, "_")
+        .replace(/[^\w_]/g, "")
+        .slice(0, 40); 
+};
+
+const saveImage = (result, name, index) => {
+    const base64 = result.image; 
+
+    const buffer = Buffer.from(base64, "base64");
+
+    const fileName = `${toFileName(name)}_step_${index}.png`;
+
+    const filePath = path.join(FRONTEND_IMAGE_DIR, fileName);
+
+    fs.writeFileSync(filePath, buffer);
+
+    return `/images/${fileName}`; 
+};
+
+app.post("/generate-result-image", async (req, res) => {
+    const { step, previous, index, name} = req.body;
+
+    try {
+        const prompt = `
+        Cooking step: ${step}
+        Previous result image: ${previous || "none"}
+        Generate the result of this step as an image.
+        the style is 2d, single centered object, dark academia vibes, white background, no other objects except for the result of step
+        `;
+
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash-image",
+            contents: [{parts: [{ text: prompt }] }]
+        });
+
+        const parts = response.candidates?.[0]?.content?.parts || [];
+
+        const imagePart = parts.find(p => p.inlineData);
+
+        if (!imagePart) {
+            throw new Error("No image returned from Gemini");
+        }
+
+        const base64 = imagePart.inlineData.data;
+
+        const imagePath = saveImage({ image: base64 }, name, index);
+
+        res.json({ image_path: imagePath });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "generation failed" });
     }
 });
 
