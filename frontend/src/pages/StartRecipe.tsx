@@ -280,10 +280,15 @@ const StartRecipe = () => {
            
                 const data = await res.json();
 
-                setStepResult(prev => ({
+                setStepResult(prev => {
+                    const updated = {
                     ...prev,
                     [i]: data.image_path
-                }));
+                }
+                console.log("UPDATED STEP RESULT:", updated);
+
+                return updated;
+            });
 
                 previousResult = data.image_path;
             }
@@ -316,7 +321,7 @@ const StartRecipe = () => {
 
     return (
         <div className="game-container">
-            <div><button className="button-back" onClick={() => {setStepData([]); navigate(`/collection/`)}}>←</button></div>
+            <div><button className="button-back" onClick={() => {setStepData({}); navigate(`/collection/`)}}>←</button></div>
             <div className="board-container">
                 <div className="board-card">
                     <div className="tab-title">
@@ -346,7 +351,9 @@ const StartRecipe = () => {
 
                                 <div className="canvas">
                                     <h3>{recipe?.steps[activeTutTab]}</h3>
-                                    <Canvas className="canvas-board"
+                                    <Canvas 
+                                        key={activeTutTab}
+                                        className="canvas-board"
                                         width={950}
                                         height={750}
                                         ingredients={stepIngredients}

@@ -36,11 +36,18 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
 
     const [pressed, setPressed] = useState<boolean>(false);
 
-    useEffect(() => {
-            if (!resultImgSrc) return;
-            const res = new Image();
-            res.src = resultImgSrc;
-            res.onload = () => setResultImg(res);
+     useEffect(() => {
+        if (!resultImgSrc) {
+            setResultImg(null);
+            return;
+        }
+
+        const img = new Image();
+        img.src = resultImgSrc;
+
+        img.onload = () => setResultImg(img);
+
+        setResultImg(null);
     }, [resultImgSrc]);
 
     useEffect(() => {
@@ -133,7 +140,7 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
             if (item.img.complete && item.img.naturalWidth !== 0) {
                 ctx.drawImage(item.img, item.x, item.y, 80, 80);
                 ctx.font = "14px sans-serif";
-                ctx.fillStyle = "#3a2a20";
+                ctx.fillStyle = "#bd9a85";
                 ctx.textAlign = "center";
                 ctx.fillText(item.label, item.x + 40, item.y + 100);
             }
@@ -175,10 +182,14 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
 
                     if (allReachedCenter && !explosionTimer.current) {
                         state.current = "EXPLODING";
+                        
                         explosionTimer.current = window.setTimeout(() => {
+                            explosionTimer.current = null;
                             state.current = "SHOW_RESULT";
 
                             resultTimer.current = window.setTimeout(() => {
+                                resultTimer.current = null;
+
                                 resetPositions();
                                 state.current = "TOOL_MOVING";
                             }, 3500)
@@ -187,13 +198,18 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
                 } 
 
                 if (state.current === "EXPLODING") {
-                    ctx.fillStyle = "rgb(212, 24, 24)";
+                    ctx.globalAlpha = 0.5 + Math.random() * 0.5;
+
+                    ctx.fillStyle = "orange";
                     ctx.beginPath();
-                    ctx.arc(canvas.width / 2, canvas.height / 2, 50, 0, Math.PI * 2);
+                    ctx.arc(centerX, centerY, 60 + Math.random() * 20, 0, Math.PI * 2);
                     ctx.fill();
+
+                    ctx.globalAlpha = 1;
                 } 
 
-                if (state.current === "SHOW_RESULT" && resultImg) {
+                if (state.current === "SHOW_RESULT") 
+                    if (resultImg && resultImg.complete) {
                     ctx.drawImage(resultImg, canvas.width / 2 - 40, canvas.height / 2 - 40, 80, 80);
                 }
             } 
@@ -208,7 +224,7 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
             if (explosionTimer.current) clearTimeout(explosionTimer.current);
             if (resultTimer.current) clearTimeout(resultTimer.current);
         };
-    }, [ingredients, tools, resultImgSrc]);
+    }, [ingredients, tools]);
 
     const pauseAnimation = () => { isPaused.current = true; };
     const resumeAnimation = () => { isPaused.current = false; };
