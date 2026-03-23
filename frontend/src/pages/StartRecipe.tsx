@@ -267,6 +267,7 @@ const StartRecipe = () => {
             
             for (let i = 0; i < recipe.steps.length; i++) {
                 const step = recipe.steps[i];
+
                 const res = await fetch("http://localhost:8080/generate-result-image", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -282,13 +283,11 @@ const StartRecipe = () => {
 
                 setStepResult(prev => {
                     const updated = {
-                    ...prev,
-                    [i]: data.image_path
-                }
-                console.log("UPDATED STEP RESULT:", updated);
-
-                return updated;
-            });
+                        ...prev,
+                        [i]: data.image_path
+                    }
+                    return updated;
+                });
 
                 previousResult = data.image_path;
             }

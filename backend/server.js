@@ -124,31 +124,62 @@ const saveImage = (result, name, index) => {
 };
 
 app.post("/generate-result-image", async (req, res) => {
-    const { step, previous, index, name} = req.body;
+    const { step, previous, index, name } = req.body;
 
     try {
         const prompt = `
         Cooking step: ${step}
-        Previous result image: ${previous || "none"}
         Generate the result of this step as an image.
-        the style is 2d, single centered object, dark academia vibes, white background, no other objects except for the result of step
+
+        STYLE (must stay identical across steps):
+        flat 2D illustration, minimalistic, dark academia palette,
+        muted browns, beiges, dark greens, soft shadows,
+        white background, no extra objects
+
+        COMPOSITION:
+        single centered object only
+        same framing and scale every time
+
+        If an image is provided, use it as strict style reference.
         `;
+
+        const parts = [{ text: prompt }];
+
+        if (previous) {
+            let base64Previous;
+
+            if (previous.startsWith("/")) {
+                const filePath = path.join(FRONTEND_IMAGE_DIR, previous.replace("/images/", ""));
+                base64Previous = fs.readFileSync(filePath, { encoding: "base64" });
+            } else {
+                base64Previous = previous;
+            }
+
+            parts.push({
+                inlineData: {
+                    mimeType: "image/png",
+                    data: base64Previous
+                }
+            });
+        }
 
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash-image",
-            contents: [{parts: [{ text: prompt }] }]
+            contents: [
+                {
+                    parts
+                }
+            ]
         });
 
-        const parts = response.candidates?.[0]?.content?.parts || [];
-
-        const imagePart = parts.find(p => p.inlineData);
+        const responseParts = response.candidates?.[0]?.content?.parts || [];
+        const imagePart = responseParts.find(p => p.inlineData);
 
         if (!imagePart) {
             throw new Error("No image returned from Gemini");
         }
 
         const base64 = imagePart.inlineData.data;
-
         const imagePath = saveImage({ image: base64 }, name, index);
 
         res.json({ image_path: imagePath });
