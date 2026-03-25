@@ -13,6 +13,7 @@ const app = express();
 const port = 8080;
 const PYTHON = "C:\\Users\\devil\\AppData\\Local\\Programs\\Python\\Python314\\python.exe";
 const { GoogleGenAI } = require("@google/genai");
+const crypto = require("crypto");
 
 const FRONTEND_IMAGE_DIR = path.join(__dirname, "../frontend/public/images");
 
@@ -20,6 +21,9 @@ const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY
 });
 
+const makeHash = (text) => {
+    return crypto.createHash("md5").update(text).digest("hex").slice(0, 8);
+};
 
 app.use(cors());
 app.use(express.json());
@@ -109,13 +113,11 @@ const toFileName = (text) => {
         .slice(0, 40); 
 };
 
-const saveImage = (result, name, index) => {
+const saveImage = (result, name, index, hash) => {
     const base64 = result.image; 
-
     const buffer = Buffer.from(base64, "base64");
 
-    const fileName = `${toFileName(name)}_step_${index}.png`;
-
+    const fileName = `${toFileName(name)}_step_${index}_${hash}.png`;
     const filePath = path.join(FRONTEND_IMAGE_DIR, fileName);
 
     fs.writeFileSync(filePath, buffer);
@@ -125,6 +127,16 @@ const saveImage = (result, name, index) => {
 
 app.post("/generate-result-image", async (req, res) => {
     const { step, previous, index, name } = req.body;
+
+    const hash = makeHash(step + (previous || ""));
+
+    const fileName = `${toFileName(name)}_step_${index}_${hash}.png`;
+    const filePath = path.join(FRONTEND_IMAGE_DIR, fileName);
+
+    if (fs.existsSync(filePath)) {
+        console.log("Using cached image:", fileName);
+        return res.json({ image_path: `/images/${fileName}` });
+    }
 
     try {
         const prompt = `
@@ -180,7 +192,7 @@ app.post("/generate-result-image", async (req, res) => {
         }
 
         const base64 = imagePart.inlineData.data;
-        const imagePath = saveImage({ image: base64 }, name, index);
+        const imagePath = saveImage({ image: base64 }, name, index, hash);
 
         res.json({ image_path: imagePath });
     } catch (err) {

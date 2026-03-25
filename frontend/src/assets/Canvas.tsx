@@ -185,22 +185,28 @@ const Canvas: React.FC<CanvasProps> = ({ingredients, tools, resultImgSrc, ...pro
                 }
 
                 if (state.current === "INGREDIENTS_MOVING") {
-                let done = true;
+                    let done = true;
 
-                ingredientItem.current.forEach((i) => {
-                    i.x += (i.targetX - i.x) * 0.02;
-                    i.y += (i.targetY - i.y) * 0.02;
+                    ingredientItem.current.forEach((i) => {
+                        i.x += (i.targetX - i.x) * 0.02;
+                        i.y += (i.targetY - i.y) * 0.02;
 
-                    if (Math.hypot(i.x - i.targetX, i.y - i.targetY) > 1) {
-                        done = false;
+                        if (Math.hypot(i.x - i.targetX, i.y - i.targetY) > 1) {
+                            done = false;
+                        }
+                    });
+
+                    if (done) {
+                        state.current = "EXPLODING";
+                        createParticles(centerX, centerY);
                     }
-                });
+                }
 
-                if (done) {
-                    state.current = "EXPLODING";
-                    createParticles(centerX, centerY);
+                if (state.current === "EXPLODING") {
+                    updateParticles();
+                    drawParticles(ctx);
 
-                    explosionTimer.current = window.setTimeout(() => {
+                    if (particlesRef.current.length < 10 && resultImg?.complete) {
                         state.current = "SHOW_RESULT";
 
                         resultTimer.current = window.setTimeout(() => {
@@ -217,26 +223,25 @@ const Canvas: React.FC<CanvasProps> = ({ingredients, tools, resultImgSrc, ...pro
                             }
 
                             state.current = "TOOL_MOVING";
-                        }, 3500);
-                    }, 2000);
+                        }, 3000);
+                    }
                 }
-            }
 
-            if (state.current === "EXPLODING") {
-                updateParticles();
-                drawParticles(ctx);
-            }
+                if (state.current === "EXPLODING") {
+                    updateParticles();
+                    drawParticles(ctx);
+                }
 
-            if (state.current === "SHOW_RESULT" && resultImg?.complete) {
-                const size = Math.min(canvas.width, canvas.height) * 0.5;
-                ctx.drawImage(
-                    resultImg,
-                    centerX - size / 2,
-                    centerY - size / 2,
-                    size,
-                    size
-                );
-            }
+                if (state.current === "SHOW_RESULT" && resultImg?.complete) {
+                    const size = Math.min(canvas.width, canvas.height) * 0.5;
+                    ctx.drawImage(
+                        resultImg,
+                        centerX - size / 2,
+                        centerY - size / 2,
+                        size,
+                        size
+                    );
+                }
             }
 
             rafRef.current = requestAnimationFrame(render);

@@ -262,39 +262,34 @@ const StartRecipe = () => {
     useEffect(() => {
         if (!recipe) return;
 
-        const run = async () => {
-            let previousResult = null;
-            
-            for (let i = 0; i < recipe.steps.length; i++) {
-                const step = recipe.steps[i];
+        const generateStep = async () => {
+            if (stepResult[activeTutTab]) return;
 
-                const res = await fetch("http://localhost:8080/generate-result-image", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        step,
-                        previous: previousResult,
-                        index: i + 1,
-                        name: recipe.name
-                    }),
-                });
-           
-                const data = await res.json();
+            const previous = activeTutTab === 0
+                ? null
+                : stepResult[activeTutTab - 1];
 
-                setStepResult(prev => {
-                    const updated = {
-                        ...prev,
-                        [i]: data.image_path
-                    }
-                    return updated;
-                });
+            const res = await fetch("/generate-result-image", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    step: recipe.steps[activeTutTab],
+                    previous,
+                    index: activeTutTab + 1,
+                    name: recipe.name
+                })
+            });
 
-                previousResult = data.image_path;
-            }
+            const data = await res.json();
+
+            setStepResult(prev => ({
+                ...prev,
+                [activeTutTab]: data.image_path
+            }));
         };
 
-        run();
-    }, [recipe]);
+        generateStep();
+    }, [activeTutTab, recipe]);
 
     useEffect(() => {
         Object.keys(ingredientImages).forEach(key => {
