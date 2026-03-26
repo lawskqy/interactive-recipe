@@ -157,16 +157,25 @@ app.post("/generate-result-image", async (req, res) => {
 
         const parts = [{ text: prompt }];
 
+        let base64Previous = null;
         if (previous) {
-            let base64Previous;
+            const prevFile = previous.startsWith("/")
+                ? path.join(FRONTEND_IMAGE_DIR, previous.replace("/images/", ""))
+                : null;
 
-            if (previous.startsWith("/")) {
-                const filePath = path.join(FRONTEND_IMAGE_DIR, previous.replace("/images/", ""));
-                base64Previous = fs.readFileSync(filePath, { encoding: "base64" });
-            } else {
-                base64Previous = previous;
+            if (prevFile && fs.existsSync(prevFile)) {
+                base64Previous = fs.readFileSync(prevFile, { encoding: "base64" });
             }
+        } else {
+            const recipeImgFile = path.join(FRONTEND_IMAGE_DIR, `${toFileName(name)}.png`);
+            if (fs.existsSync(recipeImgFile)) {
+                base64Previous = fs.readFileSync(recipeImgFile, { encoding: "base64" });
+            } else {
+                console.warn("Recipe image not found:", recipeImgFile);
+            }
+        }
 
+        if (base64Previous) {
             parts.push({
                 inlineData: {
                     mimeType: "image/png",

@@ -89,22 +89,30 @@ const StartRecipe = () => {
 
             [...toolsRaw, ...createsRaw].forEach(generateImage);
 
-            const ingredientImages = (data.ingredients || []).map(toImagePath);
-            const toolImages = (toolsRaw.map(toImagePath));
-            const actionImages = (data.actions || []).map(toImagePath);
+            const ingredientImagesArr = (data.ingredients || []).map((name: string) => 
+                ingredientImages[name] || toImagePath(name)
+            );
 
-            setStepIngredients(ingredientImages);
-            setStepTools(toolImages);
-            setStepActions(actionImages);
+            const toolImagesArr = toolsRaw.map((name: string) => 
+                ingredientImages[name] || toImagePath(name)
+            );
+
+            const actionImagesArr = (data.actions || []).map((name: string) => 
+                ingredientImages[name] || toImagePath(name)
+            );
+
+            setStepIngredients(ingredientImagesArr);
+            setStepTools(toolImagesArr);
+            setStepActions(actionImagesArr);
 
             const currentStep = activeTutTab;
             
             setStepData(prev => ({
                 ...prev,
                 [currentStep]: {
-                    ingredients: ingredientImages,
-                    tools: toolImages,
-                    actions: actionImages,
+                    ingredients: ingredientImagesArr,
+                    tools: toolImagesArr,
+                    actions: actionImagesArr,
                     creates: createsRaw
                 }
             }));
@@ -266,10 +274,10 @@ const StartRecipe = () => {
             if (stepResult[activeTutTab]) return;
 
             const previous = activeTutTab === 0
-                ? null
+                ? `/images/${recipe.name}.png`
                 : stepResult[activeTutTab - 1];
 
-            const res = await fetch("/generate-result-image", {
+            const res = await fetch("http://localhost:8080/generate-result-image", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

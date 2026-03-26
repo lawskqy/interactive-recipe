@@ -21,34 +21,29 @@ interface AnimatedItem {
 
 type AnimationState =
     | "IDLE"
-    | "TOOL_MOVING"
-    | "INGREDIENTS_MOVING"
+    | "MOVING"
     | "EXPLODING"
     | "SHOW_RESULT";
 
-const Canvas: React.FC<CanvasProps> = ({ingredients, tools, resultImgSrc, ...props}) => {
+const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...props }) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
     const state = useRef<AnimationState>("IDLE");
     const [resultImg, setResultImg] = useState<HTMLImageElement | null>(null);
 
-    const staticItems = useRef<AnimatedItem[]>([]);
-    const toolItem = useRef<AnimatedItem | null>(null);
-    const ingredientItem = useRef<AnimatedItem[]>([]);
-
-    const explosionTimer = useRef<number | null>(null);
-    const resultTimer = useRef<number | null>(null);
-    const rafRef = useRef<number | null>(null);
-
+    const items = useRef<AnimatedItem[]>([]);
     const particlesRef = useRef<any[]>([]);
 
+    const rafRef = useRef<number | null>(null);
+    const resultTimer = useRef<number | null>(null);
+
     const isPaused = useRef(false);
-    const [pressed, setPressed] = useState<boolean>(false);
+    const [pressed, setPressed] = useState(false);
 
     useEffect(() => {
         if (!resultImgSrc) {
-        setResultImg(null);
-        return;
+            setResultImg(null);
+            return;
         }
 
         const img = new Image();
@@ -59,31 +54,31 @@ const Canvas: React.FC<CanvasProps> = ({ingredients, tools, resultImgSrc, ...pro
     const createParticles = (cx: number, cy: number) => {
         const arr = [];
         for (let i = 0; i < 140; i++) {
-        arr.push({
-            x: cx,
-            y: cy,
-            vx: Math.random() * 4 - 2,
-            vy: Math.random() * 4 - 2,
-            size: Math.random() * 10 + 4,
-            life: 0,
-            death: Math.random() * 120 + 80,
-        });
+            arr.push({
+                x: cx,
+                y: cy,
+                vx: Math.random() * 4 - 2,
+                vy: Math.random() * 4 - 2,
+                size: Math.random() * 10 + 4,
+                life: 0,
+                death: Math.random() * 120 + 80,
+            });
         }
         particlesRef.current = arr;
     };
 
     const updateParticles = () => {
         particlesRef.current = particlesRef.current.filter((p) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life++;
-        return p.life <= p.death;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life++;
+            return p.life <= p.death;
         });
     };
 
     const drawParticles = (ctx: CanvasRenderingContext2D) => {
         particlesRef.current.forEach((p) => {
-            ctx.fillStyle = "rgb(255,255,255)";
+            ctx.fillStyle = "white";
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
             ctx.fill();
@@ -98,100 +93,64 @@ const Canvas: React.FC<CanvasProps> = ({ingredients, tools, resultImgSrc, ...pro
         if (!ctx) return;
 
         if (rafRef.current) cancelAnimationFrame(rafRef.current);
-        if (explosionTimer.current) clearTimeout(explosionTimer.current);
         if (resultTimer.current) clearTimeout(resultTimer.current);
 
         particlesRef.current = [];
-        staticItems.current = [];
-        ingredientItem.current = [];
-        toolItem.current = null;
+        items.current = [];
 
         state.current = "IDLE";
 
-        if (!ingredients.length && !tools.length) return;
+        const allImages = [...ingredients, ...tools];
+        if (!allImages.length) return;
 
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
 
-        const allImages = [...ingredients, ...tools];
+        items.current = allImages.map((src, index) => {
+            const x = (index % 5) * 200 + 20;
+            const y = Math.floor(index / 5) * 200 + 20;
 
-        staticItems.current = allImages.map((src, index) => {
-        const x = (index % 5) * 200 + 20;
-        const y = Math.floor(index / 5) * 200 + 20;
+            const img = new Image();
+            img.src = src;
 
-        const img = new Image();
-        img.src = src;
-
-        return {
-            img,
-            label: src.split("/").pop()?.replace(".png", "") || "",
-            x,
-            y,
-            startX: x,
-            startY: y,
-            targetX: centerX - 40,
-            targetY: centerY - 40,
-        };
+            return {
+                img,
+                label: src.split("/").pop()?.replace(".png", "") || "",
+                x,
+                y,
+                startX: x,
+                startY: y,
+                targetX: centerX - 40,
+                targetY: centerY - 40,
+            };
         });
 
-        const last = staticItems.current[staticItems.current.length - 1];
-
-        toolItem.current = { ...last };
-
-        ingredientItem.current = staticItems.current.slice(0, -1).map((i) => ({...i,}));
-
-        state.current = "TOOL_MOVING";
+        state.current = "MOVING";
 
         const render = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            staticItems.current.forEach((item) => {
-                if (item.img.complete) {
-                    ctx.drawImage(item.img, item.startX, item.startY, 80, 80);
-                    ctx.font = "14px sans-serif";
-                    ctx.fillStyle = "#bd9a85";
-                    ctx.textAlign = "center";
-                    ctx.fillText(item.label, item.startX + 40, item.startY + 100);
-                }
-            });
-
-            if (toolItem.current) {
-                ctx.drawImage(
-                toolItem.current.img,
-                toolItem.current.x,
-                toolItem.current.y,
-                80,
-                80
-                );
+            if (state.current === "MOVING") {
+                items.current.forEach((item) => {
+                    if (item.img.complete && item.img.naturalWidth > 0) {
+                        ctx.drawImage(item.img, item.startX, item.startY, 80, 80);
+                        ctx.font = "14px sans-serif";
+                        ctx.fillStyle = "#bd9a85";
+                        ctx.textAlign = "center";
+                        ctx.fillText(item.label, item.startX + 40, item.startY + 100);
+                    }
+                });
             }
 
-            ingredientItem.current.forEach((item) => {
-                ctx.drawImage(item.img, item.x, item.y, 80, 80);
-            });
-
             if (!isPaused.current) {
-                if (state.current === "TOOL_MOVING" && toolItem.current) {
-                    toolItem.current.x += (toolItem.current.targetX - toolItem.current.x) * 0.02;
-                    toolItem.current.y += (toolItem.current.targetY - toolItem.current.y) * 0.02;
-
-                    if (
-                        Math.hypot(
-                            toolItem.current.x - toolItem.current.targetX,
-                            toolItem.current.y - toolItem.current.targetY
-                        ) < 1
-                    ) {
-                        state.current = "INGREDIENTS_MOVING";
-                    }
-                }
-
-                if (state.current === "INGREDIENTS_MOVING") {
+                if (state.current === "MOVING") {
                     let done = true;
 
-                    ingredientItem.current.forEach((i) => {
-                        i.x += (i.targetX - i.x) * 0.02;
-                        i.y += (i.targetY - i.y) * 0.02;
+                    items.current.forEach((item) => {
+                        item.x += (item.targetX - item.x) * 0.03;
+                        item.y += (item.targetY - item.y) * 0.03;
 
-                        if (Math.hypot(i.x - i.targetX, i.y - i.targetY) > 1) {
+                        if (Math.hypot(item.x - item.targetX, item.y - item.targetY) > 1) {
                             done = false;
                         }
                     });
@@ -212,28 +171,26 @@ const Canvas: React.FC<CanvasProps> = ({ingredients, tools, resultImgSrc, ...pro
                         resultTimer.current = window.setTimeout(() => {
                             particlesRef.current = [];
 
-                            ingredientItem.current.forEach((i) => {
-                                i.x = i.startX;
-                                i.y = i.startY;
+                            items.current.forEach((item) => {
+                                item.x = item.startX;
+                                item.y = item.startY;
                             });
 
-                            if (toolItem.current) {
-                                toolItem.current.x = toolItem.current.startX;
-                                toolItem.current.y = toolItem.current.startY;
-                            }
-
-                            state.current = "TOOL_MOVING";
+                            state.current = "MOVING";
                         }, 3000);
                     }
                 }
+            }
 
-                if (state.current === "EXPLODING") {
-                    updateParticles();
-                    drawParticles(ctx);
+            items.current.forEach((item) => {
+                if (item.img.complete && item.img.naturalWidth > 0) {
+                    ctx.drawImage(item.img, item.x, item.y, 80, 80);
                 }
+            });
 
-                if (state.current === "SHOW_RESULT" && resultImg?.complete) {
-                    const size = Math.min(canvas.width, canvas.height) * 0.5;
+            if (state.current === "SHOW_RESULT" && resultImg?.complete) {
+                const size = Math.min(canvas.width, canvas.height) * 0.5;
+                if (resultImg?.complete && resultImg.naturalWidth > 0) {
                     ctx.drawImage(
                         resultImg,
                         centerX - size / 2,
@@ -251,7 +208,6 @@ const Canvas: React.FC<CanvasProps> = ({ingredients, tools, resultImgSrc, ...pro
 
         return () => {
             if (rafRef.current) cancelAnimationFrame(rafRef.current);
-            if (explosionTimer.current) clearTimeout(explosionTimer.current);
             if (resultTimer.current) clearTimeout(resultTimer.current);
         };
     }, [ingredients, tools, resultImg]);
@@ -264,57 +220,52 @@ const Canvas: React.FC<CanvasProps> = ({ingredients, tools, resultImgSrc, ...pro
         isPaused.current = false;
     };
 
-    const resetPositions = () => {
-        ingredientItem.current.forEach((item) => {
-        item.x = item.startX;
-        item.y = item.startY;
+    const restartAnimation = () => {
+        items.current.forEach((item) => {
+            item.x = item.startX;
+            item.y = item.startY;
         });
 
-        if (toolItem.current) {
-        toolItem.current.x = toolItem.current.startX;
-        toolItem.current.y = toolItem.current.startY;
-        }
-    };
-
-    const restartAnimation = () => {
-        resetPositions();
         particlesRef.current = [];
-        state.current = "TOOL_MOVING";
+        state.current = "MOVING";
         resumeAnimation();
     };
 
     return (
         <>
-        <canvas ref={canvasRef} {...props} />
-        <div className="button-container">
-            <button
-            className={`buttons ${pressed ? "pressed" : ""}`}
-            onClick={() => {
-                pauseAnimation();
-                setPressed(true);
-            }}
-            >
-            Pause
-            </button>
-            <button
-            className="buttons"
-            onClick={() => {
-                resumeAnimation();
-                setPressed(false);
-            }}
-            >
-            Resume
-            </button>
-            <button
-            className="buttons"
-            onClick={() => {
-                restartAnimation();
-                setPressed(false);
-            }}
-            >
-            Restart
-            </button>
-        </div>
+            <canvas ref={canvasRef} {...props} />
+
+            <div className="button-container">
+                <button
+                    className={`buttons ${pressed ? "pressed" : ""}`}
+                    onClick={() => {
+                        pauseAnimation();
+                        setPressed(true);
+                    }}
+                >
+                    Pause
+                </button>
+
+                <button
+                    className="buttons"
+                    onClick={() => {
+                        resumeAnimation();
+                        setPressed(false);
+                    }}
+                >
+                    Resume
+                </button>
+
+                <button
+                    className="buttons"
+                    onClick={() => {
+                        restartAnimation();
+                        setPressed(false);
+                    }}
+                >
+                    Restart
+                </button>
+            </div>
         </>
     );
 };
