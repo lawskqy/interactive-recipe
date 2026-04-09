@@ -67,7 +67,11 @@ async def main():
     frontend_path = FRONTEND_IMAGE_DIR / f"{safe_name}.png"
 
     if cached_path.exists() and frontend_path.exists():
-        print(json.dumps({"image_path": str(frontend_path), "ingredient": ingredient}))
+        public_path = f"/images/{safe_name}.png"
+        print(json.dumps({
+            "image_path": public_path,
+            "ingredient": ingredient
+        }))
         return
 
     await session_service.create_session(app_name="recipe-game", user_id="user1", session_id="image")

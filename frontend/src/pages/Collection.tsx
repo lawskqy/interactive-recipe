@@ -23,7 +23,7 @@ const Collection = () => {
     const [filteredRecipe, setFilteredRecipe] = useState<Array<Recipe>>(recipe);
     
     useEffect (() => {
-        fetch('../recipes.json')
+        fetch('/recipes.json')
             .then(response => response.json())
             .then(recipe => {
                 setRecipe(recipe);

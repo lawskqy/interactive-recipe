@@ -4,7 +4,6 @@ import '../styles/StartRecipe.css';
 import Canvas from "../assets/Canvas";
 import { useNavigate } from "react-router-dom";
 
-
 interface Recipe {
     name: string;
     steps: string[];
@@ -25,7 +24,6 @@ interface StepData {
     creates: string[];
 }
 
-
 const StartRecipe = () => {
     const navigate = useNavigate();
     const [recipe, setRecipe] = useState<Recipe | null>(null);
@@ -39,6 +37,7 @@ const StartRecipe = () => {
     const [ingredientImages, setIngredientImages] = useState<Record<string, string>>(() => {
         return JSON.parse(localStorage.getItem("ingredientImages") || "{}")
     });
+    const generatedRef = useRef(new Set<string>(Object.keys(ingredientImages)));
     const [activeTutTab, setActiveTutTab] = useState(0);
     const [stepIngredients, setStepIngredients] = useState<Array<string>>([]);
     const [stepTools, setStepTools] = useState<Array<string>>([]);
@@ -47,18 +46,13 @@ const StartRecipe = () => {
     const [stepData, setStepData] = useState<Record<number, StepData>>({});
     const [createdItems, setCreatedItems] = useState<string[]>([]);
     const requestedRef = useRef(new Set<string>());
-
+    const [assetsReady, setAssetsReady] = useState(false);
 
     const toImagePath = (name: string) => {
-        return `/images/${name
-            .toLowerCase() 
-            .replace(/\s+/g, "_")
-            .replace(/[^\w_]/g, "")
-        }.png`;
+        return `/images/${name.toLowerCase().replace(/\s+/g, "_").replace(/[^\w_]/g, "")}.png`;
     };
 
     const stepSeparator = (step: string) => {
-
         const payload = {
             current_step: step,
             ingredients: recipe?.ingredients,
@@ -71,12 +65,8 @@ const StartRecipe = () => {
             body: JSON.stringify(payload),
             headers: { "Content-Type": "application/json" }
         })
-        
         .then(response => response.json())
-        .then (data => {
-            console.log(payload);
-            console.log("Agent response:", data);
-
+        .then(data => {
             const toolsRaw = data.tools || [];
             let newCreatedItems = createdItems;
 
@@ -86,18 +76,17 @@ const StartRecipe = () => {
             }
 
             const createsRaw = data.creates ? [data.creates] : [];
-
             [...toolsRaw, ...createsRaw].forEach(generateImage);
 
-            const ingredientImagesArr = (data.ingredients || []).map((name: string) => 
+            const ingredientImagesArr = (data.ingredients || []).map((name: string) =>
                 ingredientImages[name] || toImagePath(name)
             );
 
-            const toolImagesArr = toolsRaw.map((name: string) => 
+            const toolImagesArr = toolsRaw.map((name: string) =>
                 ingredientImages[name] || toImagePath(name)
             );
 
-            const actionImagesArr = (data.actions || []).map((name: string) => 
+            const actionImagesArr = (data.actions || []).map((name: string) =>
                 ingredientImages[name] || toImagePath(name)
             );
 
@@ -106,7 +95,7 @@ const StartRecipe = () => {
             setStepActions(actionImagesArr);
 
             const currentStep = activeTutTab;
-            
+
             setStepData(prev => ({
                 ...prev,
                 [currentStep]: {
@@ -122,7 +111,6 @@ const StartRecipe = () => {
 
     useEffect (() => {
         if (!recipe) return;
-
         const stepText = recipe.steps[activeTutTab];
 
         if (stepData[activeTutTab]) {
@@ -135,21 +123,13 @@ const StartRecipe = () => {
     }, [activeTutTab, recipe]);
 
     const handleTabClick = (tabName :string) => {
-        if (tabName === "Recipe") {
-            setActiveTab("Recipe");
-        } else {
-            setActiveTab("Chat");
-        }
+        setActiveTab(tabName);
     };
 
     const handleBoardTabClick = (tabName :string) => {
-        if (tabName === "Quizz") {
-            setActiveBoardTab("Quizz");
-        } else {
-            setActiveBoardTab("Recipe tutorial");
-        }
+        setActiveBoardTab(tabName);
     };
-    
+
     useEffect (() => {
         fetch('/recipes.json')
             .then(response => response.json())
@@ -159,7 +139,6 @@ const StartRecipe = () => {
 
     const Scroll = () => {
         if (!container.current) return;
-        
         const { offsetHeight, scrollHeight, scrollTop } = container.current as HTMLDivElement;
         if (scrollHeight <= scrollTop + offsetHeight + 100) {
             container.current?.scrollTo(0, scrollHeight);
@@ -174,12 +153,11 @@ const StartRecipe = () => {
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setUserMessage(e.target.value);
-
         if (textareaRef.current) {
             textareaRef.current.style.height = "auto"; 
             textareaRef.current.style.height = textareaRef.current.scrollHeight + "px"; 
         }
-    }
+    };
 
     const handleSend = () => {
         if (!userMessage.trim() || !recipe) return;
@@ -197,7 +175,6 @@ const StartRecipe = () => {
                 previous: updatedHistory
             }
         };
-        console.log(payload)
 
         fetch("http://localhost:8080/send-message", {
             method: "POST",
@@ -217,9 +194,7 @@ const StartRecipe = () => {
                     try {
                         updatedRecipe = JSON.parse(jsonText);
                         explanation = reply.replace(jsonText, "").trim();
-                    } catch (err) {
-                        console.log("Failed to parse JSON", err);
-                    }
+                    } catch (err) {}
                 }
 
                 setMessages(prev => [...prev, { sender: "agent", text: explanation }]);
@@ -242,13 +217,9 @@ const StartRecipe = () => {
         }
     };
 
-
     const generateImage = async (ingredientName:string) => {
-        console.log("generateImage called:", ingredientName);
-        if (ingredientImages[ingredientName]) return;
-        if (requestedRef.current.has(ingredientName)) return;
-
-        requestedRef.current.add(ingredientName);
+        if (generatedRef.current.has(ingredientName)) return;
+        generatedRef.current.add(ingredientName);
 
         try {
             const res = await fetch("http://localhost:8080/generate-image", {
@@ -256,16 +227,35 @@ const StartRecipe = () => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ingredient: ingredientName })
             });
-            console.log("response status:", res.status);
 
             const data = await res.json();
-
             setIngredientImages(prev => ({ ...prev, [ingredientName]: data.image_path }));
         } catch (err) {
             console.error("Image generation error:", err);
         }
     };
 
+    const checkImagesReady = async (sources: string[]) => {
+        const results = await Promise.all(
+            sources.map((src) => new Promise<boolean>((resolve) => {
+                const img = new Image();
+                img.src = src;
+                img.onload = () => resolve(true);
+                img.onerror = () => resolve(false);
+            }))
+        );
+        return results.every(Boolean);
+    };
+
+    useEffect(() => {
+        if (!recipe) return;
+        const step = stepData[activeTutTab];
+        if (!step) return;
+
+        const allSources = [...step.ingredients, ...step.tools];
+        setAssetsReady(false);
+        checkImagesReady(allSources).then((ready) => setAssetsReady(ready));
+    }, [stepData, activeTutTab]);
 
     useEffect(() => {
         if (!recipe) return;
@@ -275,7 +265,7 @@ const StartRecipe = () => {
 
             const previous = activeTutTab === 0
                 ? `/images/${recipe.name}.png`
-                : stepResult[activeTutTab - 1];
+                : stepResult[activeTutTab - 1] || `/images/${recipe.name}.png`;
 
             const res = await fetch("http://localhost:8080/generate-result-image", {
                 method: "POST",
@@ -289,21 +279,11 @@ const StartRecipe = () => {
             });
 
             const data = await res.json();
-
-            setStepResult(prev => ({
-                ...prev,
-                [activeTutTab]: data.image_path
-            }));
+            setStepResult(prev => ({ ...prev, [activeTutTab]: data.image_path }));
         };
 
         generateStep();
-    }, [activeTutTab, recipe]);
-
-    useEffect(() => {
-        Object.keys(ingredientImages).forEach(key => {
-            requestedRef.current.add(key);
-        });
-    }, [ingredientImages]);
+    }, [activeTutTab, recipe, stepResult]);
 
     useEffect(() => {
         if (!recipe) return;
@@ -331,29 +311,20 @@ const StartRecipe = () => {
                         <h2 className={activeBoardTab==="Quizz"? "active-quizz-tab" : "inactive-tab"} onClick={() => handleBoardTabClick("Quizz")}>Quizz</h2>
                     </div>
                     <div style={{width: "100%"}} className="show-part">
-                        { 
-                        activeBoardTab === "Quizz"?
-                            <>
-                                <div >
-                                    Currently not available
-                                </div> 
-                            </> :
+                        { activeBoardTab === "Quizz" ? <div>Currently not available</div> :
                             <>
                                 <div className="step-tabs">
-                                    {recipe?.steps.map((step, index) => {
-                                        return (
-                                            <div className="tabs" key={index}>
-                                                <div className={activeTutTab === index? "active-tab" : "inactive-tab"} onClick={() => setActiveTutTab(index)}>
-                                                    <h3>Step {index + 1}</h3>
-                                                </div>
+                                    {recipe?.steps.map((step, index) => (
+                                        <div className="tabs" key={index}>
+                                            <div className={activeTutTab === index? "active-tab" : "inactive-tab"} onClick={() => setActiveTutTab(index)}>
+                                                <h3>Step {index + 1}</h3>
                                             </div>
-                                        )
-                                    })}
+                                        </div>
+                                    ))}
                                 </div>
-
                                 <div className="canvas">
                                     <h3>{recipe?.steps[activeTutTab]}</h3>
-                                    <Canvas 
+                                    {assetsReady ? (<Canvas 
                                         key={activeTutTab}
                                         className="canvas-board"
                                         width={950}
@@ -362,7 +333,9 @@ const StartRecipe = () => {
                                         tools={stepTools}
                                         actions={stepActions}
                                         resultImgSrc={stepResult[activeTutTab]}
-                                    />
+                                    />) : (
+                                        <div style={{ color: "white", textAlign: "center" }}>Generating images...</div>
+                                    )}
                                 </div>
                             </>
                         }  
@@ -377,55 +350,52 @@ const StartRecipe = () => {
                         <h2 className={activeTab==="Chat"? "active-chat-tab" : "inactive-tab"} onClick={() => handleTabClick("Chat")}>Chat</h2>
                     </div>
                     <div>
-                        {
-                        activeTab === "Recipe" ? 
+                        {activeTab === "Recipe" ? 
                             <div className="recipe-tab">
                                 <h2>{name}</h2>
-
                                 <div className="ingredient-list">
-                                    <h3>Ingredients for {recipe? (Number(recipe.portion) === 1 ? `${recipe.portion} portion` : `${recipe.portion} portions`) : ''}</h3>
+                                    <h3>Ingredients for {recipe ? (Number(recipe.portion) === 1 ? `${recipe.portion} portion` : `${recipe.portion} portions`) : ''}</h3>
                                     {recipe && recipe.ingredients && recipe.amount && recipe.ingredients.map((ingredient, index) => (
-                                        <div className="ingredients-colors"><p key={index} className="ingred-color">{ingredient}</p> <p>-</p> <p className="amount-color">{recipe.amount[index]}</p></div>))}
+                                        <div className="ingredients-colors">
+                                            <p key={index} className="ingred-color">{ingredient}</p> 
+                                            <p>-</p> 
+                                            <p className="amount-color">{recipe.amount[index]}</p>
+                                        </div>
+                                    ))}
                                 </div>
-
                                 <div className="step-list">
                                     <h3>Steps</h3>
                                     {recipe && recipe.steps && recipe.steps.map((step, index) => (
-                                        <div className="ingredients-colors"><p key={index} className="amount-color">Step {index + 1}:</p> <p className="ingred-color">{step}</p></div>))}
+                                        <div className="steps-colors">
+                                            <span className="amount-color step-pos">Step {index + 1}:</span>
+                                            <span className="ingred-color step-text-pos">{step}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             </div> :
-                            <>
-                                <div className="chat-container">
-                                    <div className="messages-window" ref={container}>
-                                        {messages.map((msg, index) => (
-                                            <p 
-                                                key={index} 
-                                                className={msg.sender === "user" ? "user-message" : "agent-message"}
-                                            >
-                                                {msg.text}
-                                            </p>
-                                        ))}
-                                    </div>
-
-                                    <div className="input-container">
-                                        <textarea
-                                            ref={textareaRef}
-                                            value={userMessage}
-                                            onChange={handleChange}
-                                            className="chat-input"
-                                            onKeyDown={(event) => {
-                                                if (event.key === 'Enter' && !event.shiftKey) {
-                                                    event.preventDefault(); 
-                                                    handleSend();
-                                                }
-                                            }}
-                                        />
-                                        <button onClick={handleSend} className="button">↑</button>
-                                    </div>
+                            <div className="chat-container">
+                                <div className="messages-window" ref={container}>
+                                    {messages.map((msg, index) => (
+                                        <p key={index} className={msg.sender === "user" ? "user-message" : "agent-message"}>{msg.text}</p>
+                                    ))}
                                 </div>
-                            </>
+                                <div className="input-container">
+                                    <textarea
+                                        ref={textareaRef}
+                                        value={userMessage}
+                                        onChange={handleChange}
+                                        className="chat-input"
+                                        onKeyDown={(event) => {
+                                            if (event.key === 'Enter' && !event.shiftKey) {
+                                                event.preventDefault(); 
+                                                handleSend();
+                                            }
+                                        }}
+                                    />
+                                    <button onClick={handleSend} className="button">↑</button>
+                                </div>
+                            </div>
                         }
-                    
                     </div>
                 </div>
             </div>
