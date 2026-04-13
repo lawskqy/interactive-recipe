@@ -17,6 +17,9 @@ const crypto = require("crypto");
 
 const FRONTEND_IMAGE_DIR = path.join(__dirname, "../frontend/public/images");
 
+const COMFY_URL = "http://127.0.0.1:8188"
+const COMFY_OUTPUT_DIR = path.join("D:/ComfyUI/output")
+
 const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY
 });
@@ -54,7 +57,7 @@ app.post("/send-message", (req, res) => {
     pythonProcess.stdin.end();
 });
 
-const WORKFLOW_PATH = path.join(__dirname, "sdxlturbo.json");
+const WORKFLOW_PATH = path.join(__dirname, "segment-anything.json");
 
 const workflow = JSON.parse(fs.readFileSync(WORKFLOW_PATH, "utf8"));
 
@@ -89,7 +92,7 @@ function runImageAgent(ingredient) {
     });
 }
 
-app.post("/generate-image", async (req, res) => {
+/*app.post("/generate-image", async (req, res) => {
     const { ingredient } = req.body;
     if (!ingredient) return res.status(400).send("No ingredient");
 
@@ -103,7 +106,181 @@ app.post("/generate-image", async (req, res) => {
         console.error(e);
         res.status(500).send("Generation error");
     }
+});*/ 
+
+async function sendWorkflowToComfy(workflow) {
+    const fetch = global.fetch || (await import("node-fetch")).default;
+
+    const res = await fetch(`${COMFY_URL}/prompt`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+        prompt: workflow,
+        client_id: "node-backend"
+        })
+    });
+
+    const data = await res.json();
+    return data.prompt_id;
+};
+
+async function waitForResult(promptId) {
+    const fetch = global.fetch || (await import("node-fetch")).default;
+
+    while (true) {
+        const res = await fetch(`${COMFY_URL}/history/${promptId}`);
+        const data = await res.json();
+
+        if (data?.[promptId]) {
+        return data[promptId];
+        }
+
+        await new Promise((r) => setTimeout(r, 1000));
+    }
+};
+
+app.post("/generate-and-segment", async (req, res) => {
+    const { ingredient } = req.body;
+
+    if (!ingredient || typeof ingredient !== "string") {
+        return res.status(400).json({ error: "Invalid ingredient" });
+    }
+
+    try {
+        console.log(`[PIPELINE] Start for: ${ingredient}`);
+
+        // 1. Generate base image via Python agent
+        const raw = await runImageAgent(ingredient);
+
+        let parsed;
+        try {
+            parsed = JSON.parse(raw);
+        } catch (err) {
+            console.error("[PIPELINE] Failed to parse image agent output:", raw);
+            return res.status(500).json({ error: "Image agent returned invalid JSON" });
+        }
+
+        if (!parsed?.image_path) {
+            return res.status(500).json({ error: "No image_path from image agent" });
+        }
+
+        const basePath = parsed.image_path;
+        console.log("[PIPELINE] Base image:", basePath);
+
+        // 2. Load segmentation workflow
+        let baseWorkflow;
+        try {
+            baseWorkflow = JSON.parse(fs.readFileSync(WORKFLOW_PATH, "utf8"));
+        } catch (err) {
+            console.error("[PIPELINE] Failed to load workflow");
+            return res.status(500).json({ error: "Workflow load failed" });
+        }
+
+        const workflow = structuredClone(baseWorkflow);
+
+        // IMPORTANT: ensure image exists
+        const absoluteImagePath = path.join(
+            FRONTEND_IMAGE_DIR,
+            path.basename(basePath)
+        );
+
+        if (!fs.existsSync(absoluteImagePath)) {
+            return res.status(500).json({ error: "Base image file not found" });
+        }
+
+        workflow["2"].inputs.image = absoluteImagePath;
+        workflow["3"].inputs.prompt =
+            `${ingredient} in a bowl, isolated object, clean background`;
+
+        // 3. Send to ComfyUI
+        console.log("[PIPELINE] Sending to ComfyUI...");
+        const promptId = await sendWorkflowToComfy(workflow);
+
+        if (!promptId) {
+            return res.status(500).json({ error: "Failed to get promptId" });
+        }
+
+        // 4. Wait result
+        const result = await waitForResult(promptId);
+
+        if (!result) {
+            return res.status(500).json({ error: "No result from ComfyUI" });
+        }
+
+        const image = extractImage(result);
+
+        if (!image) {
+            return res.status(500).json({ error: "No image in ComfyUI result" });
+        }
+
+        // 5. Save final image
+        const buffer = Buffer.from(image, "base64");
+
+        const safeName = ingredient
+            .toLowerCase()
+            .replace(/\s+/g, "_")
+            .replace(/[^\w_]/g, "")
+            .slice(0, 40);
+
+        const filePath = path.join(FRONTEND_IMAGE_DIR, `${safeName}.png`);
+
+        fs.writeFileSync(filePath, buffer);
+
+        console.log(`[PIPELINE] Done: ${filePath}`);
+
+        // 6. Response
+        return res.json({
+            ingredient,
+            image_path: `/images/${safeName}.png`
+        });
+
+    } catch (e) {
+        console.error("[PIPELINE] Fatal error:", e);
+        return res.status(500).json({
+            error: "Pipeline failed",
+            details: e.message
+        });
+    }
 });
+
+/*app.post("/segmentation", async (req, res) => {
+    const { ingredient } = req.body;
+    if (!ingredient) return res.status(400).send("No ingredient");
+
+    try {
+        const baseWorkflow = JSON.parse(fs.readFileSync(WORKFLOW_PATH, "utf8"));
+        const workflow = structuredClone(baseWorkflow);
+        console.log("ABOUT TO SEND TO COMFY");
+        console.log(JSON.stringify(workflow, null, 2));
+
+        const imagePath = `C:/Users/devil/Desktop/project/recipe-game/backend/image_cache/${ingredient}.png`;
+
+        workflow["2"].inputs.image = imagePath;
+        workflow["3"].inputs.prompt =
+            `${ingredient} in a bowl, isolated object, clean background`;
+
+        const promptId = await sendWorkflowToComfy(workflow);
+
+        const result = await waitForResult(promptId);
+
+        const image = extractImage(result);
+
+        const buffer = Buffer.from(image, "base64");
+
+        const filePath = path.join(FRONTEND_IMAGE_DIR, `${ingredient}.png`);
+
+        fs.writeFileSync(filePath, buffer);
+
+        res.json({
+            promptId,
+            image_path: filePath
+        });
+
+    } catch (e) {
+        console.error(e);
+        res.status(500).send("Segmentation failed");
+    }
+});*/
 
 const toFileName = (text) => {
     return text

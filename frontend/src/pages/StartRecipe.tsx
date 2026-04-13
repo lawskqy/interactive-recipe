@@ -45,7 +45,6 @@ const StartRecipe = () => {
     const [stepResult, setStepResult] = useState<Record<string, string>>({});
     const [stepData, setStepData] = useState<Record<number, StepData>>({});
     const [createdItems, setCreatedItems] = useState<string[]>([]);
-    const requestedRef = useRef(new Set<string>());
     const [assetsReady, setAssetsReady] = useState(false);
 
     const toImagePath = (name: string) => {
@@ -217,7 +216,7 @@ const StartRecipe = () => {
         }
     };
 
-    const generateImage = async (ingredientName:string) => {
+    /*const generateImage = async (ingredientName:string) => {
         if (generatedRef.current.has(ingredientName)) return;
         generatedRef.current.add(ingredientName);
 
@@ -229,9 +228,40 @@ const StartRecipe = () => {
             });
 
             const data = await res.json();
-            setIngredientImages(prev => ({ ...prev, [ingredientName]: data.image_path }));
+            if (data.) {
+                const segRes = await fetch("http://localhost:8080/segmentation", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        ingredient: ingredientName
+                    })
+                });
+
+                const segData = await segRes.json();
+                setIngredientImages(prev => ({ ...prev, [ingredientName]: segData.image_path }));
+            }
         } catch (err) {
             console.error("Image generation error:", err);
+        }
+    };*/
+
+    const generateImage = async (ingredientName: string) => {
+        try {
+            const res = await fetch("http://localhost:8080/generate-and-segment", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ingredient: ingredientName })
+            });
+
+            const data = await res.json();
+
+            setIngredientImages(prev => ({
+                ...prev,
+                [ingredientName]: data.image_path
+            }));
+
+        } catch (err) {
+            console.error("Image pipeline error:", err);
         }
     };
 
@@ -296,6 +326,7 @@ const StartRecipe = () => {
 
         run();
     }, [recipe]);
+
 
     useEffect(() => {
         localStorage.setItem("ingredientImages", JSON.stringify(ingredientImages));
