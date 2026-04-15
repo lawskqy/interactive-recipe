@@ -48,7 +48,7 @@ const StartRecipe = () => {
     const [assetsReady, setAssetsReady] = useState(false);
 
     const toImagePath = (name: string) => {
-        return `/images/${name.toLowerCase().replace(/\s+/g, "_").replace(/[^\w_]/g, "")}.png`;
+        return `/images/${name.toLowerCase().replace(/\s+/g, "_").replace(/[^\w_]/g, "")}_seg.png`;
     };
 
     const stepSeparator = (step: string) => {
@@ -142,7 +142,7 @@ const StartRecipe = () => {
         if (scrollHeight <= scrollTop + offsetHeight + 100) {
             container.current?.scrollTo(0, scrollHeight);
         }
-    }
+    };
 
     useEffect (() => {
         if (activeTab === "Chat"){

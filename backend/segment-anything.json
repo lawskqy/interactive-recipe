@@ -1,7 +1,7 @@
 {
   "2": {
     "inputs": {
-      "image": "warm_vanilla_matcha_step_1_2c8a0e60.png"
+      "image": ""
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -10,7 +10,7 @@
   },
   "3": {
     "inputs": {
-      "prompt": "matcha in container",
+      "prompt": "",
       "threshold": 0.3,
       "sam_model": [
         "5",

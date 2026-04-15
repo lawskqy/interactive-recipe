@@ -16,6 +16,7 @@ const { GoogleGenAI } = require("@google/genai");
 const crypto = require("crypto");
 
 const FRONTEND_IMAGE_DIR = path.join(__dirname, "../frontend/public/images");
+app.use("/images", express.static(FRONTEND_IMAGE_DIR));
 
 const COMFY_URL = "http://127.0.0.1:8188"
 const COMFY_OUTPUT_DIR = path.join("D:/ComfyUI/output")
@@ -124,6 +125,19 @@ async function sendWorkflowToComfy(workflow) {
     return data.prompt_id;
 };
 
+function extractComfyImage(result) {
+    const node = result?.outputs?.["14"];
+    const img = node?.images?.[0];
+
+    if (!img) return null;
+
+    return {
+        filename: img.filename,
+        subfolder: img.subfolder || "",
+        type: img.type || "output"
+    };
+};
+
 async function waitForResult(promptId) {
     const fetch = global.fetch || (await import("node-fetch")).default;
 
@@ -146,96 +160,75 @@ app.post("/generate-and-segment", async (req, res) => {
         return res.status(400).json({ error: "Invalid ingredient" });
     }
 
+    const safeName = ingredient
+        .toLowerCase()
+        .replace(/\s+/g, "_")
+        .replace(/[^\w_]/g, "")
+        .slice(0, 40);
+
+    const baseFile = path.join(FRONTEND_IMAGE_DIR, `${safeName}.png`);
+    const segFile = path.join(FRONTEND_IMAGE_DIR, `${safeName}_seg.png`);
+
     try {
-        console.log(`[PIPELINE] Start for: ${ingredient}`);
+        console.log(`[PIPELINE] Start: ${ingredient}`);
 
-        // 1. Generate base image via Python agent
-        const raw = await runImageAgent(ingredient);
+        if (!fs.existsSync(baseFile)) {
+            const raw = await runImageAgent(ingredient);
+            const parsed = JSON.parse(raw);
 
-        let parsed;
-        try {
-            parsed = JSON.parse(raw);
-        } catch (err) {
-            console.error("[PIPELINE] Failed to parse image agent output:", raw);
-            return res.status(500).json({ error: "Image agent returned invalid JSON" });
+            if (!parsed?.image_path) {
+                return res.status(500).json({ error: "No base image path" });
+            }
+
+            if (!fs.existsSync(baseFile)) {
+                return res.status(500).json({ error: "Base image not created" });
+            }
         }
 
-        if (!parsed?.image_path) {
-            return res.status(500).json({ error: "No image_path from image agent" });
-        }
+        console.log("[PIPELINE] running segmentation...");
 
-        const basePath = parsed.image_path;
-        console.log("[PIPELINE] Base image:", basePath);
-
-        // 2. Load segmentation workflow
-        let baseWorkflow;
-        try {
-            baseWorkflow = JSON.parse(fs.readFileSync(WORKFLOW_PATH, "utf8"));
-        } catch (err) {
-            console.error("[PIPELINE] Failed to load workflow");
-            return res.status(500).json({ error: "Workflow load failed" });
-        }
-
+        const baseWorkflow = JSON.parse(fs.readFileSync(WORKFLOW_PATH, "utf8"));
         const workflow = structuredClone(baseWorkflow);
 
-        // IMPORTANT: ensure image exists
-        const absoluteImagePath = path.join(
-            FRONTEND_IMAGE_DIR,
-            path.basename(basePath)
-        );
-
-        if (!fs.existsSync(absoluteImagePath)) {
-            return res.status(500).json({ error: "Base image file not found" });
-        }
-
-        workflow["2"].inputs.image = absoluteImagePath;
+        workflow["2"].inputs.image = baseFile;
         workflow["3"].inputs.prompt =
             `${ingredient} in a bowl, isolated object, clean background`;
 
-        // 3. Send to ComfyUI
-        console.log("[PIPELINE] Sending to ComfyUI...");
         const promptId = await sendWorkflowToComfy(workflow);
-
-        if (!promptId) {
-            return res.status(500).json({ error: "Failed to get promptId" });
-        }
-
-        // 4. Wait result
         const result = await waitForResult(promptId);
 
         if (!result) {
-            return res.status(500).json({ error: "No result from ComfyUI" });
+            return res.status(500).json({ error: "No Comfy result" });
         }
 
-        const image = extractImage(result);
+        const imgInfo = extractComfyImage(result);
 
-        if (!image) {
-            return res.status(500).json({ error: "No image in ComfyUI result" });
+        if (!imgInfo) {
+            return res.status(500).json({ error: "No image in Comfy output" });
         }
 
-        // 5. Save final image
-        const buffer = Buffer.from(image, "base64");
+        const comfyPath = path.join(
+            COMFY_OUTPUT_DIR,
+            imgInfo.subfolder,
+            imgInfo.filename
+        );
 
-        const safeName = ingredient
-            .toLowerCase()
-            .replace(/\s+/g, "_")
-            .replace(/[^\w_]/g, "")
-            .slice(0, 40);
+        if (!fs.existsSync(comfyPath)) {
+            return res.status(500).json({ error: "Comfy file not found", comfyPath });
+        }
 
-        const filePath = path.join(FRONTEND_IMAGE_DIR, `${safeName}.png`);
+        fs.copyFileSync(comfyPath, segFile);
 
-        fs.writeFileSync(filePath, buffer);
+        console.log(`[PIPELINE] Done: ${segFile}`);
 
-        console.log(`[PIPELINE] Done: ${filePath}`);
-
-        // 6. Response
         return res.json({
             ingredient,
-            image_path: `/images/${safeName}.png`
+            image_path: `/images/${path.basename(segFile)}`
         });
 
     } catch (e) {
-        console.error("[PIPELINE] Fatal error:", e);
+        console.error("[PIPELINE ERROR]", e);
+
         return res.status(500).json({
             error: "Pipeline failed",
             details: e.message
