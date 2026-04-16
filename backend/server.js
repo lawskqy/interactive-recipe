@@ -91,23 +91,7 @@ function runImageAgent(ingredient) {
         }) + "\n");
         python.stdin.end();
     });
-}
-
-/*app.post("/generate-image", async (req, res) => {
-    const { ingredient } = req.body;
-    if (!ingredient) return res.status(400).send("No ingredient");
-
-    try {
-        const raw = await runImageAgent(ingredient);
-        const parsed = JSON.parse(raw);
-        console.log(raw)
-
-        res.json(parsed);
-    } catch (e) {
-        console.error(e);
-        res.status(500).send("Generation error");
-    }
-});*/ 
+};
 
 async function sendWorkflowToComfy(workflow) {
     const fetch = global.fetch || (await import("node-fetch")).default;
@@ -235,45 +219,6 @@ app.post("/generate-and-segment", async (req, res) => {
         });
     }
 });
-
-/*app.post("/segmentation", async (req, res) => {
-    const { ingredient } = req.body;
-    if (!ingredient) return res.status(400).send("No ingredient");
-
-    try {
-        const baseWorkflow = JSON.parse(fs.readFileSync(WORKFLOW_PATH, "utf8"));
-        const workflow = structuredClone(baseWorkflow);
-        console.log("ABOUT TO SEND TO COMFY");
-        console.log(JSON.stringify(workflow, null, 2));
-
-        const imagePath = `C:/Users/devil/Desktop/project/recipe-game/backend/image_cache/${ingredient}.png`;
-
-        workflow["2"].inputs.image = imagePath;
-        workflow["3"].inputs.prompt =
-            `${ingredient} in a bowl, isolated object, clean background`;
-
-        const promptId = await sendWorkflowToComfy(workflow);
-
-        const result = await waitForResult(promptId);
-
-        const image = extractImage(result);
-
-        const buffer = Buffer.from(image, "base64");
-
-        const filePath = path.join(FRONTEND_IMAGE_DIR, `${ingredient}.png`);
-
-        fs.writeFileSync(filePath, buffer);
-
-        res.json({
-            promptId,
-            image_path: filePath
-        });
-
-    } catch (e) {
-        console.error(e);
-        res.status(500).send("Segmentation failed");
-    }
-});*/
 
 const toFileName = (text) => {
     return text

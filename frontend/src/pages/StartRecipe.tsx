@@ -93,11 +93,10 @@ const StartRecipe = () => {
             setStepTools(toolImagesArr);
             setStepActions(actionImagesArr);
 
-            const currentStep = activeTutTab;
 
             setStepData(prev => ({
                 ...prev,
-                [currentStep]: {
+                [activeTutTab]: {
                     ingredients: ingredientImagesArr,
                     tools: toolImagesArr,
                     actions: actionImagesArr,
@@ -216,34 +215,6 @@ const StartRecipe = () => {
         }
     };
 
-    /*const generateImage = async (ingredientName:string) => {
-        if (generatedRef.current.has(ingredientName)) return;
-        generatedRef.current.add(ingredientName);
-
-        try {
-            const res = await fetch("http://localhost:8080/generate-image", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ingredient: ingredientName })
-            });
-
-            const data = await res.json();
-            if (data.) {
-                const segRes = await fetch("http://localhost:8080/segmentation", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        ingredient: ingredientName
-                    })
-                });
-
-                const segData = await segRes.json();
-                setIngredientImages(prev => ({ ...prev, [ingredientName]: segData.image_path }));
-            }
-        } catch (err) {
-            console.error("Image generation error:", err);
-        }
-    };*/
 
     const generateImage = async (ingredientName: string) => {
         try {
@@ -331,6 +302,17 @@ const StartRecipe = () => {
     useEffect(() => {
         localStorage.setItem("ingredientImages", JSON.stringify(ingredientImages));
     }, [ingredientImages]);
+
+    useEffect(() => {
+        if (!recipe) return;
+
+        setStepData({});
+        setStepResult({});
+        setCreatedItems([]);
+        setStepIngredients([]);
+        setStepTools([]);
+        setStepActions([]);
+    }, [recipe]);
 
     return (
         <div className="game-container">
