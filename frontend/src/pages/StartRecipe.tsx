@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from 'react-router-dom';
 import '../styles/StartRecipe.css';
-import Canvas from "../assets/Canvas";
 import { useNavigate } from "react-router-dom";
+
+import RecipeView from "../components/RecipeView";
+import ChatView from "../components/ChatView";
+import TutorialBoard from "../components/TutorialBoard";
 
 interface Recipe {
     name: string;
@@ -37,7 +40,6 @@ const StartRecipe = () => {
     const [ingredientImages, setIngredientImages] = useState<Record<string, string>>(() => {
         return JSON.parse(localStorage.getItem("ingredientImages") || "{}")
     });
-    const generatedRef = useRef(new Set<string>(Object.keys(ingredientImages)));
     const [activeTutTab, setActiveTutTab] = useState(0);
     const [stepIngredients, setStepIngredients] = useState<Array<string>>([]);
     const [stepTools, setStepTools] = useState<Array<string>>([]);
@@ -120,14 +122,6 @@ const StartRecipe = () => {
         }
     }, [activeTutTab, recipe]);
 
-    const handleTabClick = (tabName :string) => {
-        setActiveTab(tabName);
-    };
-
-    const handleBoardTabClick = (tabName :string) => {
-        setActiveBoardTab(tabName);
-    };
-
     useEffect (() => {
         fetch('/recipes.json')
             .then(response => response.json())
@@ -149,13 +143,6 @@ const StartRecipe = () => {
         }
     }, [messages, activeTab]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setUserMessage(e.target.value);
-        if (textareaRef.current) {
-            textareaRef.current.style.height = "auto"; 
-            textareaRef.current.style.height = textareaRef.current.scrollHeight + "px"; 
-        }
-    };
 
     const handleSend = () => {
         if (!userMessage.trim() || !recipe) return;
@@ -317,103 +304,58 @@ const StartRecipe = () => {
     return (
         <div className="game-container">
             <div><button className="button-back" onClick={() => {setStepData({}); navigate(`/collection/`)}}>←</button></div>
-            <div className="board-container">
-                <div className="board-card">
-                    <div className="tab-title">
-                        <h2 className={activeBoardTab==="Recipe tutorial"? "active-recipe-tab" : "inactive-tab"} onClick={() => handleBoardTabClick("Recipe tutorial")}>Recipe tutorial</h2>
-                        <h2 className={activeBoardTab==="Quizz"? "active-quizz-tab" : "inactive-tab"} onClick={() => handleBoardTabClick("Quizz")}>Quizz</h2>
-                    </div>
-                    <div style={{width: "100%"}} className="show-part">
-                        { activeBoardTab === "Quizz" ? <div>Currently not available</div> :
-                            <>
-                                <div className="step-tabs">
-                                    {recipe?.steps.map((step, index) => (
-                                        <div className="tabs" key={index}>
-                                            <div className={activeTutTab === index? "active-tab" : "inactive-tab"} onClick={() => setActiveTutTab(index)}>
-                                                <h3>Step {index + 1}</h3>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="canvas">
-                                    <h3>{recipe?.steps[activeTutTab]}</h3>
-                                    {assetsReady ? (<Canvas 
-                                        key={activeTutTab}
-                                        className="canvas-board"
-                                        width={950}
-                                        height={750}
-                                        ingredients={stepIngredients}
-                                        tools={stepTools}
-                                        actions={stepActions}
-                                        resultImgSrc={stepResult[activeTutTab]}
-                                    />) : (
-                                        <div style={{ color: "white", textAlign: "center" }}>Generating images...</div>
-                                    )}
-                                </div>
-                            </>
-                        }  
-                    </div>
-                </div>
-            </div>
+
+            <TutorialBoard
+                activeBoardTab={activeBoardTab}
+                setActiveBoardTab={setActiveBoardTab}
+                recipe={recipe}
+                activeTutTab={activeTutTab}
+                setActiveTutTab={setActiveTutTab}
+                stepIngredients={stepIngredients}
+                stepTools={stepTools}
+                stepActions={stepActions}
+                stepResult={stepResult}
+                assetsReady={assetsReady}
+            />
 
             <div className="recipe-container">
                 <div className="recipe-card">
                     <div className="tab-title">
-                        <h2 className={activeTab==="Recipe"? "active-recipe-tab" : "inactive-tab"} onClick={() => handleTabClick("Recipe")}>Recipe</h2>
-                        <h2 className={activeTab==="Chat"? "active-chat-tab" : "inactive-tab"} onClick={() => handleTabClick("Chat")}>Chat</h2>
-                    </div>
-                    <div>
-                        {activeTab === "Recipe" ? 
-                            <div className="recipe-tab">
-                                <h2>{name}</h2>
-                                <div className="ingredient-list">
-                                    <h3>Ingredients for {recipe ? (Number(recipe.portion) === 1 ? `${recipe.portion} portion` : `${recipe.portion} portions`) : ''}</h3>
-                                    {recipe && recipe.ingredients && recipe.amount && recipe.ingredients.map((ingredient, index) => (
-                                        <div className="ingredients-colors">
-                                            <p key={index} className="ingred-color">{ingredient}</p> 
-                                            <p>-</p> 
-                                            <p className="amount-color">{recipe.amount[index]}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="step-list">
-                                    <h3>Steps</h3>
-                                    {recipe && recipe.steps && recipe.steps.map((step, index) => (
-                                        <div className="steps-colors">
-                                            <span className="amount-color step-pos">Step {index + 1}:</span>
-                                            <span className="ingred-color step-text-pos">{step}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div> :
-                            <div className="chat-container">
-                                <div className="messages-window" ref={container}>
-                                    {messages.map((msg, index) => (
-                                        <p key={index} className={msg.sender === "user" ? "user-message" : "agent-message"}>{msg.text}</p>
-                                    ))}
-                                </div>
-                                <div className="input-container">
-                                    <textarea
-                                        ref={textareaRef}
-                                        value={userMessage}
-                                        onChange={handleChange}
-                                        className="chat-input"
-                                        onKeyDown={(event) => {
-                                            if (event.key === 'Enter' && !event.shiftKey) {
-                                                event.preventDefault(); 
-                                                handleSend();
-                                            }
-                                        }}
-                                    />
-                                    <button onClick={handleSend} className="button">↑</button>
-                                </div>
-                            </div>
+                        <h2
+                        className={
+                            activeTab === "Recipe" ? "active-recipe-tab" : "inactive-tab"
                         }
+                        onClick={() => setActiveTab("Recipe")}
+                        >
+                        Recipe
+                        </h2>
+
+                        <h2
+                        className={
+                            activeTab === "Chat" ? "active-chat-tab" : "inactive-tab"
+                        }
+                        onClick={() => setActiveTab("Chat")}
+                        >
+                        Chat
+                        </h2>
                     </div>
+
+                    {activeTab === "Recipe" ? (
+                        <RecipeView recipe={recipe} name={name} />
+                    ) : (
+                        <ChatView
+                        messages={messages}
+                        userMessage={userMessage}
+                        setUserMessage={setUserMessage}
+                        handleSend={handleSend}
+                        textareaRef={textareaRef}
+                        containerRef={container}
+                        />
+                    )}
                 </div>
             </div>
         </div>
-    )
+    );
 }
 
 export default StartRecipe;
