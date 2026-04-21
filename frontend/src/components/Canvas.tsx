@@ -37,6 +37,7 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
     const resultTimeout = useRef<number | null>(null);
     const isPaused = useRef(false);
     const [resultImg, setResultImg] = useState<HTMLImageElement | null>(null);
+    const [activeButton, setActiveButton] = useState(false);
 
     const loadImages = (sources: string[]) => {
         return Promise.all(
@@ -128,7 +129,7 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
                 const y = Math.floor(index / 5) * 160 + 20;
                 return {
                     img,
-                    label: allSources[index].split("/").pop()?.replace(".png", "") || "",
+                    label: allSources[index].split("/").pop()?.replace(".png", "").replace("_seg", "").replaceAll("_", " ") || "",
                     x,
                     y,
                     startX: x,
@@ -163,7 +164,7 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
 
                 staticItems.current.forEach((item) => {
                     if (item.img.complete && item.img.naturalWidth > 0) {
-                        ctx.drawImage(item.img, item.x, item.y, 80, 80);
+                        ctx.drawImage(item.img, item.x, item.y, 100, 100);
                     } else {
                         ctx.fillStyle = "#444";
                         ctx.fillRect(item.x, item.y, 80, 80);
@@ -171,7 +172,7 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
                     ctx.fillStyle = "white";
                     ctx.font = "14px sans-serif";
                     ctx.textAlign = "center";
-                    ctx.fillText(item.label, item.x + 40, item.y + 95);
+                    ctx.fillText(item.label, item.x + 50, item.y + 100);
                 });
 
                 items.current.forEach((item) => {
@@ -179,7 +180,7 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
                     if (item.opacity > 1) item.opacity = 1;
                     ctx.globalAlpha = item.opacity;
                     if (item.img.complete && item.img.naturalWidth > 0) {
-                        ctx.drawImage(item.img, item.x, item.y, 80, 80);
+                        ctx.drawImage(item.img, item.x, item.y, 100, 100);
                     }
                     ctx.globalAlpha = 1;
                 });
@@ -188,7 +189,7 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
                     if (state.current === "MOVING") {
                         let done = true;
                         items.current.forEach((item) => {
-                            const speed = 0.01;
+                            const speed = 0.02;
                             item.x += (item.targetX - item.x) * speed;
                             item.y += (item.targetY - item.y) * speed;
                             if (Math.abs(item.x - item.targetX) > 0.5) done = false;
@@ -216,17 +217,17 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
                             }, 7000);
                         }
                     }
+                }
 
-                    if (state.current === "SHOW_RESULT") {
-                        const size = Math.min(canvas.width, canvas.height) * 0.5;
-                        if (resultImg?.complete && resultImg.naturalWidth > 0) {
-                            ctx.drawImage(resultImg, centerX - size / 2, centerY - size / 2, size, size);
-                        } else {
-                            ctx.fillStyle = "white";
-                            ctx.textAlign = "center";
-                            ctx.font = "20px sans-serif";
-                            ctx.fillText("Loading...", centerX, centerY);
-                        }
+                if (state.current === "SHOW_RESULT") {
+                    const size = Math.min(canvas.width, canvas.height);
+                    if (resultImg?.complete && resultImg.naturalWidth > 0) {
+                        ctx.drawImage(resultImg, centerX - size / 2, centerY - size / 2, size, size);
+                    } else {
+                        ctx.fillStyle = "white";
+                        ctx.textAlign = "center";
+                        ctx.font = "20px sans-serif";
+                        ctx.fillText("Loading...", centerX, centerY);
                     }
                 }
 
@@ -245,10 +246,12 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
 
     const pauseAnimation = () => {
         isPaused.current = true;
+        setActiveButton(true);
     };
 
     const resumeAnimation = () => {
         isPaused.current = false;
+        setActiveButton(false);
     };
 
     const restartAnimation = () => {
@@ -260,13 +263,14 @@ const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...pr
         particlesRef.current = [];
         state.current = "MOVING";
         resumeAnimation();
+        setActiveButton(false);
     };
 
     return (
         <>
             <canvas ref={canvasRef} {...props} />
             <div className="button-container">
-                <button className="buttons" onClick={pauseAnimation}>Pause</button>
+                <button className={`buttons ${activeButton ? "pressed" : ""}`} onClick={pauseAnimation}>Pause</button>
                 <button className="buttons" onClick={resumeAnimation}>Resume</button>
                 <button className="buttons" onClick={restartAnimation}>Restart</button>
             </div>

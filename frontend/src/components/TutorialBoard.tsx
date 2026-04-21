@@ -85,8 +85,8 @@ const TutorialBoard = ({
                     <Canvas
                         key={activeTutTab}
                         className="canvas-board"
-                        width={950}
-                        height={750}
+                        width={700}
+                        height={700}
                         ingredients={stepIngredients}
                         tools={stepTools}
                         actions={stepActions}
