@@ -34,6 +34,7 @@ const StartRecipe = () => {
     const [activeBoardTab, setActiveBoardTab] = useState("Recipe tutorial");
     const [userMessage, setUserMessage] = useState("");
     const [messages, setMessages] = useState<Array<Messages>>([]);
+    const [isLoading, setIsLoading] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const container = useRef<HTMLDivElement>(null);
     const { name } = useParams<{name: string}>();
@@ -148,6 +149,7 @@ const StartRecipe = () => {
         if (!userMessage.trim() || !recipe) return;
 
         setMessages(prev => [...prev, { sender: "user", text: userMessage }]);
+        setIsLoading(true);
         let updatedHistory = messages.map(msg => msg.text);
         const payload = {
             message: userMessage,
@@ -173,6 +175,7 @@ const StartRecipe = () => {
                 const jsonMatch = reply.match(/\{[\s\S]*\}$/);
                 let explanation = reply;
                 let updatedRecipe = null;
+                setIsLoading(false);
 
                 if (jsonMatch) {
                     const jsonText = jsonMatch[0];
@@ -194,7 +197,10 @@ const StartRecipe = () => {
                     });
                 }
             })
-            .catch(error => console.error("Request error:", error));
+            .catch(error => {
+                console.error("Request error:", error);
+                setIsLoading(false);
+            });
 
         setUserMessage("");
         if (textareaRef.current) {
@@ -344,12 +350,13 @@ const StartRecipe = () => {
                         <RecipeView recipe={recipe} name={name} />
                     ) : (
                         <ChatView
-                        messages={messages}
-                        userMessage={userMessage}
-                        setUserMessage={setUserMessage}
-                        handleSend={handleSend}
-                        textareaRef={textareaRef}
-                        containerRef={container}
+                            messages={messages}
+                            userMessage={userMessage}
+                            setUserMessage={setUserMessage}
+                            handleSend={handleSend}
+                            textareaRef={textareaRef}
+                            containerRef={container}
+                            isLoading={isLoading}
                         />
                     )}
                 </div>

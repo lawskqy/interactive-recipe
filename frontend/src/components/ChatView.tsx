@@ -10,6 +10,7 @@ interface ChatViewProps {
     handleSend: () => void;
     textareaRef: React.RefObject<HTMLTextAreaElement | null>;
     containerRef: React.RefObject<HTMLDivElement | null>;
+    isLoading: boolean;
 }
 
 const ChatView = ({
@@ -19,6 +20,7 @@ const ChatView = ({
     handleSend,
     textareaRef,
     containerRef,
+    isLoading,
     }: ChatViewProps) => {
         const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
             setUserMessage(e.target.value);
@@ -40,6 +42,13 @@ const ChatView = ({
                     {msg.text}
                 </p>
                 ))}
+                {isLoading && (
+                    <p className="agent-message loading-message">
+                        <span className="dot">•</span>
+                        <span className="dot">•</span>
+                        <span className="dot">•</span>
+                    </p>
+                )}
             </div>
 
             <div className="input-container">

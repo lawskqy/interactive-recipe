@@ -1,75 +1,113 @@
-# React + TypeScript + Vite
+### Interactive Recipe Tutorial App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An AI-powered cooking assistant that teaches you recipes step-by-step through animated ingredient visualizations, real-time chat, and generated imagery.
 
-Currently, two official plugins are available:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Features:
 
-## React Compiler
+- Animated Canvas Tutorial — Ingredients and tools animate toward each other in a step-by-step visual, culminating in a particle explosion and an AI-generated result image.
+- AI Recipe Chat — Ask questions about any recipe and get contextual answers. The agent can also dynamically modify the recipe in-conversation (adjust portions, swap ingredients, etc.).
+- Step-by-Step Breakdown — Each recipe step is parsed server-side to extract relevant ingredients, tools, and actions.
+- AI Image Generation — Ingredient and result images are generated and segmented automatically via a backend pipeline.
+- Recipe Collection — Browse, filter (warm/cold drinks), and preview recipes before starting.
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
 
-Note: This will impact Vite dev & build performances.
+### Tech Stack:
+  Frontend:
 
-## Expanding the ESLint configuration
+  -  React + TypeScript
+  -  React Router
+  -  HTML5 Canvas API (custom animation engine)
+  -  CSS (custom design system — no UI library)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+  Backend
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+  -  Node.js + Express (REST API, localhost:8080)
+  -  Python 3.14 (AI agent subprocesses)
+  -  Google ADK (LlmAgent, Runner, InMemorySessionService)
+  -  Gemini 2.5 Flash / Flash-Lite (chat, step separation, image generation)
+  -  ComfyUI (local diffusion workflow runner)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Getting Started
+  Prerequisites
+
+  -  Node.js 18+
+  -  Python 3.10+
+  -  ComfyUI running locally at http://127.0.0.1:8188
+  -  ComfyUI custom nodes: ComfyUI-segment-anything
+  -  Models downloaded into ComfyUI:
+
+    -  GroundingDINO_SwinB 
+    -  sam_hq_vit_h 
+
+
+  -  A Google Gemini API key
+
+
+Backend Setup:
+
+```bash
+
+  npm install
+  pip install google-adk google-genai python-dotenv
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Create .env file in /backend, copy the variables below putting there your values:
+```env
+  GOOGLE_API_KEY=your_key_here
+  GEMINI_API_KEY=your_key_here
+  PYTHON_PATH=C:\Users\you\AppData\Local\Programs\Python\Python314\python.exe
+  COMFY_OUTPUT_DIR=D:/ComfyUI/output
 ```
+
+GEMINI_API_KEY — get yours at aistudio.google.com
+PYTHON_PATH — path to your Python executable (/usr/bin/python3 on Mac/Linux)
+COMFY_OUTPUT_DIR — path to your local ComfyUI output folder
+
+
+Start the backend:
+
+```bash
+
+  npm start
+```
+
+Frontend setup:
+
+```bash
+
+  cd frontend
+  npm install
+  npm run dev
+```
+
+### Collection Page
+Browse and filter all available recipes. Click any card to preview the recipe before starting.
+
+![collection page](collection.png)
+
+![Collection cold](collection_cold.png) 
+
+![Modal](modal.png)
+
+### Recipe Page
+View the full ingredient list and step-by-step instructions for the selected recipe.
+Switch to the Chat tab to ask questions or request modifications — swap ingredients,
+adjust portions, or make it vegan. The recipe updates live based on the agent's response.
+
+![Recipe board](recipe.png) ![Chat](chat.png) ![Recipe change](recipe-chat.png)
+
+### Tutorial Board
+Each recipe step gets its own animated visual. Ingredients and tools slide toward the center,
+explode into particles, and reveal an AI-generated image showing the result of that step.
+Navigate between steps using the tabs at the top. Images are generated on the fly and cached
+so switching back to a previous step is instant.
+
+![Animation](animation.gif)
+
+![Switching tabs](animation2.gif)
+
+
+
+
