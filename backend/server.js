@@ -11,7 +11,7 @@ const imageAgentPath = path.join(__dirname, "my_agent", "image_agent.py");
 const separationAgentPath = path.join(__dirname, "my_agent", "separation_agent.py")
 const app = express();
 const port = 8080;
-const PYTHON = "C:\\Users\\devil\\AppData\\Local\\Programs\\Python\\Python314\\python.exe";
+const PYTHON = process.env.PYTHON_PATH;
 const { GoogleGenAI } = require("@google/genai");
 const crypto = require("crypto");
 
@@ -19,7 +19,7 @@ const FRONTEND_IMAGE_DIR = path.join(__dirname, "../frontend/public/images");
 app.use("/images", express.static(FRONTEND_IMAGE_DIR));
 
 const COMFY_URL = "http://127.0.0.1:8188"
-const COMFY_OUTPUT_DIR = path.join("D:/ComfyUI/output")
+const COMFY_OUTPUT_DIR = process.env.COMFY_OUTPUT_DIR;
 
 const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY
@@ -240,6 +240,27 @@ const saveImage = (result, name, index, hash) => {
     return `/images/${fileName}`; 
 };
 
+async function segmentImage(inputPath, outputPath, label) {
+    const baseWorkflow = JSON.parse(fs.readFileSync(WORKFLOW_PATH, "utf8"));
+    const workflow = structuredClone(baseWorkflow);
+
+    workflow["2"].inputs.image = inputPath;
+    workflow["3"].inputs.prompt = `${label} in a container`;
+
+    const promptId = await sendWorkflowToComfy(workflow);
+    const result = await waitForResult(promptId);
+
+    if (!result) throw new Error("No Comfy result for segmentation");
+
+    const imgInfo = extractComfyImage(result);
+    if (!imgInfo) throw new Error("No image in Comfy output");
+
+    const comfyPath = path.join(COMFY_OUTPUT_DIR, imgInfo.subfolder, imgInfo.filename);
+    if (!fs.existsSync(comfyPath)) throw new Error("Comfy file not found");
+
+    fs.copyFileSync(comfyPath, outputPath);
+};
+
 app.post("/generate-result-image", async (req, res) => {
     const { step, previous, index, name } = req.body;
 
@@ -247,10 +268,23 @@ app.post("/generate-result-image", async (req, res) => {
 
     const fileName = `${toFileName(name)}_step_${index}_${hash}.png`;
     const filePath = path.join(FRONTEND_IMAGE_DIR, fileName);
+    const segFileName = `${toFileName(name)}_step_${index}_${hash}_seg.png`;
+    const segFilePath = path.join(FRONTEND_IMAGE_DIR, segFileName);
+
+    if (fs.existsSync(segFilePath)) {
+        console.log("Using cached segmented image:", segFileName);
+        return res.json({ image_path: `/images/${segFileName}` });
+    }
 
     if (fs.existsSync(filePath)) {
-        console.log("Using cached image:", fileName);
-        return res.json({ image_path: `/images/${fileName}` });
+        console.log("Base image exists, segmenting...");
+        try {
+            await segmentImage(filePath, segFilePath, `${name}`);
+            return res.json({ image_path: `/images/${segFileName}` });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ error: "segmentation failed" });
+        }
     }
 
     try {
@@ -261,13 +295,15 @@ app.post("/generate-result-image", async (req, res) => {
         STYLE (must stay identical across steps):
         flat 2D illustration, minimalistic, dark academia palette,
         muted browns, beiges, dark greens, soft shadows,
-        white background, no extra objects
+        white background, no extra objects, no shadows, same container across steps, except for when the step requires another container
 
         COMPOSITION:
-        single centered object only
+        single isolated object centered on pure white background
+        no pouring, no hands, no motion, no splashing
+        show only the final result, not the action
         same framing and scale every time
 
-        If an image is provided, use it as strict style reference.
+        If an image is provided, use it as style reference.
         `;
 
         const parts = [{ text: prompt }];
@@ -318,7 +354,12 @@ app.post("/generate-result-image", async (req, res) => {
         const base64 = imagePart.inlineData.data;
         const imagePath = saveImage({ image: base64 }, name, index, hash);
 
-        res.json({ image_path: imagePath });
+        const fullPath = path.join(FRONTEND_IMAGE_DIR, path.basename(imagePath));
+
+        await segmentImage(fullPath, segFilePath, step);
+
+        res.json({ image_path: `/images/${segFileName}` });
+
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "generation failed" });

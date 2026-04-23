@@ -1,4 +1,4 @@
-### Interactive Recipe Tutorial App
+# Interactive Recipe Tutorial App
 
 An AI-powered cooking assistant that teaches you recipes step-by-step through animated ingredient visualizations, real-time chat, and generated imagery.
 
