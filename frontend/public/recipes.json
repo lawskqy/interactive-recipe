@@ -1,383 +1,1867 @@
 [
-   {
-        "category": "cold drinks",
-        "name": "iced matcha latte",
-        "description": "A smooth and refreshing iced drink made with matcha, milk, and a touch of honey for natural sweetness.",
-        "portion": "1",
-        "ingredients": ["matcha powder", "water", "milk", "honey", "ice"],
-        "amount": ["2g", "80ml", "180ml", "10ml", "120g"],
-        "steps": [
-            "Whisk matcha powder with cold water until smooth and lump-free.",
-            "Stir honey into the matcha mixture until dissolved.",
-            "Fill a glass with ice.",
-            "Pour milk into the glass over the ice.",
-            "Slowly pour the prepared matcha mixture over the milk.",
-            "Stir before drinking."
-        ],
-        "image": "iced-matcha-latte.png"
-    },
-    {
-        "category": "warm drinks",
-        "name": "hot matcha latte",
-        "description": "A warm and creamy matcha latte balanced with honey, vanilla, and a small pinch of sea salt.",
-        "portion": "1",
-        "ingredients": ["matcha powder", "hot water", "milk", "honey", "vanilla extract", "sea salt"],
-        "amount": ["2g", "20ml", "240ml", "10ml", "1ml", "pinch"],
-        "steps": [
-            "Warm the milk until steamy but not boiling.",
-            "Whisk matcha powder with a small splash of hot water until smooth.",
-            "Stir in honey, vanilla extract, and a pinch of sea salt.",
-            "Combine the matcha mixture with the warm milk and froth if desired.",
-            "Serve immediately and enjoy."
-        ],
-        "image": "hot-matcha-latte.png"
-    },
-    {
-        "category": "cold drinks",
-        "name": "mango matcha latte",
-        "description": "A tropical layered drink that blends sweet mango with creamy milk and earthy matcha.",
-        "portion": "1",
-        "ingredients": ["matcha powder", "warm water", "mango pulp", "milk", "honey or maple syrup", "ice"],
-        "amount": ["2g", "80ml", "120ml", "120ml", "10ml", "few cubes"],
-        "steps": [
-            "Whisk matcha powder with warm water until smooth and frothy.",
-            "Blend mango pulp with milk and sweetener until combined.",
-            "Fill a glass with ice.",
-            "Pour the mango-milk blend over the ice.",
-            "Slowly pour the prepared matcha mixture on top.",
-            "Stir gently before drinking."
-        ],
-        "image": "mango-matcha-latte.png"
-    },
-    {
-        "category": "cold drinks",
-        "name": "pumpkin spice maple matcha latte",
-        "description": "A cozy autumn-inspired iced matcha drink with pumpkin spice, maple sweetness, and creamy foam.",
-        "portion": "1",
-        "ingredients": ["matcha powder", "pumpkin spice", "pumpkin puree", "maple syrup", "hot water", "non-dairy milk", "heavy cream", "milk", "maple syrup (foam)", "ice", "ground cinnamon"],
-        "amount": ["4g", "0.5g", "15g", "15ml", "60ml", "60ml", "45ml", "15ml", "5ml", "few cubes", "pinch"],
-        "steps": [
-            "Sift matcha powder into a bowl and add pumpkin spice.",
-            "Pour hot water over the matcha and whisk until smooth and frothy.",
-            "Add pumpkin puree and maple syrup to the matcha mixture and whisk again until combined.",
-            "In a separate cup, froth heavy cream, milk, maple syrup, and a small amount of pumpkin puree until thick and creamy.",
-            "Fill a glass with ice and pour in the matcha base.",
-            "Add the non-dairy milk and stir gently.",
-            "Spoon the sweet cream foam on top and finish with a pinch of ground cinnamon."
-        ],
-        "image": "pumpkin-spice-maple-matcha-latte.png"
-    },
-    {
-        "category": "warm drinks",
-        "name": "matcha mocha latte",
-        "description": "A rich and comforting latte combining earthy matcha with smooth cacao and warm milk.",
-        "portion": "1",
-        "ingredients": ["matcha powder", "cacao powder", "hot water", "milk", "maple syrup or coconut sugar"],
-        "amount": ["2g", "1g", "60ml", "180ml", "5ml"],
-        "steps": [
-            "Whisk matcha powder and cacao powder with hot water until smooth and lump-free.",
-            "Steam or froth the milk until creamy.",
-            "Pour the milk into the matcha-cacao mixture.",
-            "Add maple syrup or coconut sugar to taste and stir well before serving."
-        ],
-        "image": "matcha-mocha-latte.png"
-    },
-    {
-        "category": "cold drinks",
-        "name": "tropical matcha",
-        "description": "A bright and refreshing matcha drink mixed with sweet pineapple juice for a tropical twist.",
-        "portion": "1",
-        "ingredients": ["matcha powder", "hot water", "pineapple juice", "ice", "pineapple slice or mint"],
-        "amount": ["2g", "120ml", "240ml", "few cubes", "1 piece or leaf"],
-        "steps": [
-            "Whisk matcha powder with hot water until smooth and frothy.",
-            "Pour pineapple juice into a glass.",
-            "Slowly add the prepared matcha mixture to the juice, stirring gently.",
-            "Add ice cubes if desired.",
-            "Garnish with a pineapple slice or mint leaf and serve immediately."
-        ],
-        "image": "tropical-matcha.png"
-    },
-    {
-        "category": "cold drinks",
-        "name": "blueberry matcha fizz",
-        "description": "A sparkling matcha drink with muddled blueberries, lemon juice, and refreshing soda water.",
-        "portion": "1",
-        "ingredients": ["matcha powder", "blueberries", "water", "syrup", "fresh lemon juice", "soda water", "ice"],
-        "amount":["3g", "20g", "40ml", "30ml", "60ml", "150ml", "few cubes"],
-        "steps": [
-            "Place the blueberries in a cocktail shaker or small mixing glass. Lightly muddle them to release the juice.", 
-            "Add the simple syrup and lemon juice. Stir briefly to combine.", 
-            "Add ice, close the shaker, and shake for about 10–15 seconds until the mixture is well chilled.", 
-            "Strain or pour the mixture into a glass filled with fresh ice.", 
-            "Top with soda water.", 
-            "Carefully pour the prepared matcha over the top so it floats slightly."
-        ],
-        "image": "blueberry-matcha-fizz.png"
-    },
-    {
-        "category": "cold drinks",
-        "name": "coconut matcha refresher",
-        "description": "A light and hydrating drink made with coconut water, matcha, and a touch of creamy coconut.",
-        "portion": "1",
-        "ingredients": ["matcha powder", "warm water", "coconut water", "water", "coconut cream", "honey or sweetener", "ice", "lime juice", "mint"],
-        "amount": ["3g", "40ml", "180ml", "60ml", "10ml", "5ml", "few cubes", "optional squeeze", "optional"],
-        "steps": [
-            "Sift matcha powder into a bowl to remove lumps.",
-            "Add warm water and whisk the matcha until smooth and slightly frothy.",
-            "Fill a glass with ice.",
-            "Pour coconut water and cold water into the glass.",
-            "Slowly pour the prepared matcha over the coconut water to create a layered drink.",
-            "Lightly whisk coconut cream and gently spoon it on top if using.",
-            "Add sweetener if desired and stir before drinking."
-        ],
-        "image": "coconut-matcha-refresher.png"
-    },
-    {
-        "category": "cold drinks",
-        "name": "iced raspberry matcha latte",
-        "description": "A fruity iced matcha latte layered with fresh raspberries, milk, and smooth matcha.",
-        "portion": "1",
-        "ingredients": ["matcha powder", "water", "milk", "raspberries", "ice"],
-        "amount": ["2g", "120ml", "120ml", "25g", "few cubes"],
-        "steps": [
-            "Whisk matcha powder with hot water until smooth.",
-            "Add raspberries to a glass and lightly mash them.",
-            "Fill the glass with ice.",
-            "Pour milk into the glass.",
-            "Slowly pour the matcha mixture over the milk to create a layered drink.",
-            "Stir before drinking if desired."
-        ],
-        "image": "iced-raspberry-matcha-latte.png"
-    },
-    {
-        "category": "warm drinks",
-        "name": "warm vanilla matcha",
-        "description": "A comforting matcha drink with warm milk, gentle vanilla flavor, and light sweetness.",
-        "portion": "1",
-        "ingredients": ["matcha powder", "warm water", "milk", "vanilla extract", "honey or maple syrup"],
-        "amount": ["3g", "30ml", "180ml", "2ml", "5–10ml"],
-        "steps": [
-            "Whisk matcha powder with warm water in a bowl until smooth and lump-free.",
-            "Heat the milk until warm but not boiling.",
-            "Stir vanilla extract and sweetener into the warm milk.",
-            "Pour the milk into a cup.",
-            "Add the prepared matcha and mix gently.",
-            "Serve warm."
-        ],
-        "image": "warm-vanilla-matcha.png"
-    },
-    {
-        "category": "warm drinks",
-        "name": "tiramisu matcha latte",
-        "description": "A dessert-style latte that blends matcha, coffee, creamy milk, and mascarpone topping.",
-        "portion": "1",
-        "ingredients": ["matcha powder", "hot water", "milk", "espresso or strong coffee", "mascarpone", "sugar or maple syrup"],
-        "amount": ["2g", "40ml", "180ml", "60ml", "35g", "5–10ml"],
-        "steps": [
-            "Mix mascarpone with sugar or maple syrup in a small bowl until smooth and slightly fluffy.",
-            "Whisk matcha powder with hot water until completely smooth.",
-            "Pour espresso or strong coffee into the matcha and stir gently.",
-            "Heat the milk and froth lightly.",
-            "Add the warm milk to the matcha-coffee mixture.",
-            "Spoon the mascarpone cream on top before serving."
-        ],
-        "image": "tiramisu-matcha-latte.png"
-    },
-    {
-        "category": "warm drinks",
-        "name": "salted caramel latte",
-        "description": "A rich coffee drink blended with butter, coconut oil, honey, and a hint of salt.",
-        "portion": "1",
-        "ingredients": ["brewed coffee", "coconut oil or MCT oil", "butter", "salt", "vanilla extract", "honey", "milk"],
-        "amount": ["240ml", "15ml", "5g", "pinch", "2ml", "5ml", "120ml"],
-        "steps": [
-            "Pour hot brewed coffee into a blender.",
-            "Add coconut oil, butter, salt, vanilla extract, and honey.",
-            "Blend on high for about 15 seconds until the mixture is emulsified and slightly frothy.",
-            "Pour the drink into a cup.",
-            "Top with warm foamed milk if desired and finish with a pinch of salt and a drizzle of honey."
-        ],
-        "image": "salted-caramel-latte.png"
-    },
-    {
-        "category": "warm drinks",
-        "name": "pistachio creamy latte",
-        "description": "A smooth latte flavored with pistachio paste and lightly sweetened for a nutty, creamy taste.",
-        "portion": "1",
-        "ingredients": ["espresso or strong coffee", "milk", "pistachio paste", "honey or sugar", "vanilla extract"],
-        "amount": ["60ml", "200ml", "15g", "5–10ml", "1ml"],
-        "steps": [
-            "Prepare a shot of espresso or strong coffee and pour it into a cup.",
-            "Heat the milk until warm and froth lightly.",
-            "Stir pistachio paste, honey or sugar, and vanilla extract into the coffee until smooth.",
-            "Pour the warm milk into the cup and stir gently to combine.",
-            "Serve immediately."
-        ],
-        "image": "pistachio-creamy-latte.png"
-    },
-    {
-        "category": "warm drinks",
-        "name": "spanish latte",
-        "description": "A sweet and creamy espresso drink made with milk and condensed milk.",
-        "portion": "1",
-        "ingredients": ["espresso", "milk", "sweetened condensed milk"],
-        "amount": ["60ml", "180ml", "30ml"],
-        "steps": [
-            "Prepare a shot of espresso and pour it into a cup.",
-            "Add sweetened condensed milk and stir until combined.",
-            "Heat the milk until warm and froth lightly.",
-            "Pour the warm milk into the espresso mixture and stir gently.",
-            "Serve immediately."
-        ],
-        "image": "spanish-latte.png"
-    },
-    {
-        "category": "warm drinks",
-        "name": "white mocha coffee",
-        "description": "A creamy coffee drink combining espresso, milk, and melted white chocolate.",
-        "portion": "1",
-        "ingredients": ["espresso", "milk", "white chocolate", "vanilla extract"],
-        "amount": ["60ml", "180ml", "20g", "1ml"],
-        "steps": [
-            "Melt the white chocolate in a cup using a small amount of hot milk or microwave.",
-            "Prepare a shot of espresso and pour it over the melted white chocolate, stirring until smooth.",
-            "Heat the milk until warm and froth lightly.",
-            "Pour the warm milk into the espresso mixture and stir gently.",
-            "Add a small amount of vanilla extract if desired and serve."
-        ],
-        "image": "white-mocha-coffee.png"
-    },
-    {
-        "category": "cold drinks",
-        "name": "iced coconut coffee",
-        "description": "A refreshing iced coffee with coconut milk and a hint of sweetness.",
-        "portion": "1",
-        "ingredients": ["strong brewed coffee", "coconut milk", "coconut syrup or honey", "ice"],
-        "amount": ["180ml", "120ml", "10ml", "few cubes"],
-        "steps": [
-            "Brew strong coffee and allow it to cool slightly.",
-            "Fill a glass with ice.",
-            "Pour the coffee over the ice.",
-            "Add coconut milk and coconut syrup or honey.",
-            "Stir gently to combine and serve."
-        ],
-        "image": "iced-coconut-coffee.png"
-    },
-    {
-        "category": "warm drinks",
-        "name": "irish latte",
-        "description": "A warm espresso drink mixed with Irish whiskey, brown sugar, milk, and whipped cream.",
-        "portion": "1",
-        "ingredients": ["espresso", "irish whiskey", "brown sugar", "milk", "whipped cream"],
-        "amount": ["60ml", "30ml", "5g", "150ml", "20g"],
-        "steps": [
-            "Prepare a shot of espresso and pour it into a heatproof glass.",
-            "Add Irish whiskey and brown sugar, then stir until the sugar dissolves.",
-            "Heat the milk until warm and froth lightly.",
-            "Pour the warm milk into the espresso mixture.",
-            "Top with whipped cream and serve immediately."
-        ],
-        "image": "irish-latte.png"
-    },
-    {
-        "category": "cold drinks",
-        "name": "strawberry cold foam hojicha",
-        "description": "A refreshing iced hojicha drink topped with sweet strawberry cold foam.",
-        "portion": "1",
-        "ingredients": ["hojicha powder", "water", "ice", "milk", "strawberry syrup", "red food coloring"],
-        "amount": ["2g", "120ml", "120g", "60ml", "15ml", "optional few drops"],
-        "steps": [
-            "Whisk hojicha powder with 60ml cold water until smooth.",
-            "Fill a glass with ice and pour the prepared hojicha over it.",
-            "Add the remaining 60ml cold water and stir gently.",
-            "In a separate cup combine milk and strawberry syrup and add food coloring if desired.",
-            "Froth the milk mixture until thick and foamy.",
-            "Pour the strawberry cold foam over the iced hojicha and serve."
-        ],
-        "image": "strawberry-cold-foam-hojicha.png"
-    },
-    {
-        "category": "cold drinks",
-        "name": "coconut hojicha cloud",
-        "description": "A tropical iced drink with coconut water and a creamy hojicha foam layer.",
-        "portion": "1",
-        "ingredients": ["ice", "coconut water", "hojicha powder", "coconut cream", "milk", "vanilla syrup"],
-        "amount": ["120g", "180ml", "2g", "60g", "45ml", "22ml"],
-        "steps": [
-            "Fill a glass with ice and pour coconut water over it.",
-            "In a separate cup combine hojicha powder, chilled coconut cream, milk, and vanilla syrup.",
-            "Froth the mixture briefly with a milk frother until smooth and pourable.",
-            "Slowly pour the hojicha cream foam over the coconut water.",
-            "Serve immediately and stir before drinking if desired."
-        ],
-        "image": "coconut-hojicha-cloud.png"
-    },
-    {
-        "category": "cold drinks",
-        "name": "strawberry hojicha latte",
-        "description": "A layered drink combining sweet strawberries, creamy milk, and roasted hojicha tea.",
-        "portion": "1",
-        "ingredients": ["strawberries", "sugar", "ice", "milk", "hojicha powder", "cold water"],
-        "amount": ["45g", "4g", "120g", "180ml", "2g", "60ml"],
-        "steps": [
-            "Dice strawberries and mix with sugar in a small bowl.",
-            "Let the strawberries sit for 15–30 minutes until they release juice and become syrupy.",
-            "Gently mash the strawberries and add them to the bottom of a tall glass.",
-            "Fill the glass with ice and slowly pour milk over the strawberry layer.",
-            "Whisk hojicha powder with cold water until smooth.",
-            "Slowly pour the prepared hojicha over the ice to create a layered drink and serve."
-        ],
-        "image": "strawberry-hojicha-latte.png"
-    },
-    {
-        "category": "warm drinks",
-        "name": "maple hojicha latte macchiato",
-        "description": "A layered latte with maple-sweetened milk and roasted hojicha poured through the foam.",
-        "portion": "1",
-        "ingredients": ["milk", "maple syrup", "hojicha powder", "filtered water"],
-        "amount": ["180ml", "15ml", "2g", "60ml"],
-        "steps": [
-            "Steam and froth the milk together with maple syrup until creamy and foamy.",
-            "Slowly pour the foamed milk into a glass or mug.",
-            "Whisk hojicha powder with filtered hot water (around 80°C) until smooth.",
-            "Slowly pour the whisked hojicha into the center of the milk foam to create layers.",
-            "Serve immediately and enjoy."
-        ],
-        "image": "maple-hojicha-latte-macchiato.png"
-    },
-    {
-        "category": "warm drinks",
-        "name": "hojicha rose tea latte",
-        "description": "A floral latte combining fragrant rose tea with smooth roasted hojicha and milk.",
-        "portion": "1",
-        "ingredients": ["dried rose buds", "filtered water", "hojicha powder", "maple syrup", "milk", "dried rose petals"],
-        "amount": ["2g", "100ml", "2g", "5ml", "140ml", "1g"],
-        "steps": [
-            "Steep dried rose buds in filtered water at 95°C for 5 minutes.",
-            "Whisk hojicha powder with half of the rose tea until fully dissolved, then add the remaining rose tea and stir.",
-            "Add maple syrup and mix well.",
-            "Steam and froth the milk, then pour into the hojicha-rose tea mixture.",
-            "Lightly crush a few dried rose buds and sprinkle with dried rose petals on top for garnish.",
-            "Serve warm and enjoy."
-        ],
-        "image": "hojicha-rose-tea-latte.png"
-    },
-    {
-        "category": "warm drinks",
-        "name": "lavender hojicha latte",
-        "description": "A calming latte made with roasted hojicha tea and fragrant lavender infusion.",
-        "portion": "1",
-        "ingredients": ["dried lavender buds", "filtered water", "hojicha powder", "maple syrup", "milk", "dried lavender buds (garnish)"],
-        "amount": ["2g", "100ml", "2g", "5ml", "140ml", "1g"],
-        "steps": [
-            "Steep dried lavender buds in filtered water at 95°C for 5 minutes.",
-            "Whisk hojicha powder with half of the lavender tea until fully dissolved.",
-            "Add the remaining lavender tea and maple syrup, mixing well.",
-            "Steam and froth the milk, then pour onto the hojicha-lavender mixture.",
-            "Lightly sprinkle dried lavender buds on top for garnish.",
-            "Serve warm and enjoy."
-        ],
-        "image": "lavender-hojicha-latte.png"
-    }
+  {
+    "category": "cold drinks",
+    "name": "iced matcha latte",
+    "description": "A smooth and refreshing iced drink made with matcha, milk, and a touch of honey for natural sweetness.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "matcha powder",
+        "amount": "2g"
+      },
+      {
+        "name": "water",
+        "amount": "80ml"
+      },
+      {
+        "name": "milk",
+        "amount": "180ml"
+      },
+      {
+        "name": "honey",
+        "amount": "10ml"
+      },
+      {
+        "name": "ice",
+        "amount": "120g"
+      }
+    ],
+    "steps": [
+      "Whisk matcha powder with cold water until smooth and lump-free.",
+      "Stir honey into the matcha mixture until dissolved.",
+      "Fill a glass with ice.",
+      "Pour milk into the glass over the ice.",
+      "Slowly pour the prepared matcha mixture over the milk.",
+      "Stir before drinking."
+    ],
+    "image": "iced-matcha-latte.png",
+    "id": "iced-matcha-latte"
+  },
+  {
+    "category": "warm drinks",
+    "name": "hot matcha latte",
+    "description": "A warm and creamy matcha latte balanced with honey, vanilla, and a small pinch of sea salt.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "matcha powder",
+        "amount": "2g"
+      },
+      {
+        "name": "hot water",
+        "amount": "20ml"
+      },
+      {
+        "name": "milk",
+        "amount": "240ml"
+      },
+      {
+        "name": "honey",
+        "amount": "10ml"
+      },
+      {
+        "name": "vanilla extract",
+        "amount": "1ml"
+      },
+      {
+        "name": "sea salt",
+        "amount": "pinch"
+      }
+    ],
+    "steps": [
+      "Warm the milk until steamy but not boiling.",
+      "Whisk matcha powder with a small splash of hot water until smooth.",
+      "Stir in honey, vanilla extract, and a pinch of sea salt.",
+      "Combine the matcha mixture with the warm milk and froth if desired.",
+      "Serve immediately and enjoy."
+    ],
+    "image": "hot-matcha-latte.png",
+    "id": "hot-matcha-latte"
+  },
+  {
+    "category": "cold drinks",
+    "name": "mango matcha latte",
+    "description": "A tropical layered drink that blends sweet mango with creamy milk and earthy matcha.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "matcha powder",
+        "amount": "2g"
+      },
+      {
+        "name": "warm water",
+        "amount": "80ml"
+      },
+      {
+        "name": "mango pulp",
+        "amount": "120ml"
+      },
+      {
+        "name": "milk",
+        "amount": "120ml"
+      },
+      {
+        "name": "honey or maple syrup",
+        "amount": "10ml"
+      },
+      {
+        "name": "ice",
+        "amount": "few cubes"
+      }
+    ],
+    "steps": [
+      "Whisk matcha powder with warm water until smooth and frothy.",
+      "Blend mango pulp with milk and sweetener until combined.",
+      "Fill a glass with ice.",
+      "Pour the mango-milk blend over the ice.",
+      "Slowly pour the prepared matcha mixture on top.",
+      "Stir gently before drinking."
+    ],
+    "image": "mango-matcha-latte.png",
+    "id": "mango-matcha-latte"
+  },
+  {
+    "category": "cold drinks",
+    "name": "pumpkin spice maple matcha latte",
+    "description": "A cozy autumn-inspired iced matcha drink with pumpkin spice, maple sweetness, and creamy foam.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "matcha powder",
+        "amount": "4g"
+      },
+      {
+        "name": "pumpkin spice",
+        "amount": "0.5g"
+      },
+      {
+        "name": "pumpkin puree",
+        "amount": "15g"
+      },
+      {
+        "name": "maple syrup",
+        "amount": "15ml"
+      },
+      {
+        "name": "hot water",
+        "amount": "60ml"
+      },
+      {
+        "name": "non-dairy milk",
+        "amount": "60ml"
+      },
+      {
+        "name": "heavy cream",
+        "amount": "45ml"
+      },
+      {
+        "name": "milk",
+        "amount": "15ml"
+      },
+      {
+        "name": "maple syrup (foam)",
+        "amount": "5ml"
+      },
+      {
+        "name": "ice",
+        "amount": "few cubes"
+      },
+      {
+        "name": "ground cinnamon",
+        "amount": "pinch"
+      }
+    ],
+    "steps": [
+      "Sift matcha powder into a bowl and add pumpkin spice.",
+      "Pour hot water over the matcha and whisk until smooth and frothy.",
+      "Add 10g pumpkin puree and the 15ml maple syrup to the matcha mixture and whisk until combined.",
+      "In a separate cup, froth the heavy cream, 15ml milk, 5ml maple syrup (foam), and remaining 5g pumpkin puree until thick and creamy.",
+      "Fill a glass with ice and pour in the matcha base.",
+      "Add the non-dairy milk and stir gently.",
+      "Spoon the sweet cream foam on top and finish with a pinch of ground cinnamon."
+    ],
+    "image": "pumpkin-spice-maple-matcha-latte.png",
+    "id": "pumpkin-spice-maple-matcha-latte"
+  },
+  {
+    "category": "warm drinks",
+    "name": "matcha mocha latte",
+    "description": "A rich and comforting latte combining earthy matcha with smooth cacao and warm milk.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "matcha powder",
+        "amount": "2g"
+      },
+      {
+        "name": "cacao powder",
+        "amount": "1g"
+      },
+      {
+        "name": "hot water",
+        "amount": "60ml"
+      },
+      {
+        "name": "milk",
+        "amount": "180ml"
+      },
+      {
+        "name": "maple syrup or coconut sugar",
+        "amount": "5ml maple syrup or 4g coconut sugar"
+      }
+    ],
+    "steps": [
+      "Whisk matcha powder and cacao powder with hot water until smooth and lump-free.",
+      "Steam or froth the milk until creamy.",
+      "Pour the milk into the matcha-cacao mixture.",
+      "Add maple syrup or coconut sugar to taste and stir well before serving."
+    ],
+    "image": "matcha-mocha-latte.png",
+    "id": "matcha-mocha-latte"
+  },
+  {
+    "category": "cold drinks",
+    "name": "tropical matcha",
+    "description": "A bright and refreshing matcha drink mixed with sweet pineapple juice for a tropical twist.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "matcha powder",
+        "amount": "2g"
+      },
+      {
+        "name": "hot water",
+        "amount": "120ml"
+      },
+      {
+        "name": "pineapple juice",
+        "amount": "240ml"
+      },
+      {
+        "name": "ice",
+        "amount": "few cubes"
+      },
+      {
+        "name": "pineapple slice or mint",
+        "amount": "1 piece or leaf"
+      }
+    ],
+    "steps": [
+      "Whisk matcha powder with hot water until smooth and frothy.",
+      "Pour pineapple juice into a glass.",
+      "Slowly add the prepared matcha mixture to the juice, stirring gently.",
+      "Add ice cubes if desired.",
+      "Garnish with a pineapple slice or mint leaf and serve immediately."
+    ],
+    "image": "tropical-matcha.png",
+    "id": "tropical-matcha"
+  },
+  {
+    "category": "cold drinks",
+    "name": "blueberry matcha fizz",
+    "description": "A sparkling matcha drink with muddled blueberries, lemon juice, and refreshing soda water.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "matcha powder",
+        "amount": "3g"
+      },
+      {
+        "name": "blueberries",
+        "amount": "20g"
+      },
+      {
+        "name": "water",
+        "amount": "40ml"
+      },
+      {
+        "name": "syrup",
+        "amount": "30ml"
+      },
+      {
+        "name": "fresh lemon juice",
+        "amount": "60ml"
+      },
+      {
+        "name": "soda water",
+        "amount": "150ml"
+      },
+      {
+        "name": "ice",
+        "amount": "few cubes"
+      }
+    ],
+    "steps": [
+      "Whisk the matcha powder with the 40ml water until smooth. Set aside.",
+      "Place the blueberries in a cocktail shaker or small mixing glass. Lightly muddle them to release the juice.",
+      "Add the simple syrup and lemon juice. Stir briefly to combine.",
+      "Add ice, close the shaker, and shake for about 10–15 seconds until the mixture is well chilled.",
+      "Strain or pour the mixture into a glass filled with fresh ice.",
+      "Top with soda water.",
+      "Carefully pour the prepared matcha over the top so it floats slightly."
+    ],
+    "image": "blueberry-matcha-fizz.png",
+    "id": "blueberry-matcha-fizz"
+  },
+  {
+    "category": "cold drinks",
+    "name": "coconut matcha refresher",
+    "description": "A light and hydrating drink made with coconut water, matcha, and a touch of creamy coconut.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "matcha powder",
+        "amount": "3g"
+      },
+      {
+        "name": "warm water",
+        "amount": "40ml"
+      },
+      {
+        "name": "coconut water",
+        "amount": "180ml"
+      },
+      {
+        "name": "water",
+        "amount": "60ml"
+      },
+      {
+        "name": "coconut cream",
+        "amount": "10ml"
+      },
+      {
+        "name": "honey or sweetener",
+        "amount": "5ml honey or sweetener to taste"
+      },
+      {
+        "name": "ice",
+        "amount": "few cubes"
+      },
+      {
+        "name": "lime juice",
+        "amount": "optional squeeze"
+      },
+      {
+        "name": "mint",
+        "amount": "optional"
+      }
+    ],
+    "steps": [
+      "Sift matcha powder into a bowl to remove lumps.",
+      "Add warm water and whisk the matcha until smooth and slightly frothy.",
+      "Fill a glass with ice.",
+      "Pour coconut water and cold water into the glass.",
+      "Slowly pour the prepared matcha over the coconut water to create a layered drink.",
+      "Lightly whisk coconut cream and gently spoon it on top if using.",
+      "Add sweetener if desired and stir before drinking.",
+      "Finish with the optional squeeze of lime juice and mint, if using."
+    ],
+    "image": "coconut-matcha-refresher.png",
+    "id": "coconut-matcha-refresher"
+  },
+  {
+    "category": "cold drinks",
+    "name": "iced raspberry matcha latte",
+    "description": "A fruity iced matcha latte layered with fresh raspberries, milk, and smooth matcha.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "matcha powder",
+        "amount": "2g"
+      },
+      {
+        "name": "water",
+        "amount": "120ml"
+      },
+      {
+        "name": "milk",
+        "amount": "120ml"
+      },
+      {
+        "name": "raspberries",
+        "amount": "25g"
+      },
+      {
+        "name": "ice",
+        "amount": "few cubes"
+      }
+    ],
+    "steps": [
+      "Whisk matcha powder with hot water until smooth.",
+      "Add raspberries to a glass and lightly mash them.",
+      "Fill the glass with ice.",
+      "Pour milk into the glass.",
+      "Slowly pour the matcha mixture over the milk to create a layered drink.",
+      "Stir before drinking if desired."
+    ],
+    "image": "iced-raspberry-matcha-latte.png",
+    "id": "iced-raspberry-matcha-latte"
+  },
+  {
+    "category": "warm drinks",
+    "name": "warm vanilla matcha",
+    "description": "A comforting matcha drink with warm milk, gentle vanilla flavor, and light sweetness.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "matcha powder",
+        "amount": "3g"
+      },
+      {
+        "name": "warm water",
+        "amount": "30ml"
+      },
+      {
+        "name": "milk",
+        "amount": "180ml"
+      },
+      {
+        "name": "vanilla extract",
+        "amount": "2ml"
+      },
+      {
+        "name": "honey or maple syrup",
+        "amount": "5–10ml"
+      }
+    ],
+    "steps": [
+      "Whisk matcha powder with warm water in a bowl until smooth and lump-free.",
+      "Heat the milk until warm but not boiling.",
+      "Stir vanilla extract and sweetener into the warm milk.",
+      "Pour the milk into a cup.",
+      "Add the prepared matcha and mix gently.",
+      "Serve warm."
+    ],
+    "image": "warm-vanilla-matcha.png",
+    "id": "warm-vanilla-matcha"
+  },
+  {
+    "category": "warm drinks",
+    "name": "tiramisu matcha latte",
+    "description": "A dessert-style latte that blends matcha, coffee, creamy milk, and mascarpone topping.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "matcha powder",
+        "amount": "2g"
+      },
+      {
+        "name": "hot water",
+        "amount": "40ml"
+      },
+      {
+        "name": "milk",
+        "amount": "180ml"
+      },
+      {
+        "name": "espresso or strong coffee",
+        "amount": "60ml"
+      },
+      {
+        "name": "mascarpone",
+        "amount": "35g"
+      },
+      {
+        "name": "sugar or maple syrup",
+        "amount": "5–10ml maple syrup or 4–8g sugar"
+      }
+    ],
+    "steps": [
+      "Mix mascarpone with sugar or maple syrup in a small bowl until smooth and slightly fluffy.",
+      "Whisk matcha powder with hot water until completely smooth.",
+      "Pour espresso or strong coffee into the matcha and stir gently.",
+      "Heat the milk and froth lightly.",
+      "Add the warm milk to the matcha-coffee mixture.",
+      "Spoon the mascarpone cream on top before serving."
+    ],
+    "image": "tiramisu-matcha-latte.png",
+    "id": "tiramisu-matcha-latte"
+  },
+  {
+    "category": "warm drinks",
+    "name": "salted caramel latte",
+    "description": "A warm coffee latte with caramel, foamed milk, and a small pinch of sea salt.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "espresso or strong coffee",
+        "amount": "60ml"
+      },
+      {
+        "name": "milk",
+        "amount": "180ml"
+      },
+      {
+        "name": "caramel sauce",
+        "amount": "15ml"
+      },
+      {
+        "name": "sea salt",
+        "amount": "small pinch"
+      }
+    ],
+    "steps": [
+      "Prepare the espresso or strong coffee and pour it into a cup.",
+      "Stir in the caramel sauce and a small pinch of sea salt until combined.",
+      "Warm the milk until steamy but not boiling, then froth lightly.",
+      "Pour the warm milk over the caramel coffee and spoon the foam on top.",
+      "Serve warm."
+    ],
+    "image": "salted-caramel-latte.png",
+    "id": "salted-caramel-latte"
+  },
+  {
+    "category": "warm drinks",
+    "name": "pistachio creamy latte",
+    "description": "A smooth latte flavored with pistachio paste and lightly sweetened for a nutty, creamy taste.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "espresso or strong coffee",
+        "amount": "60ml"
+      },
+      {
+        "name": "milk",
+        "amount": "200ml"
+      },
+      {
+        "name": "pistachio paste",
+        "amount": "15g"
+      },
+      {
+        "name": "honey or sugar",
+        "amount": "5–10ml honey or 4–8g sugar"
+      },
+      {
+        "name": "vanilla extract",
+        "amount": "1ml"
+      }
+    ],
+    "steps": [
+      "Prepare a shot of espresso or strong coffee and pour it into a cup.",
+      "Heat the milk until warm and froth lightly.",
+      "Stir pistachio paste, honey or sugar, and vanilla extract into the coffee until smooth.",
+      "Pour the warm milk into the cup and stir gently to combine.",
+      "Serve immediately."
+    ],
+    "image": "pistachio-creamy-latte.png",
+    "id": "pistachio-creamy-latte"
+  },
+  {
+    "category": "warm drinks",
+    "name": "spanish latte",
+    "description": "A sweet and creamy espresso drink made with milk and condensed milk.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "espresso",
+        "amount": "60ml"
+      },
+      {
+        "name": "milk",
+        "amount": "180ml"
+      },
+      {
+        "name": "sweetened condensed milk",
+        "amount": "30ml"
+      }
+    ],
+    "steps": [
+      "Prepare a shot of espresso and pour it into a cup.",
+      "Add sweetened condensed milk and stir until combined.",
+      "Heat the milk until warm and froth lightly.",
+      "Pour the warm milk into the espresso mixture and stir gently.",
+      "Serve immediately."
+    ],
+    "image": "spanish-latte.png",
+    "id": "spanish-latte"
+  },
+  {
+    "category": "warm drinks",
+    "name": "white mocha coffee",
+    "description": "A creamy coffee drink combining espresso, milk, and melted white chocolate.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "espresso",
+        "amount": "60ml"
+      },
+      {
+        "name": "milk",
+        "amount": "180ml"
+      },
+      {
+        "name": "white chocolate",
+        "amount": "20g"
+      },
+      {
+        "name": "vanilla extract",
+        "amount": "1ml"
+      }
+    ],
+    "steps": [
+      "Melt the white chocolate in a cup using a small amount of hot milk or microwave.",
+      "Prepare a shot of espresso and pour it over the melted white chocolate, stirring until smooth.",
+      "Heat the milk until warm and froth lightly.",
+      "Pour the warm milk into the espresso mixture and stir gently.",
+      "Add a small amount of vanilla extract if desired and serve."
+    ],
+    "image": "white-mocha-coffee.png",
+    "id": "white-mocha-coffee"
+  },
+  {
+    "category": "cold drinks",
+    "name": "iced coconut coffee",
+    "description": "A refreshing iced coffee with coconut milk and a hint of sweetness.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "strong brewed coffee",
+        "amount": "180ml"
+      },
+      {
+        "name": "coconut milk",
+        "amount": "120ml"
+      },
+      {
+        "name": "coconut syrup or honey",
+        "amount": "10ml"
+      },
+      {
+        "name": "ice",
+        "amount": "few cubes"
+      }
+    ],
+    "steps": [
+      "Brew strong coffee and allow it to cool slightly.",
+      "Fill a glass with ice.",
+      "Pour the coffee over the ice.",
+      "Add coconut milk and coconut syrup or honey.",
+      "Stir gently to combine and serve."
+    ],
+    "image": "iced-coconut-coffee.png",
+    "id": "iced-coconut-coffee"
+  },
+  {
+    "category": "warm drinks",
+    "name": "irish latte",
+    "description": "A warm espresso drink mixed with Irish whiskey, brown sugar, milk, and whipped cream.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "espresso",
+        "amount": "60ml"
+      },
+      {
+        "name": "irish whiskey",
+        "amount": "30ml"
+      },
+      {
+        "name": "brown sugar",
+        "amount": "5g"
+      },
+      {
+        "name": "milk",
+        "amount": "150ml"
+      },
+      {
+        "name": "whipped cream",
+        "amount": "20g"
+      }
+    ],
+    "steps": [
+      "Prepare a shot of espresso and pour it into a heatproof glass.",
+      "Add Irish whiskey and brown sugar, then stir until the sugar dissolves.",
+      "Heat the milk until warm and froth lightly.",
+      "Pour the warm milk into the espresso mixture.",
+      "Top with whipped cream and serve immediately."
+    ],
+    "image": "irish-latte.png",
+    "id": "irish-latte"
+  },
+  {
+    "category": "cold drinks",
+    "name": "strawberry cold foam hojicha",
+    "description": "A refreshing iced hojicha drink topped with sweet strawberry cold foam.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "hojicha powder",
+        "amount": "2g"
+      },
+      {
+        "name": "water",
+        "amount": "120ml"
+      },
+      {
+        "name": "ice",
+        "amount": "120g"
+      },
+      {
+        "name": "milk",
+        "amount": "60ml"
+      },
+      {
+        "name": "strawberry syrup",
+        "amount": "15ml"
+      },
+      {
+        "name": "red food coloring",
+        "amount": "optional few drops"
+      }
+    ],
+    "steps": [
+      "Whisk hojicha powder with 60ml cold water until smooth.",
+      "Fill a glass with ice and pour the prepared hojicha over it.",
+      "Add the remaining 60ml cold water and stir gently.",
+      "In a separate cup combine milk and strawberry syrup and add food coloring if desired.",
+      "Froth the milk mixture until thick and foamy.",
+      "Pour the strawberry cold foam over the iced hojicha and serve."
+    ],
+    "image": "strawberry-cold-foam-hojicha.png",
+    "id": "strawberry-cold-foam-hojicha"
+  },
+  {
+    "category": "cold drinks",
+    "name": "coconut hojicha cloud",
+    "description": "A tropical iced drink with coconut water and a creamy hojicha foam layer.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "ice",
+        "amount": "120g"
+      },
+      {
+        "name": "coconut water",
+        "amount": "180ml"
+      },
+      {
+        "name": "hojicha powder",
+        "amount": "2g"
+      },
+      {
+        "name": "coconut cream",
+        "amount": "60g"
+      },
+      {
+        "name": "milk",
+        "amount": "45ml"
+      },
+      {
+        "name": "vanilla syrup",
+        "amount": "22ml"
+      }
+    ],
+    "steps": [
+      "Fill a glass with ice and pour coconut water over it.",
+      "In a separate cup combine hojicha powder, chilled coconut cream, milk, and vanilla syrup.",
+      "Froth the mixture briefly with a milk frother until smooth and pourable.",
+      "Slowly pour the hojicha cream foam over the coconut water.",
+      "Serve immediately and stir before drinking if desired."
+    ],
+    "image": "coconut-hojicha-cloud.png",
+    "id": "coconut-hojicha-cloud"
+  },
+  {
+    "category": "cold drinks",
+    "name": "strawberry hojicha latte",
+    "description": "A layered drink combining sweet strawberries, creamy milk, and roasted hojicha tea.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "strawberries",
+        "amount": "45g"
+      },
+      {
+        "name": "sugar",
+        "amount": "4g"
+      },
+      {
+        "name": "ice",
+        "amount": "120g"
+      },
+      {
+        "name": "milk",
+        "amount": "180ml"
+      },
+      {
+        "name": "hojicha powder",
+        "amount": "2g"
+      },
+      {
+        "name": "cold water",
+        "amount": "60ml"
+      }
+    ],
+    "steps": [
+      "Dice strawberries and mix with sugar in a small bowl.",
+      "Let the strawberries sit for 15–30 minutes until they release juice and become syrupy.",
+      "Gently mash the strawberries and add them to the bottom of a tall glass.",
+      "Fill the glass with ice and slowly pour milk over the strawberry layer.",
+      "Whisk hojicha powder with cold water until smooth.",
+      "Slowly pour the prepared hojicha over the ice to create a layered drink and serve."
+    ],
+    "image": "strawberry-hojicha-latte.png",
+    "id": "strawberry-hojicha-latte"
+  },
+  {
+    "category": "warm drinks",
+    "name": "maple hojicha latte macchiato",
+    "description": "A layered latte with maple-sweetened milk and roasted hojicha poured through the foam.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "milk",
+        "amount": "180ml"
+      },
+      {
+        "name": "maple syrup",
+        "amount": "15ml"
+      },
+      {
+        "name": "hojicha powder",
+        "amount": "2g"
+      },
+      {
+        "name": "filtered water",
+        "amount": "60ml"
+      }
+    ],
+    "steps": [
+      "Steam and froth the milk together with maple syrup until creamy and foamy.",
+      "Slowly pour the foamed milk into a glass or mug.",
+      "Whisk hojicha powder with filtered hot water (around 80°C) until smooth.",
+      "Slowly pour the whisked hojicha into the center of the milk foam to create layers.",
+      "Serve immediately and enjoy."
+    ],
+    "image": "maple-hojicha-latte-macchiato.png",
+    "id": "maple-hojicha-latte-macchiato"
+  },
+  {
+    "category": "warm drinks",
+    "name": "hojicha rose tea latte",
+    "description": "A floral latte combining fragrant rose tea with smooth roasted hojicha and milk.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "dried rose buds",
+        "amount": "2g"
+      },
+      {
+        "name": "filtered water",
+        "amount": "100ml"
+      },
+      {
+        "name": "hojicha powder",
+        "amount": "2g"
+      },
+      {
+        "name": "maple syrup",
+        "amount": "5ml"
+      },
+      {
+        "name": "milk",
+        "amount": "140ml"
+      },
+      {
+        "name": "dried rose petals",
+        "amount": "1g"
+      }
+    ],
+    "steps": [
+      "Steep dried rose buds in filtered water at 95°C for 5 minutes.",
+      "Whisk hojicha powder with half of the rose tea until fully dissolved, then add the remaining rose tea and stir.",
+      "Add maple syrup and mix well.",
+      "Steam and froth the milk, then pour into the hojicha-rose tea mixture.",
+      "Lightly crush a few dried rose buds and sprinkle with dried rose petals on top for garnish.",
+      "Serve warm and enjoy."
+    ],
+    "image": "hojicha-rose-tea-latte.png",
+    "id": "hojicha-rose-tea-latte"
+  },
+  {
+    "category": "warm drinks",
+    "name": "lavender hojicha latte",
+    "description": "A calming latte made with roasted hojicha tea and fragrant lavender infusion.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "dried lavender buds",
+        "amount": "2g"
+      },
+      {
+        "name": "filtered water",
+        "amount": "100ml"
+      },
+      {
+        "name": "hojicha powder",
+        "amount": "2g"
+      },
+      {
+        "name": "maple syrup",
+        "amount": "5ml"
+      },
+      {
+        "name": "milk",
+        "amount": "140ml"
+      },
+      {
+        "name": "dried lavender buds (garnish)",
+        "amount": "1g"
+      }
+    ],
+    "steps": [
+      "Steep dried lavender buds in filtered water at 95°C for 5 minutes.",
+      "Whisk hojicha powder with half of the lavender tea until fully dissolved.",
+      "Add the remaining lavender tea and maple syrup, mixing well.",
+      "Steam and froth the milk, then pour onto the hojicha-lavender mixture.",
+      "Lightly sprinkle dried lavender buds on top for garnish.",
+      "Serve warm and enjoy."
+    ],
+    "image": "lavender-hojicha-latte.png",
+    "id": "lavender-hojicha-latte"
+  },
+  {
+    "id": "flat-white",
+    "name": "flat white",
+    "category": "warm drinks",
+    "description": "A compact espresso drink with warm milk and a fine, silky layer of foam.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "espresso",
+        "amount": "40ml"
+      },
+      {
+        "name": "milk",
+        "amount": "120ml"
+      }
+    ],
+    "steps": [
+      "Prepare the espresso and pour it into a small cup.",
+      "Warm the milk until steamy but not boiling.",
+      "Froth briefly to create fine bubbles, then tap the jug gently to settle any large bubbles.",
+      "Pour the milk slowly into the espresso, keeping the foam layer thin.",
+      "Serve immediately."
+    ],
+    "image": "flat-white.png"
+  },
+  {
+    "id": "cappuccino",
+    "name": "cappuccino",
+    "category": "warm drinks",
+    "description": "Espresso topped with warm milk and a generous cap of soft foam.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "espresso",
+        "amount": "40ml"
+      },
+      {
+        "name": "milk",
+        "amount": "150ml"
+      }
+    ],
+    "steps": [
+      "Prepare the espresso in a cup.",
+      "Heat the milk until steamy but not boiling.",
+      "Froth the warm milk until it has a thick layer of foam.",
+      "Pour the liquid milk into the espresso, holding the foam back with a spoon.",
+      "Spoon the remaining foam onto the drink and serve."
+    ],
+    "image": "cappuccino.png"
+  },
+  {
+    "id": "cafe-mocha",
+    "name": "café mocha",
+    "category": "warm drinks",
+    "description": "A comforting blend of coffee, cocoa, and warm milk.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "espresso",
+        "amount": "40ml"
+      },
+      {
+        "name": "milk",
+        "amount": "180ml"
+      },
+      {
+        "name": "cocoa powder",
+        "amount": "6g"
+      },
+      {
+        "name": "sugar",
+        "amount": "8g"
+      },
+      {
+        "name": "hot water",
+        "amount": "15ml"
+      }
+    ],
+    "steps": [
+      "Mix the cocoa powder and sugar with the hot water in a cup to make a smooth paste.",
+      "Prepare the espresso and stir it into the cocoa paste.",
+      "Heat the milk until steamy but not boiling.",
+      "Froth the milk lightly, then pour it into the chocolate coffee.",
+      "Stir gently and serve warm."
+    ],
+    "image": "cafe-mocha.png"
+  },
+  {
+    "id": "honey-cinnamon-latte",
+    "name": "honey cinnamon latte",
+    "category": "warm drinks",
+    "description": "A mellow coffee latte sweetened with honey and a hint of cinnamon.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "espresso",
+        "amount": "40ml"
+      },
+      {
+        "name": "milk",
+        "amount": "180ml"
+      },
+      {
+        "name": "honey",
+        "amount": "10ml"
+      },
+      {
+        "name": "ground cinnamon",
+        "amount": "small pinch"
+      }
+    ],
+    "steps": [
+      "Prepare the espresso in a cup.",
+      "Stir the honey and cinnamon into the hot espresso.",
+      "Warm the milk until steamy but not boiling.",
+      "Froth the milk lightly and pour it into the cup.",
+      "Stir gently before serving."
+    ],
+    "image": "honey-cinnamon-latte.png"
+  },
+  {
+    "id": "cardamom-latte",
+    "name": "cardamom latte",
+    "category": "warm drinks",
+    "description": "Warm milk and espresso scented with a small pinch of ground cardamom.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "espresso",
+        "amount": "40ml"
+      },
+      {
+        "name": "milk",
+        "amount": "180ml"
+      },
+      {
+        "name": "ground cardamom",
+        "amount": "small pinch"
+      },
+      {
+        "name": "maple syrup",
+        "amount": "5ml"
+      }
+    ],
+    "steps": [
+      "Prepare the espresso in a cup.",
+      "Combine the milk and cardamom in a small saucepan.",
+      "Warm gently until steamy but not boiling, stirring to disperse the spice.",
+      "Stir the maple syrup into the espresso.",
+      "Froth the spiced milk lightly and pour it over the espresso."
+    ],
+    "image": "cardamom-latte.png"
+  },
+  {
+    "id": "vanilla-iced-latte",
+    "name": "vanilla iced latte",
+    "category": "cold drinks",
+    "description": "A simple iced coffee with creamy milk and soft vanilla sweetness.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "espresso",
+        "amount": "40ml"
+      },
+      {
+        "name": "milk",
+        "amount": "180ml"
+      },
+      {
+        "name": "vanilla syrup",
+        "amount": "10ml"
+      },
+      {
+        "name": "ice",
+        "amount": "120g"
+      }
+    ],
+    "steps": [
+      "Prepare the espresso, stir in the vanilla syrup, and let it cool until no longer hot.",
+      "Fill a tall glass with the ice.",
+      "Pour the milk over the ice.",
+      "Add the cooled vanilla espresso.",
+      "Stir gently and serve cold."
+    ],
+    "image": "vanilla-iced-latte.png"
+  },
+  {
+    "id": "iced-americano",
+    "name": "iced americano",
+    "category": "cold drinks",
+    "description": "Chilled espresso and water over ice for a light, refreshing coffee.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "espresso",
+        "amount": "60ml"
+      },
+      {
+        "name": "cold water",
+        "amount": "150ml"
+      },
+      {
+        "name": "ice",
+        "amount": "120g"
+      }
+    ],
+    "steps": [
+      "Prepare the espresso and let it cool until no longer hot.",
+      "Fill a glass with the ice.",
+      "Pour the cold water over the ice.",
+      "Add the cooled espresso.",
+      "Stir once and serve immediately."
+    ],
+    "image": "iced-americano.png"
+  },
+  {
+    "id": "espresso-tonic",
+    "name": "espresso tonic",
+    "category": "cold drinks",
+    "description": "A crisp, bittersweet drink with espresso floating over chilled tonic.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "espresso",
+        "amount": "40ml"
+      },
+      {
+        "name": "tonic water",
+        "amount": "150ml"
+      },
+      {
+        "name": "ice",
+        "amount": "120g"
+      },
+      {
+        "name": "orange slice",
+        "amount": "1 thin slice"
+      }
+    ],
+    "steps": [
+      "Prepare the espresso and let it cool completely.",
+      "Fill a tall glass with ice and add the orange slice.",
+      "Pour the chilled tonic water into the glass, leaving room at the top.",
+      "Slowly pour the cooled espresso over the back of a spoon onto the tonic to limit foaming.",
+      "Stir gently if desired and serve immediately."
+    ],
+    "image": "espresso-tonic.png"
+  },
+  {
+    "id": "shaken-brown-sugar-espresso",
+    "name": "shaken brown sugar espresso",
+    "category": "cold drinks",
+    "description": "Cooled espresso shaken with brown sugar and ice, then finished with milk.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "espresso",
+        "amount": "60ml"
+      },
+      {
+        "name": "brown sugar",
+        "amount": "8g"
+      },
+      {
+        "name": "milk",
+        "amount": "100ml"
+      },
+      {
+        "name": "ice",
+        "amount": "140g"
+      }
+    ],
+    "steps": [
+      "Prepare the espresso and stir in the brown sugar until dissolved.",
+      "Let the sweetened espresso cool completely before putting it in a closed shaker.",
+      "Put 60g of the ice and the cooled espresso into a cocktail shaker. Close and shake for about 10 seconds.",
+      "Fill a glass with the remaining 80g ice and strain the shaken espresso into it.",
+      "Pour the milk over the coffee and serve."
+    ],
+    "image": "shaken-brown-sugar-espresso.png"
+  },
+  {
+    "id": "maple-oat-latte",
+    "name": "maple oat latte",
+    "category": "warm drinks",
+    "description": "A soft, gently sweet coffee latte with oat milk and maple syrup.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "espresso",
+        "amount": "40ml"
+      },
+      {
+        "name": "oat milk",
+        "amount": "180ml"
+      },
+      {
+        "name": "maple syrup",
+        "amount": "10ml"
+      }
+    ],
+    "steps": [
+      "Prepare the espresso in a cup.",
+      "Stir in the maple syrup.",
+      "Warm the oat milk until steamy but not boiling.",
+      "Froth the oat milk lightly.",
+      "Pour the oat milk into the espresso and serve."
+    ],
+    "image": "maple-oat-latte.png"
+  },
+  {
+    "id": "orange-mocha",
+    "name": "orange mocha",
+    "category": "warm drinks",
+    "description": "Chocolate coffee with a bright orange note and warm milk.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "espresso",
+        "amount": "40ml"
+      },
+      {
+        "name": "milk",
+        "amount": "180ml"
+      },
+      {
+        "name": "cocoa powder",
+        "amount": "6g"
+      },
+      {
+        "name": "sugar",
+        "amount": "8g"
+      },
+      {
+        "name": "hot water",
+        "amount": "15ml"
+      },
+      {
+        "name": "orange zest",
+        "amount": "1/4 teaspoon, finely grated"
+      }
+    ],
+    "steps": [
+      "Mix the cocoa powder, sugar, and hot water in a cup until smooth.",
+      "Prepare the espresso and stir it into the cocoa paste.",
+      "Warm the milk with the orange zest until steamy but not boiling.",
+      "Let the milk stand for 2 minutes, then strain through a fine sieve.",
+      "Pour the orange-scented milk into the chocolate coffee and stir."
+    ],
+    "image": "orange-mocha.png"
+  },
+  {
+    "id": "iced-lavender-latte",
+    "name": "iced lavender latte",
+    "category": "cold drinks",
+    "description": "A lightly floral iced coffee made with culinary lavender syrup.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "espresso",
+        "amount": "40ml"
+      },
+      {
+        "name": "milk",
+        "amount": "180ml"
+      },
+      {
+        "name": "lavender syrup",
+        "amount": "10ml, food-grade"
+      },
+      {
+        "name": "ice",
+        "amount": "120g"
+      }
+    ],
+    "steps": [
+      "Prepare the espresso and mix in the lavender syrup.",
+      "Let the espresso cool until no longer hot.",
+      "Fill a glass with the ice.",
+      "Pour in the milk, then add the cooled espresso.",
+      "Stir gently and serve."
+    ],
+    "image": "iced-lavender-latte.png"
+  },
+  {
+    "id": "spiced-chai-latte",
+    "name": "spiced chai latte",
+    "category": "warm drinks",
+    "description": "Black tea simmered with ginger and whole spices, then softened with milk.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "black tea",
+        "amount": "1 tea bag"
+      },
+      {
+        "name": "water",
+        "amount": "120ml"
+      },
+      {
+        "name": "milk",
+        "amount": "150ml"
+      },
+      {
+        "name": "fresh ginger",
+        "amount": "2 thin slices"
+      },
+      {
+        "name": "cardamom pods",
+        "amount": "2, lightly crushed"
+      },
+      {
+        "name": "cinnamon stick",
+        "amount": "1 small piece"
+      },
+      {
+        "name": "clove",
+        "amount": "1"
+      },
+      {
+        "name": "sugar",
+        "amount": "8g"
+      }
+    ],
+    "steps": [
+      "Place the water, ginger, cardamom, cinnamon, and clove in a small saucepan.",
+      "Bring to a gentle simmer and cook for 5 minutes.",
+      "Add the black tea bag and steep over low heat for 3 minutes.",
+      "Remove the tea bag, then add the milk and sugar.",
+      "Warm gently without boiling, stirring until the sugar dissolves.",
+      "Strain the drink through a fine sieve into a cup and serve."
+    ],
+    "image": "spiced-chai-latte.png"
+  },
+  {
+    "id": "dirty-chai-latte",
+    "name": "dirty chai latte",
+    "category": "warm drinks",
+    "description": "A gently spiced black-tea latte with an extra shot of espresso.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "chai tea",
+        "amount": "1 tea bag"
+      },
+      {
+        "name": "hot water",
+        "amount": "80ml"
+      },
+      {
+        "name": "espresso",
+        "amount": "40ml"
+      },
+      {
+        "name": "milk",
+        "amount": "150ml"
+      },
+      {
+        "name": "maple syrup",
+        "amount": "5ml"
+      }
+    ],
+    "steps": [
+      "Steep the chai tea bag in the hot water for 5 minutes, or for the time on its packet.",
+      "Remove the tea bag.",
+      "Prepare the espresso and add it to the brewed chai.",
+      "Stir in the maple syrup.",
+      "Warm and lightly froth the milk, then pour it into the chai coffee."
+    ],
+    "image": "dirty-chai-latte.png"
+  },
+  {
+    "id": "london-fog",
+    "name": "london fog",
+    "category": "warm drinks",
+    "description": "A fragrant Earl Grey tea latte with vanilla and softly frothed milk.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "Earl Grey tea",
+        "amount": "1 tea bag"
+      },
+      {
+        "name": "hot water",
+        "amount": "120ml"
+      },
+      {
+        "name": "milk",
+        "amount": "150ml"
+      },
+      {
+        "name": "vanilla syrup",
+        "amount": "10ml"
+      }
+    ],
+    "steps": [
+      "Steep the Earl Grey tea bag in the hot water for 3–4 minutes.",
+      "Remove the tea bag and stir in the vanilla syrup.",
+      "Warm the milk until steamy but not boiling.",
+      "Froth the milk lightly.",
+      "Pour the milk into the tea and spoon the foam on top."
+    ],
+    "image": "london-fog.png"
+  },
+  {
+    "id": "iced-peach-black-tea",
+    "name": "iced peach black tea",
+    "category": "cold drinks",
+    "description": "Black tea chilled with mashed ripe peach and a little honey.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "black tea",
+        "amount": "1 tea bag"
+      },
+      {
+        "name": "hot water",
+        "amount": "180ml"
+      },
+      {
+        "name": "ripe peach",
+        "amount": "80g flesh, stone removed"
+      },
+      {
+        "name": "honey",
+        "amount": "10ml"
+      },
+      {
+        "name": "ice",
+        "amount": "120g"
+      }
+    ],
+    "steps": [
+      "Steep the black tea bag in the hot water for 3 minutes.",
+      "Remove the tea bag, stir in the honey, and let the tea cool.",
+      "Mash the peach flesh in a bowl until juicy.",
+      "Add the peach to a glass and fill with ice.",
+      "Pour the cooled tea over the fruit and stir."
+    ],
+    "image": "iced-peach-black-tea.png"
+  },
+  {
+    "id": "honey-lemon-ginger-tea",
+    "name": "honey lemon ginger tea",
+    "category": "warm drinks",
+    "description": "A warming ginger infusion with lemon juice and honey.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "water",
+        "amount": "250ml"
+      },
+      {
+        "name": "fresh ginger",
+        "amount": "8g, thinly sliced"
+      },
+      {
+        "name": "lemon juice",
+        "amount": "15ml"
+      },
+      {
+        "name": "honey",
+        "amount": "10ml"
+      }
+    ],
+    "steps": [
+      "Put the water and sliced ginger in a small saucepan.",
+      "Bring to a gentle simmer and simmer for 5 minutes.",
+      "Strain the ginger infusion into a heatproof cup.",
+      "Stir in the lemon juice and honey.",
+      "Let the drink cool to a comfortable drinking temperature before serving."
+    ],
+    "image": "honey-lemon-ginger-tea.png"
+  },
+  {
+    "id": "mint-green-tea",
+    "name": "mint green tea",
+    "category": "warm drinks",
+    "description": "A light green-tea infusion with fresh mint leaves.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "green tea",
+        "amount": "1 tea bag"
+      },
+      {
+        "name": "water",
+        "amount": "250ml"
+      },
+      {
+        "name": "fresh mint",
+        "amount": "6 leaves"
+      },
+      {
+        "name": "honey",
+        "amount": "5ml, optional"
+      }
+    ],
+    "steps": [
+      "Heat the water to the temperature recommended on the tea packet; around 80°C suits many green teas.",
+      "Place the tea bag and mint leaves in a heatproof cup.",
+      "Pour in the hot water and steep for 2–3 minutes, or follow the packet time.",
+      "Remove the tea bag and mint leaves.",
+      "Stir in the optional honey and serve."
+    ],
+    "image": "mint-green-tea.png"
+  },
+  {
+    "id": "rose-milk-tea",
+    "name": "rose milk tea",
+    "category": "warm drinks",
+    "description": "Black tea with warm milk and a small splash of culinary rose water.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "black tea",
+        "amount": "1 tea bag"
+      },
+      {
+        "name": "hot water",
+        "amount": "120ml"
+      },
+      {
+        "name": "milk",
+        "amount": "150ml"
+      },
+      {
+        "name": "sugar",
+        "amount": "8g"
+      },
+      {
+        "name": "rose water",
+        "amount": "1/4 teaspoon, food-grade"
+      }
+    ],
+    "steps": [
+      "Steep the black tea bag in the hot water for 3 minutes.",
+      "Remove the tea bag and stir in the sugar until dissolved.",
+      "Warm the milk until steamy but not boiling.",
+      "Pour the warm milk into the tea.",
+      "Stir in the rose water and serve."
+    ],
+    "image": "rose-milk-tea.png"
+  },
+  {
+    "id": "classic-hot-chocolate",
+    "name": "classic hot chocolate",
+    "category": "warm drinks",
+    "description": "A rich, smooth hot chocolate made with cocoa and dark chocolate.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "milk",
+        "amount": "250ml"
+      },
+      {
+        "name": "cocoa powder",
+        "amount": "6g"
+      },
+      {
+        "name": "dark chocolate",
+        "amount": "20g, chopped"
+      },
+      {
+        "name": "sugar",
+        "amount": "5g"
+      }
+    ],
+    "steps": [
+      "Mix the cocoa powder and sugar with 30ml of the milk in a small saucepan to form a smooth paste.",
+      "Gradually whisk in the remaining 220ml milk.",
+      "Warm gently, stirring, until steamy but not boiling.",
+      "Add the chopped dark chocolate and stir until fully melted.",
+      "Pour into a cup and serve."
+    ],
+    "image": "classic-hot-chocolate.png"
+  },
+  {
+    "id": "cinnamon-hot-chocolate",
+    "name": "cinnamon hot chocolate",
+    "category": "warm drinks",
+    "description": "Creamy dark hot chocolate with cinnamon and a little vanilla.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "milk",
+        "amount": "250ml"
+      },
+      {
+        "name": "cocoa powder",
+        "amount": "6g"
+      },
+      {
+        "name": "dark chocolate",
+        "amount": "20g, chopped"
+      },
+      {
+        "name": "sugar",
+        "amount": "5g"
+      },
+      {
+        "name": "ground cinnamon",
+        "amount": "1/4 teaspoon"
+      },
+      {
+        "name": "vanilla extract",
+        "amount": "1/4 teaspoon"
+      }
+    ],
+    "steps": [
+      "Mix the cocoa powder, sugar, and cinnamon with 30ml of the milk in a small saucepan.",
+      "Whisk in the remaining 220ml milk until smooth.",
+      "Warm gently until steamy but not boiling.",
+      "Add the chopped chocolate and stir until melted.",
+      "Stir in the vanilla extract and pour into a cup."
+    ],
+    "image": "cinnamon-hot-chocolate.png"
+  },
+  {
+    "id": "iced-chocolate-milk",
+    "name": "iced chocolate milk",
+    "category": "cold drinks",
+    "description": "A cold, creamy cocoa drink with a smooth homemade chocolate base.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "cocoa powder",
+        "amount": "8g"
+      },
+      {
+        "name": "sugar",
+        "amount": "10g"
+      },
+      {
+        "name": "hot water",
+        "amount": "25ml"
+      },
+      {
+        "name": "milk",
+        "amount": "220ml"
+      },
+      {
+        "name": "ice",
+        "amount": "100g"
+      }
+    ],
+    "steps": [
+      "Mix the cocoa powder and sugar with the hot water until smooth.",
+      "Let the cocoa mixture cool until no longer hot.",
+      "Stir 50ml of the milk into the cocoa mixture to loosen it.",
+      "Fill a glass with ice, then add the chocolate base.",
+      "Pour in the remaining 170ml milk and stir thoroughly."
+    ],
+    "image": "iced-chocolate-milk.png"
+  },
+  {
+    "id": "strawberry-milk",
+    "name": "strawberry milk",
+    "category": "cold drinks",
+    "description": "Fresh strawberries and milk blended into a lightly sweet pink drink.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "strawberries",
+        "amount": "100g, hulled"
+      },
+      {
+        "name": "milk",
+        "amount": "200ml, chilled"
+      },
+      {
+        "name": "sugar",
+        "amount": "8g"
+      }
+    ],
+    "steps": [
+      "Wash and hull the strawberries, then cut them into pieces.",
+      "Place the strawberries, chilled milk, and sugar in a blender.",
+      "Blend until smooth.",
+      "Pour into a glass and serve immediately."
+    ],
+    "image": "strawberry-milk.png"
+  },
+  {
+    "id": "mango-lassi",
+    "name": "mango lassi",
+    "category": "cold drinks",
+    "description": "A thick, tangy mango and yogurt drink with a hint of cardamom.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "ripe mango",
+        "amount": "120g flesh"
+      },
+      {
+        "name": "plain yogurt",
+        "amount": "150g"
+      },
+      {
+        "name": "milk",
+        "amount": "60ml, chilled"
+      },
+      {
+        "name": "sugar",
+        "amount": "5g, optional"
+      },
+      {
+        "name": "ground cardamom",
+        "amount": "small pinch"
+      }
+    ],
+    "steps": [
+      "Peel the mango, remove its stone, and measure 120g of flesh.",
+      "Put the mango, yogurt, chilled milk, and cardamom in a blender.",
+      "Add the optional sugar if the mango needs extra sweetness.",
+      "Blend until smooth and creamy.",
+      "Pour into a glass and serve cold."
+    ],
+    "image": "mango-lassi.png"
+  },
+  {
+    "id": "raspberry-lemonade",
+    "name": "raspberry lemonade",
+    "category": "cold drinks",
+    "description": "Tart lemon and fresh raspberries over ice, lightly sweetened with sugar.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "raspberries",
+        "amount": "50g"
+      },
+      {
+        "name": "lemon juice",
+        "amount": "30ml"
+      },
+      {
+        "name": "sugar",
+        "amount": "15g"
+      },
+      {
+        "name": "warm water",
+        "amount": "30ml"
+      },
+      {
+        "name": "cold water",
+        "amount": "150ml"
+      },
+      {
+        "name": "ice",
+        "amount": "120g"
+      }
+    ],
+    "steps": [
+      "Stir the sugar into the warm water until dissolved, then let it cool.",
+      "Mash the raspberries in a bowl and pass them through a fine sieve to remove the seeds.",
+      "Mix the raspberry juice, lemon juice, cooled syrup, and cold water.",
+      "Fill a glass with ice.",
+      "Pour the lemonade over the ice and stir."
+    ],
+    "image": "raspberry-lemonade.png"
+  },
+  {
+    "id": "cucumber-mint-cooler",
+    "name": "cucumber mint cooler",
+    "category": "cold drinks",
+    "description": "A fresh sparkling drink with cucumber, mint, and lime.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "cucumber",
+        "amount": "50g, thinly sliced"
+      },
+      {
+        "name": "fresh mint",
+        "amount": "6 leaves"
+      },
+      {
+        "name": "lime juice",
+        "amount": "15ml"
+      },
+      {
+        "name": "simple syrup",
+        "amount": "10ml"
+      },
+      {
+        "name": "sparkling water",
+        "amount": "180ml, chilled"
+      },
+      {
+        "name": "ice",
+        "amount": "120g"
+      }
+    ],
+    "steps": [
+      "Put the cucumber slices and mint in a tall glass.",
+      "Press gently with a muddler or the back of a spoon to release their flavor.",
+      "Add the lime juice and simple syrup, then stir.",
+      "Fill the glass with ice.",
+      "Top with the chilled sparkling water and stir gently."
+    ],
+    "image": "cucumber-mint-cooler.png"
+  },
+  {
+    "id": "sparkling-hibiscus-tea",
+    "name": "sparkling hibiscus tea",
+    "category": "cold drinks",
+    "description": "A jewel-red hibiscus infusion brightened with sparkling water and orange.",
+    "portion": 1,
+    "ingredients": [
+      {
+        "name": "dried hibiscus",
+        "amount": "3g, food-grade"
+      },
+      {
+        "name": "hot water",
+        "amount": "120ml"
+      },
+      {
+        "name": "sugar",
+        "amount": "10g"
+      },
+      {
+        "name": "sparkling water",
+        "amount": "120ml, chilled"
+      },
+      {
+        "name": "ice",
+        "amount": "120g"
+      },
+      {
+        "name": "orange slice",
+        "amount": "1 thin slice"
+      }
+    ],
+    "steps": [
+      "Steep the dried hibiscus in the hot water for 5 minutes.",
+      "Strain into a heatproof jug and stir in the sugar until dissolved.",
+      "Let the infusion cool completely.",
+      "Fill a glass with ice and add the orange slice.",
+      "Pour in the cooled hibiscus infusion, top with sparkling water, and stir gently."
+    ],
+    "image": "sparkling-hibiscus-tea.png"
+  }
 ]

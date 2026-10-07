@@ -1,30 +1,162 @@
-.button-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
+.step-assets {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  min-height: 30px;
+}
+.step-asset {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 74px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.step-asset img {
+  object-fit: contain;
+  width: 58px;
+  height: 58px;
+}
+.asset-placeholder {
+  height: 58px;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  color: var(--brass);
+}
+.illustration-stage {
+  display: grid;
+  place-items: center;
+  min-height: 290px;
+  padding: 16px 0;
+}
+.illustration-stage figure {
+  margin: 0;
+  width: 100%;
+  text-align: center;
+}
+.cover-preview {
+  width: 240px;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid #c5a16a88;
+  padding: 6px;
+  margin: auto;
+  box-shadow: 0 10px 30px #0003;
+}
+.illustration-stage figcaption {
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  margin-top: 15px;
+}
+.generated-result {
+  width: 100%;
+  max-height: 340px;
+  object-fit: contain;
+}
+.animation-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 0 20px;
+}
+.animation-controls button {
+  font-size: 11px;
+  padding: 7px 12px;
+  min-height: 36px;
+}
+.animation-controls > span {
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+  width: 100%;
+}
+.action-scene {
+  width: 100%;
+  max-width: 310px;
+  text-align: center;
+}
+.action-scene svg {
+  width: 100%;
+  height: 230px;
+}
+.action-scene p {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 23px;
+  color: var(--sage);
+  margin: 0;
+}
+.action-scene .stir-tool,
+.action-scene .pour-stream,
+.action-scene .steam-lines {
+  display: none;
+  animation-play-state: paused !important;
+}
+.action-whisk .stir-tool,
+.action-froth .stir-tool,
+.action-stir .stir-tool {
+  display: block;
+  transform-origin: 160px 140px;
+  animation: stir 1s ease-in-out infinite;
+}
+.action-pour .pour-stream {
+  display: block;
+  animation: pour 1s ease-in-out infinite;
+}
+.action-heat .steam-lines,
+.action-steep .steam-lines {
+  display: block;
+  animation: steam 2s ease-in-out infinite;
+}
+.action-chill svg,
+.action-prepare svg {
+  animation: breathe 2s ease-in-out infinite;
+  animation-play-state: paused;
+}
+.action-scene.is-playing .stir-tool,
+.action-scene.is-playing .pour-stream,
+.action-scene.is-playing .steam-lines,
+.action-scene.is-playing svg {
+  animation-play-state: running !important;
+}
+@keyframes stir {
+  0%,
+  100% {
+    transform: rotate(-12deg);
+  }
+  50% {
+    transform: rotate(12deg);
+  }
+}
+@keyframes pour {
+  50% {
+    opacity: 0.45;
+    transform: translateY(5px);
+  }
+}
+@keyframes steam {
+  50% {
+    opacity: 0.3;
+    transform: translateY(-8px);
+  }
+}
+@keyframes breathe {
+  50% {
+    opacity: 0.65;
+  }
 }
 
-.buttons {
-    border-radius: 1px;
-    border: 1px solid #4f4239;
-    box-shadow:  5px 6px 6px 0px #1a0401d7;
-    background-color: transparent;
-    font-size: 1rem;
-    padding: 5px 50px;
-    margin: 0 10px 0 10px;
-    justify-content: center;
-    text-align: center;
-    color:#d3dec3;
+.cover-preview {
+  height: auto;
 }
 
-.buttons:active {
-    transform: scale(0.97);
-    box-shadow: 2px 3px 3px 0px #1a0401d7;
-}
-
-.pressed {
-    border: 1px solid #4e3f27d5;
-    box-shadow:  5px 6px 6px 0px #1a0401cb;
-    background-color: #1a04019a;
+.animation-controls button {
+  min-height: 44px;
 }

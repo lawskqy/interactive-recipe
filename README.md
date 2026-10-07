@@ -1,113 +1,142 @@
-# Interactive Recipe Tutorial App
+# The Quiet Cup
 
-An AI-powered cooking assistant that teaches you recipes step-by-step through animated ingredient visualizations, real-time chat, and generated imagery.
+A local cafe recipe journal with **50 illustrated drinks: 27 warm and 23 cold**. Browse the collection, follow preparation steps, and ask an optional Gemini companion to help personalize a recipe.
 
+## Features
 
-### Features:
+- **Browse:** filter by temperature, search recipes or ingredients, and preview a drink before starting. Search filters stay in the URL and are preserved when returning from a recipe.
+- **Prepare:** check off ingredients, navigate the method, explicitly mark completed steps, and restart preparation. Short action illustrations support pause, reset and reduced motion; they are demonstrations, not cooking timers.
+- **Personalize:** ask naturally in chat, such as "Can you add vanilla?" Review the proposal, then click **Yes, apply changes** or type **yes**. Ingredients, method and tutorial update immediately. Type **no** to discard, or "yes, but less sugar" to request a revised proposal. Undo restores the preceding recipe.
+- **Resume:** recipes, pending proposals, the last 40 chat messages, drafts, checklists and preparation progress are saved in this browser. Storage failures are shown in the interface.
+- **Illustrate:** existing watercolor covers and ingredient/tool artwork work without AI. New step illustrations are generated only when requested; ComfyUI can optionally remove their backgrounds.
+- **Recover:** missing artwork falls back to the original cover or a bundled placeholder. Invalid data and failed AI requests show recoverable errors.
 
-- Animated Canvas Tutorial — Ingredients and tools animate toward each other in a step-by-step visual, culminating in a particle explosion and an AI-generated result image.
-- AI Recipe Chat — Ask questions about any recipe and get contextual answers. The agent can also dynamically modify the recipe in-conversation (adjust portions, swap ingredients, etc.).
-- Step-by-Step Breakdown — Each recipe step is parsed server-side to extract relevant ingredients, tools, and actions.
-- AI Image Generation — Ingredient and result images are generated and segmented automatically via a backend pipeline.
-- Recipe Collection — Browse, filter (warm/cold drinks), and preview recipes before starting.
+## Stack
 
+React 19, TypeScript, React Router and Vite on the frontend; Express 5 and the Google GenAI Node SDK on the backend. Python and Google ADK are no longer required by the app. ComfyUI is an optional, separate installation.
 
-### Tech Stack:
-  Frontend:
+## Run locally
 
-  -  React + TypeScript
-  -  React Router
-  -  HTML5 Canvas API (custom animation engine)
-  -  CSS (custom design system — no UI library)
+Use Node.js **^20.19.0 or >=22.12.0** and npm. The project was checked with Node 24.21.0. These commands use PowerShell; use `npm.cmd` if PowerShell blocks `npm.ps1`.
 
-  Backend
+From the repository root, set up the backend:
 
-  -  Node.js + Express (REST API, localhost:8080)
-  -  Python 3.14 (AI agent subprocesses)
-  -  Google ADK (LlmAgent, Runner, InMemorySessionService)
-  -  Gemini 2.5 Flash / Flash-Lite (chat, step separation, image generation)
-  -  ComfyUI (local diffusion workflow runner)
-
-
-### Getting Started
-  Prerequisites
-
-  -  Node.js 18+
-  -  Python 3.10+
-  -  ComfyUI running locally at http://127.0.0.1:8188
-  -  ComfyUI custom nodes: ComfyUI-segment-anything
-  -  Models downloaded into ComfyUI:
-
-    -  GroundingDINO_SwinB 
-    -  sam_hq_vit_h 
-
-
-  -  A Google Gemini API key
-
-
-Backend Setup:
-
-```bash
-
-  npm install
-  pip install google-adk google-genai python-dotenv
+```powershell
+cd backend
+npm ci
+if (!(Test-Path .env)) { Copy-Item .env.example .env }
+npm start
 ```
 
-Create .env file in /backend, copy the variables below putting there your values:
+In another terminal, from the repository root:
+
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
+
+Open **http://127.0.0.1:5173**. The backend listens at **http://127.0.0.1:8080**. Vite proxies API and media requests to it. Browsing and local preparation work without an API key; the frontend can also display its optimized artwork without the backend running.
+
+On macOS/Linux, use the same npm commands and copy the environment template with `cp` if `.env` does not already exist.
+
+## AI configuration
+
+Add a Gemini key to **`backend/.env`**, then restart the backend:
+
 ```env
-  GOOGLE_API_KEY=your_key_here
-  GEMINI_API_KEY=your_key_here
-  PYTHON_PATH=C:\Users\you\AppData\Local\Programs\Python\Python314\python.exe
-  COMFY_OUTPUT_DIR=D:/ComfyUI/output
+GEMINI_API_KEY=your_key_here
+CHAT_MODEL=gemini-3.5-flash-lite
+IMAGE_MODEL=gemini-2.5-flash-image
+PORT=8080
+COMFY_OUTPUT_DIR=
 ```
 
-GEMINI_API_KEY — get yours at aistudio.google.com
-PYTHON_PATH — path to your Python executable (/usr/bin/python3 on Mac/Linux)
-COMFY_OUTPUT_DIR — path to your local ComfyUI output folder
+One key is used for chat and image generation. `GOOGLE_API_KEY` is accepted as a fallback. Model access, quota and billing depend on the configured Google account. The older 2.5 Flash-Lite text model can return 404 for new users, so the default chat model is 3.5 Flash-Lite.
 
+The health endpoint, `/api/health`, reports whether configuration is present. It does **not** verify credentials, quota or live provider availability. Chat requests send the current recipe, recent conversation and message to Google; image requests send recipe context and reference artwork.
 
-Start the backend:
+`.env` files and their variants are ignored by Git; `.env.example` templates contain public settings only. Never put keys in frontend `VITE_*` variables. If a key has ever been committed, revoke it: ignoring or deleting its file does not remove it from Git history.
 
-```bash
+### Optional ComfyUI background removal
 
-  npm start
+Chat and image generation can run without ComfyUI. To enable background removal, install and run ComfyUI with the segment-anything custom nodes and the workflow's **GroundingDINO SwinB** and **SAM HQ ViT-H** models. Configure:
+
+```env
+COMFY_URL=http://127.0.0.1:8188
+COMFY_OUTPUT_DIR=D:/ComfyUI/output
 ```
 
-Frontend setup:
+Use your actual output directory. ComfyUI must be able to read the backend's input images, and the backend must be able to read ComfyUI's output. The workflow is in `backend/segment-anything.json`. Its custom-node, model and path compatibility still needs a live check on the target installation. New illustration requests fall back to the original generated image if optional segmentation fails.
 
-```bash
+## Production preview
 
-  cd frontend
-  npm install
-  npm run dev
+Install dependencies in both packages, then:
+
+```powershell
+cd frontend
+npm run build
+cd ../backend
+npm start
 ```
 
-### Collection Page
-Browse and filter all available recipes. Click any card to preview the recipe before starting.
+Open **http://127.0.0.1:8080**. Build before starting or restarting the backend. Keep `frontend/public/images` available: the backend uses original covers as AI references and image fallbacks. The frontend build ships only optimized catalog and manifest assets.
 
-![collection page](collection.png)
+The server deliberately binds to loopback and validates local Host headers. It is a **local application**, with no user accounts or public authentication. Public hosting requires an authenticated deployment boundary, per-user limits and appropriate media storage. `ALLOWED_ORIGINS` controls browser origins; it is not authentication. `VITE_API_BASE_URL` in `frontend/.env` can select a separate backend, but does not make that backend publicly reachable. If changing `PORT`, also update the Vite proxy targets.
 
-![Collection cold](collection_cold.png) 
+## Project layout
 
-![Modal](modal.png)
+| Path | Purpose |
+| --- | --- |
+| `frontend/src/pages/` | Collection and recipe workspace |
+| `frontend/src/components/` | Recipe sheet, tutorial, artwork fallbacks and chat |
+| `frontend/src/lib/` | API client, recipe validation and browser persistence |
+| `frontend/public/recipes.json` | Recipe catalog |
+| `frontend/public/images/` | Source covers and ingredient/tool artwork |
+| `frontend/public/thumbnails/`, `assets/` | Optimized display images |
+| `frontend/scripts/` | Asset preparation and build validation |
+| `backend/server.js` | HTTP routes, Gemini requests and optional segmentation |
+| `backend/core.js`, `resources.js` | Validation, queues, image cache and request allowance |
+| `backend/test/`, `frontend/tests/` | Backend and browser tests |
+| `.github/workflows/checks.yml` | Secret-pattern check, lint, build and tests |
 
-### Recipe Page
-View the full ingredient list and step-by-step instructions for the selected recipe.
-Switch to the Chat tab to ask questions or request modifications — swap ingredients,
-adjust portions, or make it vegan. The recipe updates live based on the agent's response.
+## Artwork and recipe data
 
-![Recipe board](recipe.png) ![Chat](chat.png) ![Recipe change](recipe-chat.png)
+After adding recipes or replacing source artwork, run `npm run assets:prepare` from `frontend`. It creates 480-pixel WebP covers and small ingredient/tool assets. Commit the source artwork, optimized outputs and manifest together. `npm run build` validates recipe data, unique IDs and referenced asset files, but does not regenerate images.
 
-### Tutorial Board
-Each recipe step gets its own animated visual. Ingredients and tools slide toward the center,
-explode into particles, and reveal an AI-generated image showing the result of that step.
-Navigate between steps using the tabs at the top. Images are generated on the fly and cached
-so switching back to a previous step is instant.
+Recipes use display strings for ingredient amounts, preserving ranges and alternatives. AI edits need user review; deterministic offline serving-size scaling is not implemented. Ingredient/tool matching and action illustrations are approximate aids; the full method remains authoritative.
 
-![Animation](animation.gif)
+## Checks
 
-![Switching tabs](animation2.gif)
+From the repository root:
 
+```powershell
+node scripts/check-secrets.cjs
+cd backend
+npm test
+cd ../frontend
+npm run lint
+npm run build
+npx playwright install chromium
+npm test -- --workers=2
+```
 
+To run browser checks against the production build, from `frontend`:
 
+```powershell
+$env:TEST_PRODUCTION='1'
+npm test -- --workers=2
+Remove-Item Env:TEST_PRODUCTION
+```
 
+The production test server uses port 4180 with provider keys disabled. Automated tests mock AI responses and do not spend API credits. CI runs the production browser suite. The focused secret-pattern check scans current project text, not historical commits or ignored environment files.
+
+Verified locally on 7 October 2026: build and lint, **11 backend tests**, and **38 production browser tests** passed. Coverage includes desktop/mobile Chromium, all 50 recipe routes, automated accessibility, artwork failures, approval by button or typed reply, reload persistence, Undo, Host validation, cache writes and request limits. Mobile tests emulate an iPhone viewport; Safari and Firefox are not covered. Real Gemini chat and a vanilla-addition proposal followed by typed approval were also verified. Live image generation and ComfyUI segmentation remain unverified. The GitHub workflow has not yet been run remotely.
+
+## Local storage and resource limits
+
+Saved preparation is specific to the browser and origin, with no device sync. Clear the site's browser data to remove saved recipes and conversations. Generated images are stored separately in ignored `backend/generated/`.
+
+The backend limits POST requests to 30 per minute per IP, queues provider/image work, caps model output, and maintains a single-server allowance of 100 provider attempts per UTC day. This is not a monetary billing limit or a shared multi-process quota. Text requests are cancelled on disconnect; shared image jobs may finish within their timeout.
+
+Generated PNGs are structurally checked and written atomically, with a 12 MiB per-image limit, 128 MiB generated-image cache limit and seven-day expiry. Expired files are removed on later writes; interrupted temporary files are outside that quota. Model, style and reference-content hashes prevent reuse of obsolete generated illustrations.

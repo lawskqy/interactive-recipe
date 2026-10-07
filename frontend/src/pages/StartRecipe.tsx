@@ -1,368 +1,321 @@
-import { useState, useEffect, useRef } from "react";
-import { useParams } from 'react-router-dom';
-import '../styles/StartRecipe.css';
-import { useNavigate } from "react-router-dom";
-
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useParams } from "react-router-dom";
+import { api } from "../lib/api";
+import { readSession, writeSession } from "../lib/session";
+import {
+  isRecipe,
+  loadRecipes,
+  type Message,
+  type Recipe,
+} from "../lib/recipe";
 import RecipeView from "../components/RecipeView";
 import ChatView from "../components/ChatView";
 import TutorialBoard from "../components/TutorialBoard";
-
-interface Recipe {
-    name: string;
-    steps: string[];
-    ingredients: string[];
-    amount: string[];
-    portion: string;
-}
-
-interface Messages {
-    sender: string;
-    text: string;
-}
-
-interface StepData {
-    ingredients: string[];
-    tools: string[];
-    actions: string[];
-    creates: string[];
-}
-
-const StartRecipe = () => {
-    const navigate = useNavigate();
-    const [recipe, setRecipe] = useState<Recipe | null>(null);
-    const [activeTab, setActiveTab] = useState("Recipe");
-    const [activeBoardTab, setActiveBoardTab] = useState("Recipe tutorial");
-    const [userMessage, setUserMessage] = useState("");
-    const [messages, setMessages] = useState<Array<Messages>>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const container = useRef<HTMLDivElement>(null);
-    const { name } = useParams<{name: string}>();
-    const [ingredientImages, setIngredientImages] = useState<Record<string, string>>(() => {
-        return JSON.parse(localStorage.getItem("ingredientImages") || "{}")
-    });
-    const [activeTutTab, setActiveTutTab] = useState(0);
-    const [stepIngredients, setStepIngredients] = useState<Array<string>>([]);
-    const [stepTools, setStepTools] = useState<Array<string>>([]);
-    const [stepActions, setStepActions] = useState<Array<string>>([]);
-    const [stepResult, setStepResult] = useState<Record<string, string>>({});
-    const [stepData, setStepData] = useState<Record<number, StepData>>({});
-    const [createdItems, setCreatedItems] = useState<string[]>([]);
-    const [assetsReady, setAssetsReady] = useState(false);
-
-    const toImagePath = (name: string) => {
-        return `/images/${name.toLowerCase().replace(/\s+/g, "_").replace(/[^\w_]/g, "")}_seg.png`;
+import "../styles/StartRecipe.css";
+export default function StartRecipe() {
+  const { name } = useParams();
+  const location = useLocation();
+  const collection = typeof location.state?.collection === "string" && location.state.collection.startsWith("/collection?") ? location.state.collection : "/collection";
+  const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [status, setStatus] = useState("loading");
+  const [attempt, setAttempt] = useState(0);
+  const [revision, setRevision] = useState(0);
+  const [previous, setPrevious] = useState<Recipe | null>(null);
+  const [step, setStep] = useState(0);
+  const [tab, setTab] = useState("recipe");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [draft, setDraft] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [lastMessage, setLastMessage] = useState("");
+  const [proposal, setProposal] = useState<Recipe | null>(null);
+  const pending = useRef<Recipe | null>(null);
+  const lastPending = useRef<Recipe | null>(null);
+  const updateProposal = (next: Recipe | null) => {
+    pending.current = next;
+    setProposal(next);
+  };
+  const [checked, setChecked] = useState<number[]>([]);
+  const [completed, setCompleted] = useState<number[]>([]);
+  const [saved, setSaved] = useState(true);
+  const [availability, setAvailability] = useState("Checking assistant availability…");
+  useEffect(() => {
+    const abort = new AbortController();
+    api<{ aiConfigured: boolean }>("health", undefined, abort.signal)
+      .then((health) => setAvailability(health.aiConfigured ? "AI is configured; provider availability is checked when you send." : "AI is not configured. You can still prepare every recipe offline."))
+      .catch(() => { if (!abort.signal.aborted) setAvailability("AI is unavailable. You can still prepare every recipe offline."); });
+    return () => abort.abort();
+  }, []);
+  const controller = useRef<AbortController | null>(null);
+  const sending = useRef(false);
+  useEffect(() => {
+    const abort = new AbortController();
+    loadRecipes(abort.signal)
+      .then((data) => {
+        const found = data.find((r) => r.id === name || r.name === name);
+        if (!found) throw new Error("This recipe could not be found.");
+        const session = readSession(found.id);
+        setRecipe(session?.recipe || found);
+        setPrevious(session?.previous || null);
+        setStep(session?.step || 0);
+        setChecked(session?.checked || []);
+        setCompleted(session?.completed || []);
+        setMessages(session?.messages || []);
+        setDraft(session?.draft || "");
+        updateProposal(session?.proposal || null);
+        setStatus("ready");
+      })
+      .catch((err) => {
+        if (!abort.signal.aborted) setStatus(err.message);
+      });
+    return () => {
+      abort.abort();
+      controller.current?.abort();
     };
-
-    const stepSeparator = (step: string) => {
-        const payload = {
-            current_step: step,
-            ingredients: recipe?.ingredients,
-            created_items: createdItems,
-            all_steps: recipe?.steps
-        }
-
-        fetch("http://localhost:8080/separate", {
-            method: "POST",
-            body: JSON.stringify(payload),
-            headers: { "Content-Type": "application/json" }
-        })
-        .then(response => response.json())
-        .then(data => {
-            const toolsRaw = data.tools || [];
-            let newCreatedItems = createdItems;
-
-            if (data.creates) {
-                newCreatedItems = [...createdItems, data.creates];
-                setCreatedItems(newCreatedItems);
-            }
-
-            const createsRaw = data.creates ? [data.creates] : [];
-            [...toolsRaw, ...createsRaw].forEach(generateImage);
-
-            const ingredientImagesArr = (data.ingredients || []).map((name: string) =>
-                ingredientImages[name] || toImagePath(name)
-            );
-
-            const toolImagesArr = toolsRaw.map((name: string) =>
-                ingredientImages[name] || toImagePath(name)
-            );
-
-            const actionImagesArr = (data.actions || []).map((name: string) =>
-                ingredientImages[name] || toImagePath(name)
-            );
-
-            setStepIngredients(ingredientImagesArr);
-            setStepTools(toolImagesArr);
-            setStepActions(actionImagesArr);
-
-
-            setStepData(prev => ({
-                ...prev,
-                [activeTutTab]: {
-                    ingredients: ingredientImagesArr,
-                    tools: toolImagesArr,
-                    actions: actionImagesArr,
-                    creates: createsRaw
-                }
-            }));
-        }) 
-        .catch(error => console.error("Step separation error:", error));
-    };
-
-    useEffect (() => {
-        if (!recipe) return;
-        const stepText = recipe.steps[activeTutTab];
-
-        if (stepData[activeTutTab]) {
-            setStepIngredients(stepData[activeTutTab].ingredients);
-            setStepTools(stepData[activeTutTab].tools);
-            setStepActions(stepData[activeTutTab].actions);
-        } else {
-            stepSeparator(stepText);
-        }
-    }, [activeTutTab, recipe]);
-
-    useEffect (() => {
-        fetch('/recipes.json')
-            .then(response => response.json())
-            .then(recipe => setRecipe(recipe.find((r: Recipe) => r.name === name)))
-            .catch(error => console.error('Error fetching data', error));
-    }, [name]);
-
-    const Scroll = () => {
-        if (!container.current) return;
-        const { offsetHeight, scrollHeight, scrollTop } = container.current as HTMLDivElement;
-        if (scrollHeight <= scrollTop + offsetHeight + 100) {
-            container.current?.scrollTo(0, scrollHeight);
-        }
-    };
-
-    useEffect (() => {
-        if (activeTab === "Chat"){
-            Scroll();
-        }
-    }, [messages, activeTab]);
-
-
-    const handleSend = () => {
-        if (!userMessage.trim() || !recipe) return;
-
-        setMessages(prev => [...prev, { sender: "user", text: userMessage }]);
-        setIsLoading(true);
-        let updatedHistory = messages.map(msg => msg.text);
-        const payload = {
-            message: userMessage,
-            context: {
-                name: recipe.name,
-                portion: recipe.portion,
-                ingredients: recipe.ingredients,
-                amount: recipe.amount,
-                steps: recipe.steps,
-                previous: updatedHistory
-            }
-        };
-
-        fetch("http://localhost:8080/send-message", {
-            method: "POST",
-            body: JSON.stringify(payload),
-            headers: { "Content-Type": "application/json" }
-        })
-            .then(response => response.json())
-            .then(text => {
-                let reply = text.reply;
-                reply = reply.replace(/```json\s*([\s\S]*?)```/, '$1').trim();
-                const jsonMatch = reply.match(/\{[\s\S]*\}$/);
-                let explanation = reply;
-                let updatedRecipe = null;
-                setIsLoading(false);
-
-                if (jsonMatch) {
-                    const jsonText = jsonMatch[0];
-                    try {
-                        updatedRecipe = JSON.parse(jsonText);
-                        explanation = reply.replace(jsonText, "").trim();
-                    } catch (err) {}
-                }
-
-                setMessages(prev => [...prev, { sender: "agent", text: explanation }]);
-
-                if (updatedRecipe) {
-                    setRecipe({
-                        name: updatedRecipe.name,
-                        portion: String(updatedRecipe.portion),
-                        ingredients: updatedRecipe.ingredients.map((i: any) => i.name),
-                        amount: updatedRecipe.ingredients.map((i: any) => `${i.amount} ${i.unit}`),
-                        steps: updatedRecipe.steps
-                    });
-                }
-            })
-            .catch(error => {
-                console.error("Request error:", error);
-                setIsLoading(false);
-            });
-
-        setUserMessage("");
-        if (textareaRef.current) {
-            textareaRef.current.style.height = "auto";
-        }
-    };
-
-
-    const generateImage = async (ingredientName: string) => {
-        try {
-            const res = await fetch("http://localhost:8080/generate-and-segment", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ingredient: ingredientName })
-            });
-
-            const data = await res.json();
-
-            setIngredientImages(prev => ({
-                ...prev,
-                [ingredientName]: data.image_path
-            }));
-
-        } catch (err) {
-            console.error("Image pipeline error:", err);
-        }
-    };
-
-    const checkImagesReady = async (sources: string[]) => {
-        const results = await Promise.all(
-            sources.map((src) => new Promise<boolean>((resolve) => {
-                const img = new Image();
-                img.src = src;
-                img.onload = () => resolve(true);
-                img.onerror = () => resolve(false);
-            }))
+  }, [name, attempt]);
+  useEffect(() => {
+    if (recipe) setSaved(writeSession({ recipe, previous, step, checked, completed, messages, draft, proposal }));
+  }, [recipe, previous, step, checked, completed, messages, draft, proposal]);
+  const applyRecipe = (next: Recipe) => {
+    setRecipe(next);
+    setStep(0);
+    setChecked([]);
+    setCompleted([]);
+    setRevision((r) => r + 1);
+    updateProposal(null);
+  };
+  function approve(text = "Yes, apply changes.") {
+    if (!recipe || !pending.current || sending.current) return;
+    const next = pending.current;
+    setPrevious(recipe);
+    applyRecipe(next);
+    setDraft("");
+    setError("");
+    setMessages((old) => [...old,
+      { sender: "user", text },
+      { sender: "agent", text: "Done — your recipe and tutorial are updated. Open The recipe to see the ingredients and method. You can undo this change above." },
+    ]);
+  }
+  function discard(text = "No, keep my recipe.") {
+    if (!pending.current || sending.current) return;
+    updateProposal(null);
+    setDraft("");
+    setError("");
+    setMessages((old) => [...old, { sender: "user", text }, { sender: "agent", text: "Kept your recipe unchanged." }]);
+  }
+  async function send(text = draft, retry = false) {
+    if (!recipe || !text.trim() || sending.current) return;
+    const answer = text.trim().toLowerCase().replace(/[.!?,]+$/g, "").trim();
+    if (!retry && pending.current) {
+      if (/^(yes|yes please|yes apply changes|yes apply it|yep|yeah|sure|ok|okay|apply|apply changes|confirm|go ahead|do it)$/.test(answer)) { approve(text); return; }
+      if (/^(no|no thanks|no thank you|no keep my recipe|cancel|discard|discard changes|keep my recipe)$/.test(answer)) { discard(text); return; }
+    }
+    const pendingRecipe = retry ? lastPending.current : pending.current;
+    lastPending.current = pendingRecipe;
+    sending.current = true;
+    setLoading(true);
+    setError("");
+    setLastMessage(text);
+    updateProposal(null);
+    if (!retry) {
+      setMessages((old) => [...old, { sender: "user", text }]);
+      setDraft("");
+    }
+    controller.current = new AbortController();
+    try {
+      const history = retry ? messages.slice(0, -1) : messages;
+      const response = await api<{ reply: string; recipe: unknown }>(
+        "send-message",
+        {
+          message: text,
+          mode: "chat",
+          pendingRecipe,
+          context: recipe,
+          previous: history
+            .slice(-10)
+            .map((item) => ({ ...item, text: item.text.slice(0, 4000) })),
+        },
+        controller.current.signal,
+      );
+      if (typeof response.reply !== "string" || !response.reply.trim())
+        throw new Error("The assistant returned an empty reply. Please retry.");
+      if (response.recipe !== null && response.recipe !== undefined) {
+        if (!isRecipe(response.recipe))
+          throw new Error(
+            "The suggested recipe was incomplete. Your current recipe has been kept.",
+          );
+        updateProposal({ ...response.recipe, id: recipe.id, image: recipe.image });
+      }
+      setMessages((old) => [...old, { sender: "agent", text: response.reply }]);
+    } catch (err) {
+      if (!controller.current.signal.aborted)
+        setError(
+          err instanceof Error ? err.message : "Unable to send this message.",
         );
-        return results.every(Boolean);
-    };
-
-    useEffect(() => {
-        if (!recipe) return;
-        const step = stepData[activeTutTab];
-        if (!step) return;
-
-        const allSources = [...step.ingredients, ...step.tools];
-        setAssetsReady(false);
-        checkImagesReady(allSources).then((ready) => setAssetsReady(ready));
-    }, [stepData, activeTutTab]);
-
-    useEffect(() => {
-        if (!recipe) return;
-
-        const generateStep = async () => {
-            if (stepResult[activeTutTab]) return;
-
-            const previous = activeTutTab === 0
-                ? `/images/${recipe.name}.png`
-                : stepResult[activeTutTab - 1] || `/images/${recipe.name}.png`;
-
-            const res = await fetch("http://localhost:8080/generate-result-image", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    step: recipe.steps[activeTutTab],
-                    previous,
-                    index: activeTutTab + 1,
-                    name: recipe.name
-                })
-            });
-
-            const data = await res.json();
-            setStepResult(prev => ({ ...prev, [activeTutTab]: data.image_path }));
-        };
-
-        generateStep();
-    }, [activeTutTab, recipe, stepResult]);
-
-    useEffect(() => {
-        if (!recipe) return;
-
-        const run = async () => {
-            for (const ingredient of recipe.ingredients) {
-                await generateImage(ingredient);
-            }
-        };
-
-        run();
-    }, [recipe]);
-
-
-    useEffect(() => {
-        localStorage.setItem("ingredientImages", JSON.stringify(ingredientImages));
-    }, [ingredientImages]);
-
-    useEffect(() => {
-        if (!recipe) return;
-
-        setStepData({});
-        setStepResult({});
-        setCreatedItems([]);
-        setStepIngredients([]);
-        setStepTools([]);
-        setStepActions([]);
-    }, [recipe]);
-
+    } finally {
+      sending.current = false;
+      if (!controller.current.signal.aborted) setLoading(false);
+    }
+  }
+  if (!recipe)
     return (
-        <div className="game-container">
-            <div><button className="button-back" onClick={() => {setStepData({}); navigate(`/collection/`)}}>←</button></div>
-
-            <TutorialBoard
-                activeBoardTab={activeBoardTab}
-                setActiveBoardTab={setActiveBoardTab}
-                recipe={recipe}
-                activeTutTab={activeTutTab}
-                setActiveTutTab={setActiveTutTab}
-                stepIngredients={stepIngredients}
-                stepTools={stepTools}
-                stepActions={stepActions}
-                stepResult={stepResult}
-                assetsReady={assetsReady}
-            />
-
-            <div className="recipe-container">
-                <div className="recipe-card">
-                    <div className="tab-title">
-                        <h2
-                        className={
-                            activeTab === "Recipe" ? "active-recipe-tab" : "inactive-tab"
-                        }
-                        onClick={() => setActiveTab("Recipe")}
-                        >
-                        Recipe
-                        </h2>
-
-                        <h2
-                        className={
-                            activeTab === "Chat" ? "active-chat-tab" : "inactive-tab"
-                        }
-                        onClick={() => setActiveTab("Chat")}
-                        >
-                        Chat
-                        </h2>
-                    </div>
-
-                    {activeTab === "Recipe" ? (
-                        <RecipeView recipe={recipe} name={name} />
-                    ) : (
-                        <ChatView
-                            messages={messages}
-                            userMessage={userMessage}
-                            setUserMessage={setUserMessage}
-                            handleSend={handleSend}
-                            textareaRef={textareaRef}
-                            containerRef={container}
-                            isLoading={isLoading}
-                        />
-                    )}
-                </div>
-            </div>
-        </div>
+      <main id="main" className="empty-state">
+        <Link to="/collection">← Back to the collection</Link>
+        <h1>{status === "loading" ? "Opening your recipe…" : status}</h1>
+        {status !== "loading" && (
+          <button
+            onClick={() => {
+              setStatus("loading");
+              setAttempt((n) => n + 1);
+            }}
+          >
+            Try again
+          </button>
+        )}
+      </main>
     );
+  return (
+    <div className="cooking-page">
+      <header className="site-header">
+        <Link className="wordmark" to="/">
+          <img src="/favicon.svg" width="28" height="28" alt="" />
+          <span>The Quiet Cup</span>
+        </Link>
+        <Link className="back-link" to={collection}>
+          ← All recipes
+        </Link>
+      </header>
+      <main id="main" className="cooking-main">
+        <div className="cooking-heading">
+          <div>
+            <p className="eyebrow">A MOMENT TO MAKE</p>
+            <h1>{recipe.name}</h1>
+          </div>
+          <span className="recipe-summary">
+            {recipe.category === "warm drinks"
+              ? "A warm ritual"
+              : "A refreshing ritual"}{" "}
+            · {recipe.steps.length} steps
+          </span>
+        </div>
+        {previous && (
+          <div className="update-notice" role="status">
+            Your recipe has been updated.
+            <button
+              disabled={loading}
+              onClick={() => {
+                applyRecipe(previous);
+                setPrevious(null);
+                setMessages((old) => [
+                  ...old,
+                  {
+                    sender: "agent",
+                    text: "Your previous recipe has been restored.",
+                  },
+                ]);
+              }}
+            >
+              Undo change
+            </button>
+          </div>
+        )}
+        <p className="save-status" role="status">{saved ? "Recipe, checklist and conversation saved in this browser." : "Browser storage is unavailable or full. Changes will be lost when you leave."}</p>
+        <nav className="workspace-links" aria-label="Preparation sections">
+          <button onClick={() => { setTab("recipe"); document.getElementById("recipe-tab")?.focus(); }}>Ingredients & method</button>
+          <button onClick={() => document.querySelector<HTMLElement>(".current-instruction")?.focus()}>Current step</button>
+          <button onClick={() => { setStep(0); setChecked([]); setCompleted([]); }}>Restart preparation</button>
+        </nav>
+        <div className="cooking-layout">
+          <TutorialBoard
+            key={revision}
+            recipe={recipe}
+            activeStep={step}
+            onStep={setStep}
+            completed={completed}
+            onComplete={() => setCompleted((old) => old.includes(step) ? old.filter((n) => n !== step) : [...old, step])}
+            availability={availability}
+          />
+          <section className="journal-panel" aria-label="Recipe and assistant">
+            <div
+              className="panel-tabs"
+              role="tablist"
+              aria-label="Recipe details"
+            >
+              {["recipe", "chat"].map((value) => (
+                <button
+                  id={value + "-tab"}
+                  key={value}
+                  role="tab"
+                  aria-selected={tab === value}
+                  aria-controls={value + "-panel"}
+                  tabIndex={tab === value ? 0 : -1}
+                  onClick={() => setTab(value)}
+                  onKeyDown={(e) => {
+                    if (
+                      ["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)
+                    ) {
+                      e.preventDefault();
+                      const next =
+                        e.key === "Home"
+                          ? "recipe"
+                          : e.key === "End"
+                            ? "chat"
+                            : tab === "recipe"
+                              ? "chat"
+                              : "recipe";
+                      setTab(next);
+                      document.getElementById(next + "-tab")?.focus();
+                    }
+                  }}
+                >
+                  {value === "recipe" ? "The recipe" : "Ask the companion"}
+                </button>
+              ))}
+            </div>
+            <div
+              id="recipe-panel"
+              role="tabpanel"
+              aria-labelledby="recipe-tab"
+              hidden={tab !== "recipe"}
+            >
+              <RecipeView
+                key={revision}
+                recipe={recipe}
+                activeStep={step}
+                onStep={setStep}
+                checked={checked}
+                onCheck={(index) => setChecked((old) => old.includes(index) ? old.filter((n) => n !== index) : [...old, index])}
+              />
+            </div>
+            <div
+              id="chat-panel"
+              role="tabpanel"
+              aria-labelledby="chat-tab"
+              hidden={tab !== "chat"}
+            >
+              <ChatView
+                active={tab === "chat"}
+                messages={messages}
+                value={draft}
+                onChange={setDraft}
+                onSend={(text) => void send(text)}
+                proposal={proposal}
+                onApprove={() => approve()}
+                onDiscard={() => discard()}
+                onViewRecipe={() => { setTab("recipe"); document.getElementById("recipe-tab")?.focus(); }}
+                updated={!!previous}
+                availability={availability}
+                loading={loading}
+                error={error}
+                onRetry={() => void send(lastMessage, true)}
+              />
+            </div>
+          </section>
+        </div>
+      </main>
+      <footer className="site-footer">
+        Good things take a little stirring.
+      </footer>
+    </div>
+  );
 }
-
-export default StartRecipe;

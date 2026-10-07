@@ -1,281 +1,206 @@
-import React, { useRef, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { Recipe, StepVisual } from "../lib/recipe";
+import RecipeCover from "./RecipeCover";
 import "../styles/canvas.css";
-
-interface CanvasProps extends React.CanvasHTMLAttributes<HTMLCanvasElement> {
-    ingredients: string[];
-    tools: string[];
-    actions: string[];
-    resultImgSrc?: string;
-}
-
-interface AnimatedItem {
-    img: HTMLImageElement;
-    label: string;
-    x: number;
-    y: number;
-    startX: number;
-    startY: number;
-    targetX: number;
-    targetY: number;
-    opacity?: number;
-}
-
-type AnimationState =
-    | "IDLE"
-    | "MOVING"
-    | "EXPLODING"
-    | "SHOW_RESULT";
-
-const Canvas: React.FC<CanvasProps> = ({ ingredients, tools, resultImgSrc, ...props }) => {
-    const canvasRef = useRef<HTMLCanvasElement | null>(null);
-    const state = useRef<AnimationState>("IDLE");
-    const items = useRef<AnimatedItem[]>([]);
-    const staticItems = useRef<AnimatedItem[]>([]);
-    const particlesRef = useRef<any[]>([]);
-    const rafRef = useRef<number | null>(null);
-    const isRunning = useRef(true);
-    const resultTimeout = useRef<number | null>(null);
-    const isPaused = useRef(false);
-    const [resultImg, setResultImg] = useState<HTMLImageElement | null>(null);
-    const [activeButton, setActiveButton] = useState(false);
-
-    const loadImages = (sources: string[]) => {
-        return Promise.all(
-            sources.map((src) => {
-                return new Promise<HTMLImageElement>((resolve) => {
-                    const img = new Image();
-                    img.src = src;
-                    img.onload = () => resolve(img);
-                    img.onerror = () => {
-                        const fallback = new Image();
-                        fallback.src = "/images/fallback.png";
-                        fallback.onload = () => resolve(fallback);
-                    };
-                });
-            })
-        );
+export default function Canvas({
+  visual,
+  recipe,
+  instruction,
+}: {
+  visual: StepVisual;
+  recipe: Recipe;
+  instruction: string;
+}) {
+  const [playing, setPlaying] = useState(false);
+  const [failedResult, setFailedResult] = useState<string | null>(null);
+  const hasResult = !!visual.result && failedResult !== visual.result;
+  const [elapsed, setElapsed] = useState(0);
+  const [reduced, setReduced] = useState(
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+  const elapsedRef = useRef(0);
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const change = () => {
+      setReduced(media.matches);
+      if (media.matches) setPlaying(false);
     };
-
-    useEffect(() => {
-        if (!resultImgSrc) {
-            setResultImg(null);
-            return;
-        }
-        const img = new Image();
-        img.src = resultImgSrc;
-        img.onload = () => setResultImg(img);
-    }, [resultImgSrc]);
-
-    const createParticles = (cx: number, cy: number) => {
-        const arr = [];
-        for (let i = 0; i < 120; i++) {
-            arr.push({
-                x: cx,
-                y: cy,
-                vx: Math.random() * 4 - 2,
-                vy: Math.random() * 4 - 2,
-                size: Math.random() * 6 + 2,
-                life: 0,
-                death: Math.random() * 80 + 60,
-            });
-        }
-        particlesRef.current = arr;
+    media.addEventListener("change", change);
+    return () => media.removeEventListener("change", change);
+  }, []);
+  useEffect(() => {
+    if (!playing || reduced) return;
+    let frame = 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const delta = Math.min(now - last, 100);
+      last = now;
+      elapsedRef.current = Math.min(6000, elapsedRef.current + delta);
+      setElapsed(elapsedRef.current);
+      if (elapsedRef.current < 6000) frame = requestAnimationFrame(tick);
+      else setPlaying(false);
     };
-
-    const updateParticles = () => {
-        particlesRef.current = particlesRef.current.filter((p) => {
-            p.x += p.vx;
-            p.y += p.vy;
-            p.life++;
-            return p.life <= p.death;
-        });
-    };
-
-    const drawParticles = (ctx: CanvasRenderingContext2D) => {
-        ctx.fillStyle = "white";
-        particlesRef.current.forEach((p) => {
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            ctx.fill();
-        });
-    };
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-
-        isRunning.current = true;
-        if (rafRef.current) cancelAnimationFrame(rafRef.current);
-        if (resultTimeout.current) clearTimeout(resultTimeout.current);
-
-        items.current = [];
-        staticItems.current = [];
-        particlesRef.current = [];
-        state.current = "IDLE";
-
-        const allSources = [...ingredients, ...tools];
-        if (!allSources.length) return;
-
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-
-        loadImages(allSources).then((loadedImages) => {
-            if (!isRunning.current) return;
-
-            staticItems.current = loadedImages.map((img, index) => {
-                const x = (index % 5) * 160 + 20;
-                const y = Math.floor(index / 5) * 160 + 20;
-                return {
-                    img,
-                    label: allSources[index].split("/").pop()?.replace(".png", "").replace("_seg", "").replaceAll("_", " ") || "",
-                    x,
-                    y,
-                    startX: x,
-                    startY: y,
-                    targetX: x,
-                    targetY: y,
-                };
-            });
-
-            items.current = loadedImages.map((img, index) => {
-                const x = (index % 5) * 160 + 20;
-                const y = Math.floor(index / 5) * 160 + 20;
-                return {
-                    img,
-                    label: allSources[index].split("/").pop()?.replace(".png", "") || "",
-                    x,
-                    y,
-                    startX: x,
-                    startY: y,
-                    targetX: centerX - 40,
-                    targetY: centerY - 40,
-                    opacity: 0,
-                };
-            });
-
-            state.current = "MOVING";
-
-            const render = () => {
-                if (!isRunning.current) return;
-
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                staticItems.current.forEach((item) => {
-                    if (item.img.complete && item.img.naturalWidth > 0) {
-                        ctx.drawImage(item.img, item.x, item.y, 100, 100);
-                    } else {
-                        ctx.fillStyle = "#444";
-                        ctx.fillRect(item.x, item.y, 80, 80);
-                    }
-                    ctx.fillStyle = "white";
-                    ctx.font = "14px sans-serif";
-                    ctx.textAlign = "center";
-                    ctx.fillText(item.label, item.x + 50, item.y + 100);
-                });
-
-                items.current.forEach((item) => {
-                    item.opacity = (item.opacity || 0) + 0.02;
-                    if (item.opacity > 1) item.opacity = 1;
-                    ctx.globalAlpha = item.opacity;
-                    if (item.img.complete && item.img.naturalWidth > 0) {
-                        ctx.drawImage(item.img, item.x, item.y, 100, 100);
-                    }
-                    ctx.globalAlpha = 1;
-                });
-
-                if (!isPaused.current) {
-                    if (state.current === "MOVING") {
-                        let done = true;
-                        items.current.forEach((item) => {
-                            const speed = 0.02;
-                            item.x += (item.targetX - item.x) * speed;
-                            item.y += (item.targetY - item.y) * speed;
-                            if (Math.abs(item.x - item.targetX) > 0.5) done = false;
-                            if (Math.abs(item.y - item.targetY) > 0.5) done = false;
-                        });
-                        if (done) {
-                            state.current = "EXPLODING";
-                            createParticles(centerX, centerY);
-                        }
-                    }
-
-                    if (state.current === "EXPLODING") {
-                        updateParticles();
-                        drawParticles(ctx);
-                        if (particlesRef.current.length < 10) {
-                            state.current = "SHOW_RESULT";
-                            resultTimeout.current = window.setTimeout(() => {
-                                items.current.forEach((item) => {
-                                    item.x = item.startX;
-                                    item.y = item.startY;
-                                    item.opacity = 0;
-                                });
-                                particlesRef.current = [];
-                                state.current = "MOVING";
-                            }, 7000);
-                        }
-                    }
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [playing, reduced]);
+  const action =
+    visual.actions.find((a) =>
+      ["pour", "whisk", "froth", "stir", "heat", "chill", "steep"].includes(a),
+    ) || "prepare";
+  const complete = elapsed >= 6000;
+  return (
+    <div className="visual-board">
+      <div
+        className="step-assets"
+        aria-label="Ingredients and tools mentioned in this step"
+      >
+        {[...visual.ingredients, ...visual.tools].map((item, index) => (
+          <div className="step-asset" key={item.name + index}>
+            {item.src ? (
+              <img
+                src={item.src}
+                alt=""
+                width="68"
+                height="68"
+                onError={(e) => {
+                  e.currentTarget.style.visibility = "hidden";
+                }}
+              />
+            ) : (
+              <span className="asset-placeholder" aria-hidden="true">
+                ✧
+              </span>
+            )}
+            <span>{item.name}</span>
+          </div>
+        ))}
+      </div>
+      <div className="illustration-stage">
+        {hasResult ? (
+          <figure>
+            <img
+              className="generated-result"
+              src={visual.result}
+              onError={() => setFailedResult(visual.result || null)}
+              alt={`Illustrated result: ${instruction}`}
+            />
+            <figcaption>AI illustration of this step</figcaption>
+          </figure>
+        ) : elapsed > 0 && !complete && !reduced ? (
+          <div
+            className={`action-scene action-${action} ${playing ? "is-playing" : ""}`}
+            role="img"
+            aria-label={`Illustration of the ${action} action`}
+          >
+            <svg viewBox="0 0 320 250" aria-hidden="true">
+              <ellipse cx="160" cy="219" rx="101" ry="9" fill="#241c17" />
+              <path
+                d="M94 92h132l-13 110q-53 23-106 0z"
+                fill="#e6d7bc"
+                stroke="#c5a16a"
+                strokeWidth="3"
+              />
+              <path d="M105 131h109l-8 67q-46 14-92 0z" fill="#8e9d72" />
+              <ellipse cx="160" cy="131" rx="53" ry="9" fill="#b7c496" />
+              <path
+                d="M227 106q59-5 35 55q-11 22-43 14"
+                fill="none"
+                stroke="#e6d7bc"
+                strokeWidth="12"
+              />
+              <g className="stir-tool">
+                <path
+                  d="M166 151l20-117"
+                  stroke="#c5a16a"
+                  strokeWidth="7"
+                  strokeLinecap="round"
+                />
+                <ellipse
+                  cx="167"
+                  cy="143"
+                  rx="13"
+                  ry="24"
+                  fill="none"
+                  stroke="#c5a16a"
+                  strokeWidth="3"
+                />
+              </g>
+              <g className="pour-stream">
+                <path
+                  d="M133 17q-25 42 15 103"
+                  stroke="#c5a16a"
+                  strokeWidth="10"
+                  fill="none"
+                  strokeLinecap="round"
+                />
+              </g>
+              <g
+                className="steam-lines"
+                stroke="#d9c8aa"
+                strokeWidth="3"
+                fill="none"
+              >
+                <path d="M133 74q-15-17 0-32t0-30" />
+                <path d="M160 72q-15-17 0-32t0-30" />
+              </g>
+            </svg>
+            <p>
+              {action === "prepare"
+                ? "One small step at a time"
+                : action.charAt(0).toUpperCase() + action.slice(1) + " gently"}
+            </p>
+          </div>
+        ) : (
+          <figure>
+            <RecipeCover
+              className="cover-preview"
+              recipe={recipe}
+              alt="The finished drink, for inspiration"
+            />
+            <figcaption>
+              {complete
+                ? "Ready for the next step?"
+                : "Your finished cup, for inspiration"}
+            </figcaption>
+          </figure>
+        )}
+      </div>
+      <div className="animation-controls">
+        {!reduced && (
+          <>
+            <button
+              onClick={() => {
+                if (complete) {
+                  elapsedRef.current = 0;
+                  setElapsed(0);
                 }
-
-                if (state.current === "SHOW_RESULT") {
-                    const size = Math.min(canvas.width, canvas.height);
-                    if (resultImg?.complete && resultImg.naturalWidth > 0) {
-                        ctx.drawImage(resultImg, centerX - size / 2, centerY - size / 2, size, size);
-                    } else {
-                        ctx.fillStyle = "white";
-                        ctx.textAlign = "center";
-                        ctx.font = "20px sans-serif";
-                        ctx.fillText("Loading...", centerX, centerY);
-                    }
-                }
-
-                rafRef.current = requestAnimationFrame(render);
-            };
-
-            render();
-        });
-
-        return () => {
-            isRunning.current = false;
-            if (rafRef.current) cancelAnimationFrame(rafRef.current);
-            if (resultTimeout.current) clearTimeout(resultTimeout.current);
-        };
-    }, [ingredients, tools, resultImg]);
-
-    const pauseAnimation = () => {
-        isPaused.current = true;
-        setActiveButton(true);
-    };
-
-    const resumeAnimation = () => {
-        isPaused.current = false;
-        setActiveButton(false);
-    };
-
-    const restartAnimation = () => {
-        items.current.forEach((item) => {
-            item.x = item.startX;
-            item.y = item.startY;
-            item.opacity = 0;
-        });
-        particlesRef.current = [];
-        state.current = "MOVING";
-        resumeAnimation();
-        setActiveButton(false);
-    };
-
-    return (
-        <>
-            <canvas ref={canvasRef} {...props} />
-            <div className="button-container">
-                <button className={`buttons ${activeButton ? "pressed" : ""}`} onClick={pauseAnimation}>Pause</button>
-                <button className="buttons" onClick={resumeAnimation}>Resume</button>
-                <button className="buttons" onClick={restartAnimation}>Restart</button>
-            </div>
-        </>
-    );
-};
-
-export default Canvas;
+                setPlaying((p) => !p);
+              }}
+              disabled={hasResult}
+            >
+              {playing
+                ? "Pause"
+                : elapsed > 0 && !complete
+                  ? "Resume"
+                  : "Play illustration"}
+            </button>
+            <button
+              onClick={() => {
+                elapsedRef.current = 0;
+                setElapsed(0);
+                setPlaying(false);
+              }}
+            >
+              Reset
+            </button>
+          </>
+        )}
+        <span>
+          {reduced
+            ? "Still view · reduced motion"
+            : "Action demonstration, not a cooking timer"}
+        </span>
+      </div>
+    </div>
+  );
+}
