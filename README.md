@@ -8,7 +8,7 @@ A local cafe recipe journal with **50 illustrated drinks: 27 warm and 23 cold**.
 - **Prepare:** check off ingredients, navigate the method, explicitly mark completed steps, and restart preparation. Short action illustrations support pause, reset and reduced motion; they are demonstrations, not cooking timers.
 - **Personalize:** ask naturally in chat, such as "Can you add vanilla?" Review the proposal, then click **Yes, apply changes** or type **yes**. Ingredients, method and tutorial update immediately. Type **no** to discard, or "yes, but less sugar" to request a revised proposal. Undo restores the preceding recipe.
 - **Resume:** recipes, pending proposals, the last 40 chat messages, drafts, checklists and preparation progress are saved in this browser. Storage failures are shown in the interface.
-- **Illustrate:** existing watercolor covers and ingredient/tool artwork work without AI. New step illustrations are generated only when requested; ComfyUI can optionally remove their backgrounds.
+- **Illustrate:** Gemini plans the whole recipe's ingredients, tools, actions and intermediate preparations. Requested steps use the actual images of their prerequisite preparations, including separate branches such as prepared matcha and a blueberry base. Ingredients and tools gather into a particle burst that reveals the result, with pause, replay, reset and reduced motion. ComfyUI can remove backgrounds from both objects and step results; bundled ingredient/tool cutouts are reused where available.
 - **Recover:** missing artwork falls back to the original cover or a bundled placeholder. Invalid data and failed AI requests show recoverable errors.
 
 ## Stack
@@ -50,6 +50,7 @@ CHAT_MODEL=gemini-3.5-flash-lite
 IMAGE_MODEL=gemini-2.5-flash-image
 PORT=8080
 COMFY_OUTPUT_DIR=
+COMFY_ENABLED=false
 ```
 
 One key is used for chat and image generation. `GOOGLE_API_KEY` is accepted as a fallback. Model access, quota and billing depend on the configured Google account. The older 2.5 Flash-Lite text model can return 404 for new users, so the default chat model is 3.5 Flash-Lite.
@@ -64,10 +65,22 @@ Chat and image generation can run without ComfyUI. To enable background removal,
 
 ```env
 COMFY_URL=http://127.0.0.1:8188
-COMFY_OUTPUT_DIR=D:/ComfyUI/output
+COMFY_ENABLED=true
 ```
 
-Use your actual output directory. ComfyUI must be able to read the backend's input images, and the backend must be able to read ComfyUI's output. The workflow is in `backend/segment-anything.json`. Its custom-node, model and path compatibility still needs a live check on the target installation. New illustration requests fall back to the original generated image if optional segmentation fails.
+Restart the backend after changing these settings. The preparation pipeline uploads source PNGs through ComfyUI's `/upload/image`, submits `backend/segment-anything.json`, polls its history, and downloads the RGBA result through `/view`. Node and ComfyUI do not need a shared filesystem. A nonempty `COMFY_OUTPUT_DIR` remains a legacy opt-in and is still used by the old single-image endpoints. The workflow's custom nodes and models must be installed in ComfyUI. These transport paths follow the [ComfyUI server API implementation](https://github.com/comfyanonymous/ComfyUI/blob/master/server.py).
+
+If segmentation is disabled or fails, original images remain usable and technical diagnostics are logged in the browser console. **Retry background removal** retries failed cutouts and reuses cached original PNGs. Downstream result images are regenerated if their input references change. A real ComfyUI installation is still needed to verify the quality of the masks; API tests use simulated ComfyUI responses.
+
+### Preparation pipeline
+
+Click **Illustrate with AI** on any step. The backend plans the whole recipe once, validates the graph and corrects an invalid plan once before failing. Raw ingredient IDs (`i1`), tool IDs (`t1`) and output IDs (`s1o1`, meaning step 1's first output) are separate. Every output has a name, physical appearance and producing step. Unknown, duplicate, self-referencing and forward references are rejected. A step can produce up to three separate preparations; its first output is the main result illustration.
+
+Only the requested step and its prerequisites are illustrated, in recipe order. Each result receives the actual images of its input ingredients/preparations and tools as labeled Gemini references. Set-aside preparations keep their own image; an unrelated previous step does not replace them. For blueberry matcha fizz, the final step uses **prepared matcha from step 1** and **the blueberry drink from step 6**, rather than matcha powder. Prompt construction uses the validated plan's physical descriptions and a shared isolated-object style; no agent framework is required.
+
+Progress appears during planning, drawing and background removal. Earlier completed steps remain available if a later request fails. Navigation, recipe edits and **Cancel illustration** stop subsequent work; an image or segmentation request already in progress may finish and be cached. A job whose browser stops polling expires between tasks after two minutes. Replay uses the existing images and makes no AI request.
+
+`POST /api/preparations` accepts `{ recipe, index, id? }` with a zero-based step index and optional client UUID. It returns a job snapshot; `GET /api/preparations/:id` reports the validated plan, completed visuals, progress and warnings. `POST /api/preparations/:id/cancel` cancels it. Jobs allow two active preparations and retain at most 32 snapshots. Plans and asset associations are cached for up to 12 recipe/configuration variants in server memory; a server restart requires replanning. Generated PNGs are cached on disk by prompt, model, workflow and reference-image content. Recipe edits create a new plan and reset the tutorial's visuals.
 
 ## Production preview
 
@@ -97,6 +110,8 @@ The server deliberately binds to loopback and validates local Host headers. It i
 | `frontend/scripts/` | Asset preparation and build validation |
 | `backend/server.js` | HTTP routes, Gemini requests and optional segmentation |
 | `backend/core.js`, `resources.js` | Validation, queues, image cache and request allowance |
+| `backend/preparation.js` | Whole-recipe planning, dependency validation, cancellable jobs and intermediate outputs |
+| `backend/preparation-artwork.js` | Labeled image references, object/result caching and ComfyUI transport |
 | `backend/test/`, `frontend/tests/` | Backend and browser tests |
 | `.github/workflows/checks.yml` | Secret-pattern check, lint, build and tests |
 
@@ -104,7 +119,7 @@ The server deliberately binds to loopback and validates local Host headers. It i
 
 After adding recipes or replacing source artwork, run `npm run assets:prepare` from `frontend`. It creates 480-pixel WebP covers and small ingredient/tool assets. Commit the source artwork, optimized outputs and manifest together. `npm run build` validates recipe data, unique IDs and referenced asset files, but does not regenerate images.
 
-Recipes use display strings for ingredient amounts, preserving ranges and alternatives. AI edits need user review; deterministic offline serving-size scaling is not implemented. Ingredient/tool matching and action illustrations are approximate aids; the full method remains authoritative.
+Recipes use display strings for ingredient amounts, preserving ranges and alternatives. AI edits need user review; deterministic offline serving-size scaling is not implemented. Offline ingredient/tool matching is approximate; AI illustration uses the whole-recipe dependency plan. Structural validation catches broken links, but AI interpretation and generated artwork can still be imperfect; the full method remains authoritative.
 
 ## Checks
 
@@ -131,7 +146,7 @@ Remove-Item Env:TEST_PRODUCTION
 
 The production test server uses port 4180 with provider keys disabled. Automated tests mock AI responses and do not spend API credits. CI runs the production browser suite. The focused secret-pattern check scans current project text, not historical commits or ignored environment files.
 
-Verified locally on 7 October 2026: build and lint, **11 backend tests**, and **38 production browser tests** passed. Coverage includes desktop/mobile Chromium, all 50 recipe routes, automated accessibility, artwork failures, approval by button or typed reply, reload persistence, Undo, Host validation, cache writes and request limits. Mobile tests emulate an iPhone viewport; Safari and Firefox are not covered. Real Gemini chat and a vanilla-addition proposal followed by typed approval were also verified. Live image generation and ComfyUI segmentation remain unverified. The GitHub workflow has not yet been run remotely.
+Verified locally on 8 October 2026: build and lint, **22 backend tests**, and **50 production browser tests** passed. Coverage includes desktop/mobile Chromium, all 50 recipe routes, automated accessibility, preparation dependencies, exact reuse of intermediate images, multiple labeled image references, cancellation, partial-failure recovery, simulated ComfyUI upload/download, artwork failures, chat approval, reload persistence, Undo, Host validation, cache writes and request limits. Mobile tests emulate an iPhone viewport; Safari and Firefox are not covered. A live Gemini planning check correctly linked blueberry matcha fizz's final step to prepared matcha from step 1 and the sparkling blueberry base from step 6. Real Gemini chat and a vanilla-addition proposal followed by typed approval were previously verified. New image generation and actual ComfyUI segmentation remain unverified; ComfyUI was not reachable at the configured default address. The GitHub workflow has not been run remotely.
 
 ## Local storage and resource limits
 

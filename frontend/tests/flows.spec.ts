@@ -120,7 +120,7 @@ test("recipe works without AI, navigation and accessible controls", async ({
 });
 test("AI failure stays bounded and retry is explicit", async ({ page }) => {
   let calls = 0;
-  await page.route("**/api/generate-result-image", (route) => {
+  await page.route("**/api/preparations", (route) => {
     calls++;
     return route.fulfill({
       status: 503,
@@ -198,10 +198,13 @@ test("invalid AI recipe is rejected and duplicate sends are prevented", async ({
 test("leaving a pending illustration does not overwrite the next step or block retry", async ({
   page,
 }) => {
-  await page.route("**/api/generate-result-image", async (route) => {
+  await page.route("**/api/preparations/*/cancel", (route) => route.fulfill({ json: { cancelled: true } }));
+  await page.route("**/api/preparations", async (route) => {
     await new Promise((r) => setTimeout(r, 400));
     await route
-      .fulfill({ json: { image_path: "/images/iced-matcha-latte.png" } })
+      .fulfill({ json: { id: route.request().postDataJSON().id, status: "complete", message: "Ready", completed: 1, total: 1, warnings: [], visuals: {
+        0: { ingredients: [], tools: [], actions: ["whisk"], result: "/images/iced-matcha-latte.png" },
+      } } })
       .catch(() => {});
   });
   await page.goto("/start/iced-matcha-latte");

@@ -10,7 +10,6 @@ interface Props {
   onDiscard: () => void;
   onViewRecipe: () => void;
   updated: boolean;
-  availability: string;
   loading: boolean;
   error: string;
   onRetry: () => void;
@@ -30,7 +29,6 @@ export default function ChatView({
   onDiscard,
   onViewRecipe,
   updated,
-  availability,
 }: Props) {
   const windowRef = useRef<HTMLDivElement>(null);
   const follow = useRef(true);
@@ -44,8 +42,6 @@ export default function ChatView({
         <p className="eyebrow">A LITTLE HELP ALONG THE WAY</p>
         <h2>Your café companion</h2>
         <p>Make this recipe your own, or ask about any step.</p>
-        <p>{availability}</p>
-        <p>Sending shares this recipe, your message and recent conversation with Google Gemini. Conversation history is also saved in this browser.</p>
         <p>Ask for a change here. I’ll show you the proposal and wait for your yes before updating the recipe.</p>
       </div>
       <div

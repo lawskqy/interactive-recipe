@@ -4,9 +4,8 @@
     var(--espresso);
 }
 .collection-main {
-  max-width: 1280px;
+  width: var(--workspace-width);
   margin: auto;
-  padding: 0 32px;
 }
 .collection-intro {
   text-align: center;
@@ -227,9 +226,6 @@
   padding: 2px 12px;
 }
 @media (min-width: 1600px) {
-  .collection-main {
-    max-width: 1440px;
-  }
   .recipe-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
@@ -240,9 +236,6 @@
   }
 }
 @media (max-width: 700px) {
-  .collection-main {
-    padding: 0 20px;
-  }
   .collection-intro {
     padding: 20px 0;
   }

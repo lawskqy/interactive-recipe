@@ -59,6 +59,22 @@
   max-height: 340px;
   object-fit: contain;
 }
+.transformation-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 320px;
+  isolation: isolate;
+}
+.transformation-stage .generated-result {
+  height: 300px;
+}
+.step-transformation {
+  position: absolute;
+  width: min(100%, 360px);
+  height: 320px;
+  pointer-events: none;
+}
 .animation-controls {
   display: flex;
   align-items: center;
@@ -159,4 +175,26 @@
 
 .animation-controls button {
   min-height: 44px;
+}
+.preparation-source {
+  color: var(--sage);
+  font-size: 10px;
+  margin-top: 4px;
+}
+.preparation-progress,
+.preparation-warnings {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.preparation-progress p,
+.preparation-warnings p {
+  margin: 0 0 8px;
+}
+.preparation-progress progress {
+  width: 100%;
+  accent-color: var(--sage);
 }

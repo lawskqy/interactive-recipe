@@ -28,7 +28,7 @@ export async function api<T>(
       throw new Error("This took too long. Please try again.");
     if (error instanceof TypeError || error instanceof SyntaxError)
       throw new Error(
-        "The café assistant is unavailable. Please start the backend and try again.",
+        "The café assistant is unavailable. Please try again in a moment.",
       );
     throw error;
   }

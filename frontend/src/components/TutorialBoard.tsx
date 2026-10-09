@@ -1,28 +1,27 @@
 import { useEffect, useRef, useState } from "react";
-import { api, mediaUrl } from "../lib/api";
+import { api } from "../lib/api";
 import { describeStep, safeManifest, type Recipe, type StepVisual } from "../lib/recipe";
+import { cancelPreparation, loadVisual, pausePolling, plannedVisual, type PreparationJob, type PreparationPlan } from "../lib/preparation";
 import Canvas from "./Canvas";
-interface Generated {
-  image_path: string;
-}
 export default function TutorialBoard({
   recipe,
   activeStep,
   onStep,
   completed,
   onComplete,
-  availability,
 }: {
   recipe: Recipe;
   activeStep: number;
   onStep: (index: number) => void;
   completed: number[];
   onComplete: () => void;
-  availability: string;
 }) {
   const [manifest, setManifest] = useState<Record<string, string>>({});
   const [results, setResults] = useState<Record<number, StepVisual>>({});
   const [busy, setBusy] = useState<number | null>(null);
+  const [plan, setPlan] = useState<PreparationPlan | null>(null);
+  const [progress, setProgress] = useState<PreparationJob | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
   const [error, setError] = useState<{ index: number; text: string } | null>(
     null,
   );
@@ -40,58 +39,59 @@ export default function TutorialBoard({
   }, []);
   useEffect(() => {
     setBusy(null);
+    setProgress(null);
     return () => {
       request.current?.abort();
     };
   }, [activeStep]);
-  const local = describeStep(recipe, activeStep, manifest);
+  const local = plan ? plannedVisual(plan, activeStep) : describeStep(recipe, activeStep, manifest);
   async function generate() {
     request.current?.abort();
     const controller = new AbortController();
     request.current = controller;
     const id = ++requestId.current;
     const index = activeStep;
+    const jobId = crypto.randomUUID();
+    const cancel = () => { void cancelPreparation(jobId); };
+    controller.signal.addEventListener("abort", cancel, { once: true });
     setBusy(index);
     setError(null);
+    setWarnings([]);
+    setProgress(null);
     try {
-      const result = await api<Generated>(
-        "generate-result-image",
-        {
-          step: recipe.steps[index],
-          previous: `/images/${recipe.image}`,
-          index: index + 1,
-          name: recipe.name,
-          context: recipe.steps.slice(0, index),
-          ingredients: recipe.ingredients,
-        },
-        controller.signal,
-      );
-      const src = mediaUrl(result.image_path);
-      await new Promise<void>((resolve, reject) => {
-        const image = new Image();
-        const timer = window.setTimeout(() => {
-          image.onload = null;
-          image.onerror = null;
-          reject(
-            new Error("The illustration could not be loaded. Please retry."),
-          );
-        }, 15000);
-        image.onload = () => {
-          clearTimeout(timer);
-          resolve();
-        };
-        image.onerror = () => {
-          clearTimeout(timer);
-          reject(
-            new Error("The illustration could not be loaded. Please retry."),
-          );
-        };
-        image.src = src;
-      });
-      if (id === requestId.current && !controller.signal.aborted)
-        setResults((old) => ({ ...old, [index]: { ...local, result: src } }));
+      let job = await api<PreparationJob>("preparations", { recipe, index, id: jobId }, controller.signal);
+      const loaded = new Set<number>();
+      const loggedWarnings = new Set<string>();
+      while (!controller.signal.aborted && id === requestId.current) {
+        setProgress(job);
+        if (job.plan) setPlan(job.plan);
+        setWarnings(job.warnings);
+        for (const warning of job.warnings) {
+          if (!loggedWarnings.has(warning)) {
+            console.warn("[Illustration]", warning);
+            loggedWarnings.add(warning);
+          }
+        }
+        for (const [step, visual] of Object.entries(job.visuals)) {
+          const stepIndex = Number(step);
+          if (loaded.has(stepIndex)) continue;
+          const ready = await loadVisual(visual, controller.signal);
+          if (id !== requestId.current || controller.signal.aborted) return;
+          setResults((old) => ({ ...old, [stepIndex]: ready }));
+          loaded.add(stepIndex);
+        }
+        if (job.status === "error") throw new Error(job.error || job.message);
+        if (job.status === "cancelled") break;
+        if (job.status === "complete") {
+          if (!loaded.has(index)) throw new Error("The preparation returned no artwork for this step. Please retry.");
+          break;
+        }
+        await pausePolling(controller.signal);
+        job = await api<PreparationJob>(`preparations/${jobId}`, undefined, controller.signal);
+      }
     } catch (err) {
-      if (id === requestId.current && !controller.signal.aborted)
+      if (id === requestId.current && !controller.signal.aborted) {
+        void cancelPreparation(jobId);
         setError({
           index,
           text:
@@ -99,8 +99,10 @@ export default function TutorialBoard({
               ? err.message
               : "Unable to illustrate this step.",
         });
+      }
     } finally {
-      if (id === requestId.current) setBusy(null);
+      controller.signal.removeEventListener("abort", cancel);
+      if (id === requestId.current && !controller.signal.aborted) setBusy(null);
     }
   }
   return (
@@ -126,7 +128,7 @@ export default function TutorialBoard({
         {recipe.steps[activeStep]}
       </h2>
       <Canvas
-        key={activeStep}
+        key={`${activeStep}:${results[activeStep]?.result || "local"}`}
         visual={results[activeStep] || local}
         recipe={recipe}
         instruction={recipe.steps[activeStep]}
@@ -144,7 +146,17 @@ export default function TutorialBoard({
               : "Illustrate with AI ✧"}
         </button>
       </div>
-      <p className="ai-note">{availability} AI illustrations share the recipe and reference artwork with Google Gemini.</p>
+      {busy === activeStep && (
+        <div className="preparation-progress">
+          <p role="status">{progress?.message || "Understanding the recipe and its preparations…"}</p>
+          {!!progress?.total && <progress value={progress.completed} max={progress.total} aria-label="Preparation steps illustrated" />}
+          <p className="ai-note">This can take a few minutes.</p>
+          <button onClick={() => { request.current?.abort(); setBusy(null); setProgress(null); }}>Cancel illustration</button>
+        </div>
+      )}
+      {warnings.some((warning) => warning.includes("retry")) && busy === null && <div className="preparation-warnings">
+        <button onClick={() => void generate()}>Retry background removal</button>
+      </div>}
       {error?.index === activeStep && (
         <div className="notice" role="alert">
           {error.text}

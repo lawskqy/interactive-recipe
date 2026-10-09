@@ -5,6 +5,8 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const { cachedPng, writePng, consumeBudget } = require("./resources");
 const { GoogleGenAI } = require("@google/genai");
+const { createPreparation } = require("./preparation");
+const { createArtwork, segmentationEnabled } = require("./preparation-artwork");
 const {
   safeName,
   hash,
@@ -150,8 +152,10 @@ async function generateImage(key, prompt, previous) {
     }),
   );
 }
-function createApp({ generate = generateContent } = {}) {
+function createApp({ generate = generateContent, artwork } = {}) {
   const app = express();
+  const renderer = artwork || createArtwork({ generate, images: IMAGE_DIR, media: MEDIA_DIR });
+  const preparation = createPreparation({ generate, render: renderer.render, available: renderer.available, cacheIdentity: renderer.identity });
   app.disable("x-powered-by");
   app.use((req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
@@ -206,7 +210,7 @@ function createApp({ generate = generateContent } = {}) {
       aiConfigured: Boolean(
         process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
       ),
-      segmentationConfigured: Boolean(process.env.COMFY_OUTPUT_DIR),
+      segmentationConfigured: segmentationEnabled(),
       providerVerified: false,
       dailyRequestLimit: 100,
     }),
@@ -227,6 +231,16 @@ function createApp({ generate = generateContent } = {}) {
     }
     buckets.set(key, bucket);
     next();
+  });
+  app.post("/api/preparations", (req, res) => {
+    res.status(202).json(preparation.start(req.body.recipe, req.body.index, req.body.id));
+  });
+  app.get("/api/preparations/:id", (req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.json(preparation.get(req.params.id));
+  });
+  app.post("/api/preparations/:id/cancel", (req, res) => {
+    res.json(preparation.cancel(req.params.id));
   });
   app.post("/api/send-message", async (req, res) => {
     const { message, context, previous = [], mode = "chat", pendingRecipe = null } = req.body;

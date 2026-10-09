@@ -13,6 +13,7 @@
   --sage: #a8b58a;
   --brass: #c5a16a;
   --line: #685441;
+  --workspace-width: min(calc(100% - 64px), max(80%, 1280px));
 }
 * {
   box-sizing: border-box;
@@ -94,9 +95,9 @@ textarea {
   color: #241c17;
 }
 .site-header {
-  max-width: 1376px;
+  width: var(--workspace-width);
   margin: auto;
-  padding: 27px 48px;
+  padding: 27px 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -194,8 +195,11 @@ textarea {
   top: 10px;
 }
 @media (max-width: 600px) {
+  :root {
+    --workspace-width: calc(100% - 40px);
+  }
   .site-header {
-    padding: 20px;
+    padding: 20px 0;
   }
   .wordmark {
     font-size: 24px;

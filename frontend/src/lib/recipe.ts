@@ -17,14 +17,19 @@ export interface Message {
   text: string;
 }
 export interface StepAsset {
+  id?: string;
   name: string;
   src?: string;
+  sourceStep?: number;
+  segmented?: boolean;
 }
 export interface StepVisual {
   ingredients: StepAsset[];
   tools: StepAsset[];
   actions: string[];
   result?: string;
+  resultName?: string;
+  outputs?: StepAsset[];
 }
 export function safeManifest(value: unknown): Record<string, string> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};

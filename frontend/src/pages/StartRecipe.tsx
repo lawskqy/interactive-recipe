@@ -38,12 +38,11 @@ export default function StartRecipe() {
   const [checked, setChecked] = useState<number[]>([]);
   const [completed, setCompleted] = useState<number[]>([]);
   const [saved, setSaved] = useState(true);
-  const [availability, setAvailability] = useState("Checking assistant availability…");
   useEffect(() => {
     const abort = new AbortController();
     api<{ aiConfigured: boolean }>("health", undefined, abort.signal)
-      .then((health) => setAvailability(health.aiConfigured ? "AI is configured; provider availability is checked when you send." : "AI is not configured. You can still prepare every recipe offline."))
-      .catch(() => { if (!abort.signal.aborted) setAvailability("AI is unavailable. You can still prepare every recipe offline."); });
+      .then((health) => console.debug("[Assistant] Configuration status (provider availability is checked on request):", health))
+      .catch((error) => { if (!abort.signal.aborted) console.warn("[Assistant] Health check failed:", error); });
     return () => abort.abort();
   }, []);
   const controller = useRef<AbortController | null>(null);
@@ -219,7 +218,7 @@ export default function StartRecipe() {
             </button>
           </div>
         )}
-        <p className="save-status" role="status">{saved ? "Recipe, checklist and conversation saved in this browser." : "Browser storage is unavailable or full. Changes will be lost when you leave."}</p>
+        {!saved && <p className="save-status" role="status">Your progress couldn’t be saved. Changes will be lost when you leave.</p>}
         <nav className="workspace-links" aria-label="Preparation sections">
           <button onClick={() => { setTab("recipe"); document.getElementById("recipe-tab")?.focus(); }}>Ingredients & method</button>
           <button onClick={() => document.querySelector<HTMLElement>(".current-instruction")?.focus()}>Current step</button>
@@ -233,7 +232,6 @@ export default function StartRecipe() {
             onStep={setStep}
             completed={completed}
             onComplete={() => setCompleted((old) => old.includes(step) ? old.filter((n) => n !== step) : [...old, step])}
-            availability={availability}
           />
           <section className="journal-panel" aria-label="Recipe and assistant">
             <div
@@ -304,7 +302,6 @@ export default function StartRecipe() {
                 onDiscard={() => discard()}
                 onViewRecipe={() => { setTab("recipe"); document.getElementById("recipe-tab")?.focus(); }}
                 updated={!!previous}
-                availability={availability}
                 loading={loading}
                 error={error}
                 onRetry={() => void send(lastMessage, true)}

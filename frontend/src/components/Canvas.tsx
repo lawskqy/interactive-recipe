@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Recipe, StepVisual } from "../lib/recipe";
 import RecipeCover from "./RecipeCover";
+import StepTransformation from "./StepTransformation";
 import "../styles/canvas.css";
 export default function Canvas({
   visual,
@@ -11,7 +12,9 @@ export default function Canvas({
   recipe: Recipe;
   instruction: string;
 }) {
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlaying] = useState(
+    () => !!visual.result && !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
   const [failedResult, setFailedResult] = useState<string | null>(null);
   const hasResult = !!visual.result && failedResult !== visual.result;
   const [elapsed, setElapsed] = useState(0);
@@ -48,11 +51,15 @@ export default function Canvas({
       ["pour", "whisk", "froth", "stir", "heat", "chill", "steep"].includes(a),
     ) || "prepare";
   const complete = elapsed >= 6000;
+  const transforming = hasResult && !reduced && !complete && (playing || elapsed > 0);
+  const reveal = transforming
+    ? 1 - (1 - Math.max(0, Math.min(1, (elapsed - 3100) / 1500))) ** 3
+    : 1;
   return (
     <div className="visual-board">
       <div
         className="step-assets"
-        aria-label="Ingredients and tools mentioned in this step"
+        aria-label="Ingredients, preparations and tools used in this step"
       >
         {[...visual.ingredients, ...visual.tools].map((item, index) => (
           <div className="step-asset" key={item.name + index}>
@@ -72,19 +79,38 @@ export default function Canvas({
               </span>
             )}
             <span>{item.name}</span>
+            {item.sourceStep !== undefined && <small className="preparation-source">From step {item.sourceStep + 1}</small>}
           </div>
         ))}
       </div>
       <div className="illustration-stage">
         {hasResult ? (
           <figure>
-            <img
-              className="generated-result"
-              src={visual.result}
-              onError={() => setFailedResult(visual.result || null)}
-              alt={`Illustrated result: ${instruction}`}
-            />
-            <figcaption>AI illustration of this step</figcaption>
+            <div className="transformation-stage">
+              <img
+                className="generated-result"
+                src={visual.result}
+                style={{ opacity: reveal, transform: `scale(${0.86 + reveal * 0.14})` }}
+                onError={() => {
+                  setFailedResult(visual.result || null);
+                  setPlaying(false);
+                  elapsedRef.current = 0;
+                  setElapsed(0);
+                }}
+                alt={`Illustrated result: ${instruction}`}
+              />
+              {transforming && (
+                <StepTransformation
+                  assets={[...visual.ingredients, ...visual.tools]}
+                  elapsed={elapsed}
+                />
+              )}
+            </div>
+            <figcaption>
+              {transforming && elapsed < 3100
+                ? "Bringing this step together…"
+                : visual.resultName || "AI illustration of this step"}
+            </figcaption>
           </figure>
         ) : elapsed > 0 && !complete && !reduced ? (
           <div
@@ -165,6 +191,12 @@ export default function Canvas({
           </figure>
         )}
       </div>
+      {!!visual.outputs && visual.outputs.length > 1 && <div className="step-assets" aria-label="Preparations made in this step">
+        {visual.outputs.map((output) => <div className="step-asset" key={output.id}>
+          {output.src && <img src={output.src} alt="" />}
+          <span>{output.name}</span>
+        </div>)}
+      </div>}
       <div className="animation-controls">
         {!reduced && (
           <>
@@ -176,13 +208,14 @@ export default function Canvas({
                 }
                 setPlaying((p) => !p);
               }}
-              disabled={hasResult}
             >
               {playing
                 ? "Pause"
                 : elapsed > 0 && !complete
                   ? "Resume"
-                  : "Play illustration"}
+                  : hasResult
+                    ? "Replay transformation"
+                    : "Play illustration"}
             </button>
             <button
               onClick={() => {
