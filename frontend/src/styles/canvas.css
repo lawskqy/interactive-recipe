@@ -1,6 +1,7 @@
 .step-assets {
+  --asset-size: 112px;
   display: flex;
-  gap: 12px;
+  gap: 20px 16px;
   flex-wrap: wrap;
   justify-content: center;
   min-height: 30px;
@@ -9,23 +10,36 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 74px;
+  width: var(--asset-size);
+  gap: 6px;
   text-align: center;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.4;
+  overflow-wrap: anywhere;
   color: var(--muted);
 }
 .step-asset img {
   object-fit: contain;
-  width: 58px;
-  height: 58px;
+  width: var(--asset-size);
+  height: var(--asset-size);
 }
 .asset-placeholder {
-  height: 58px;
+  height: var(--asset-size);
   display: grid;
   place-items: center;
-  font-size: 24px;
+  font-size: 40px;
   color: var(--brass);
+}
+@media (min-width: 1101px) {
+  .step-assets {
+    --asset-size: 144px;
+  }
+}
+@media (max-width: 480px) {
+  .step-assets {
+    --asset-size: 96px;
+    column-gap: 12px;
+  }
 }
 .illustration-stage {
   display: grid;
@@ -47,12 +61,6 @@
   padding: 6px;
   margin: auto;
   box-shadow: 0 10px 30px #0003;
-}
-.illustration-stage figcaption {
-  font-size: 10px;
-  letter-spacing: 0.5px;
-  color: var(--muted);
-  margin-top: 15px;
 }
 .generated-result {
   width: 100%;

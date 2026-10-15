@@ -67,8 +67,8 @@ export default function Canvas({
               <img
                 src={item.src}
                 alt=""
-                width="68"
-                height="68"
+                width="144"
+                height="144"
                 onError={(e) => {
                   e.currentTarget.style.visibility = "hidden";
                 }}
@@ -106,11 +106,6 @@ export default function Canvas({
                 />
               )}
             </div>
-            <figcaption>
-              {transforming && elapsed < 3100
-                ? "Bringing this step together…"
-                : visual.resultName || "AI illustration of this step"}
-            </figcaption>
           </figure>
         ) : elapsed > 0 && !complete && !reduced ? (
           <div
@@ -183,11 +178,6 @@ export default function Canvas({
               recipe={recipe}
               alt="The finished drink, for inspiration"
             />
-            <figcaption>
-              {complete
-                ? "Ready for the next step?"
-                : "Your finished cup, for inspiration"}
-            </figcaption>
           </figure>
         )}
       </div>

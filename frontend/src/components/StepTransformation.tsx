@@ -31,13 +31,13 @@ export default function StepTransformation({
           <g key={item.name + index}
             transform={`translate(${x} ${y}) scale(${1 - gather * 0.65})`}
             opacity={1 - progress(elapsed, 2450, 450)}>
-            {!item.src && <circle r="31" fill="var(--paper)" fillOpacity="0.85" />}
+            {!item.src && <circle r="48" fill="var(--paper)" fillOpacity="0.85" />}
             {item.src ? (
-              <image href={item.src} x="-29" y="-29" width="58" height="58" />
+              <image href={item.src} x="-48" y="-48" width="96" height="96" />
             ) : (
-              <text textAnchor="middle" y="8" fontSize="27" fill="var(--brass)">✧</text>
+              <text textAnchor="middle" y="12" fontSize="40" fill="var(--brass)">✧</text>
             )}
-            <text textAnchor="middle" y="43" fontSize="10" fill="var(--muted)"
+            <text textAnchor="middle" y="62" fontSize="11" fill="var(--muted)"
               opacity={1 - gather}>
               {item.name.length > 23 ? `${item.name.slice(0, 21)}…` : item.name}
             </text>

@@ -31,3 +31,9 @@ __pycache__/
 *.pyc
 frontend/test-results/
 frontend/playwright-report/
+
+# Local notes, research and comparison artifacts (not application source)
+/notes/
+/docs/session-*.md
+/scripts/segmentation/
+/output/

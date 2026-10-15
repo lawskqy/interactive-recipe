@@ -127,10 +127,14 @@ function createPreparation({ generate, render, available = async () => true, cac
     let asset = session.assets.get(item.id);
     if (asset && (asset.referenceKey !== referenceKey || !(await available(asset)))) asset = null;
     if (!asset) {
-      asset = await single(session.key + ":" + item.id, () => render({
-        ...options, item, recipe: session.recipe,
-        onProgress: (message) => { if (!terminal(job)) job.message = message; },
-      }));
+      asset = await single(session.key + ":" + item.id, () => {
+        check(job);
+        return render({
+          ...options, item, recipe: session.recipe,
+          onProgress: (message) => { if (!terminal(job)) job.message = message; },
+        });
+      });
+      if (!asset.segmented) fail("Background removal is incomplete. Please retry before viewing this illustration.", 502);
       asset = { ...asset, referenceKey };
       session.assets.set(item.id, asset);
     }
@@ -153,7 +157,7 @@ function createPreparation({ generate, render, available = async () => true, cac
         const ingredients = [];
         const tools = [];
         job.status = "rendering";
-        for (const id of [...step.inputs, ...step.tools]) {
+        const used = await Promise.all([...step.inputs, ...step.tools].map(async (id) => {
           const item = raw.get(id);
           let asset;
           if (item) {
@@ -161,8 +165,9 @@ function createPreparation({ generate, render, available = async () => true, cac
             asset = await artwork(session, item, { kind: "object", references: [] }, job);
           } else asset = outputs.get(id);
           if (!asset) fail("An earlier preparation is missing. Please retry.", 502);
-          (step.tools.includes(id) ? tools : ingredients).push(asset);
-        }
+          return { id, asset };
+        }));
+        for (const { id, asset } of used) (step.tools.includes(id) ? tools : ingredients).push(asset);
         const results = [];
         for (const output of step.outputs) {
           job.message = `Illustrating ${output.name} (step ${index + 1})…`;

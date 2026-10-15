@@ -129,28 +129,22 @@ test("HTTP boundary: malformed requests, origins, cached assets and missing AI c
       },
       body: JSON.stringify(body),
     });
-  assert.equal((await fetch(base + "/api/health")).status, 200);
+  const health = await fetch(base + "/api/health");
+  assert.equal(health.status, 200);
+  const configuration = await health.json();
+  assert.equal(configuration.segmentationConfigured, true);
+  assert.equal(configuration.backgroundRemoval, "color-key");
   assert.equal(
     (await post("send-message", {}, "https://untrusted.example")).status,
     403,
   );
   assert.equal((await post("send-message", {})).status, 400);
-  assert.equal(
-    (
-      await post("generate-result-image", {
-        step: "Stir",
-        index: 1,
-        name: "Drink",
-        previous: "/images/../../../backend/.env",
-      })
-    ).status,
-    400,
-  );
-  const cached = await post("generate-and-segment", {
-    ingredient: "matcha powder",
-  });
+  // These unused endpoints were superseded by the dependency-aware preparation API.
+  for (const route of ["separate", "generate-and-segment", "generate-result-image"])
+    assert.equal((await post(route, {})).status, 404);
+  const cached = await fetch(base + "/images/matcha_powder_seg.png");
   assert.equal(cached.status, 200);
-  assert.match((await cached.json()).image_path, /^\/images\//);
+  assert.match(cached.headers.get("content-type"), /image\/png/);
   const unavailable = await post("send-message", {
     message: "Hello",
     context: recipes[0],

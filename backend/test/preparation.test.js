@@ -97,24 +97,39 @@ test("partial progress survives failure and retry reuses completed preparations"
   assert.equal(rendered.filter((id) => id === "s1o1").length, 1);
 });
 
+test("unsegmented artwork is never published as a completed step", async () => {
+  const service = createPreparation({ generate: async () => ({ text: JSON.stringify(makePlan()) }),
+    render: async (request) => ({ ...(await fakeRender(request)), segmented: request.kind !== "result" }) });
+  const job = await finished(service, service.start(recipe, 0).id);
+  assert.equal(job.status, "error");
+  assert.match(job.error, /Background removal is incomplete/);
+  assert.equal(job.completed, 0);
+  assert.deepEqual(job.visuals, {});
+});
+
 test("cancellation stops subsequent generation, including cancellation racing the start request", async () => {
   let release;
   let started;
   const entered = new Promise((resolve) => { started = resolve; });
+  const blocked = new Promise((resolve) => { release = resolve; });
   let calls = 0;
   const service = createPreparation({ generate: async () => ({ text: JSON.stringify(makePlan()) }), render: async (request) => {
     calls++;
     started();
-    await new Promise((resolve) => { release = resolve; });
+    await blocked;
     return fakeRender(request);
   } });
   const id = service.start(recipe, 6).id;
   await entered;
+  const alreadyStarted = calls;
+  assert.ok(alreadyStarted > 0);
   service.cancel(id);
   release();
   await new Promise((resolve) => setTimeout(resolve, 10));
   assert.equal(service.get(id).status, "cancelled");
-  assert.equal(calls, 1);
+  // Independent inputs can already be in flight together; no later output starts.
+  assert.equal(calls, alreadyStarted);
+  assert.equal(service.get(id).completed, 0);
   const early = randomUUID();
   service.cancel(early);
   assert.throws(() => service.start(recipe, 0, early), /cancelled/);

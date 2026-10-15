@@ -3,7 +3,8 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
-const { createArtwork, createSegmenter } = require("../preparation-artwork");
+const sharp = require("sharp");
+const { createArtwork } = require("../preparation-artwork");
 const { writePng } = require("../resources");
 const images = path.resolve(__dirname, "../../frontend/public/images");
 const png = fs.readFileSync(path.join(images, "matcha_powder_seg.png"));
@@ -26,14 +27,19 @@ test("result generation attaches both named preparation images and caches by ref
   fs.writeFileSync(path.join(media, "prepared.png"), png);
   fs.writeFileSync(path.join(media, "base.png"), png);
   const calls = [];
-  const artwork = createArtwork({ images, media, enabled: () => false, generate: async (options) => {
+  const artwork = createArtwork({ images, media,
+    segment: async (_, output) => writePng(output, png), generate: async (options) => {
     calls.push(options);
     return { candidates: [{ content: { parts: [{ inlineData: { mimeType: "image/png", data: png.toString("base64") } }] } }] };
   } });
   const first = await artwork.render(request());
-  assert.equal(first.segmented, false);
-  assert.match(first.warning, /not configured/);
+  assert.equal(first.segmented, true);
+  assert.match(first.src, /_seg.png$/);
   const parts = calls[0].contents[0].parts;
+  assert.match(parts[0].text, /#FF00FF/);
+  assert.match(parts[0].text, /including openings through handles and gaps between wires/);
+  assert.match(artwork.identity().backgroundRemoval, /magenta-global-v/);
+  assert.equal(artwork.identity().workflow, undefined);
   assert.equal(parts.filter((part) => part.inlineData).length, 2);
   assert.match(parts[1].text, /prepared matcha, prepared in step 1/);
   assert.match(parts[3].text, /blueberry base, prepared in step 6/);
@@ -45,22 +51,55 @@ test("result generation attaches both named preparation images and caches by ref
   assert.equal(calls.length, 2);
 });
 
+test("default background worker produces and caches transparent artwork without an external service", async (t) => {
+  const media = temporary(t);
+  const input = await sharp({ create: { width: 64, height: 64, channels: 4, background: '#d44c86' } })
+    .composite([{ input: await sharp({ create: { width: 30, height: 30, channels: 4, background: 'white' } }).png().toBuffer(), left: 17, top: 17 }]).png().toBuffer();
+  let calls = 0;
+  const artwork = createArtwork({ images, media, generate: async () => {
+    calls++;
+    return { candidates: [{ content: { parts: [{ inlineData: { mimeType: "image/png", data: input.toString("base64") } }] } }] };
+  } });
+  const options = { ...request(), references: [] };
+  const result = await artwork.render(options);
+  const file = path.join(media, path.basename(result.src));
+  const pixels = await sharp(file).ensureAlpha().raw().toBuffer();
+  assert.equal(result.segmented, true);
+  assert.equal(pixels[3], 0);
+  assert.equal(pixels[(32 * 64 + 32) * 4 + 3], 255);
+  assert.equal((await artwork.render(options)).src, result.src);
+  assert.equal(calls, 1);
+});
+
+test("unsuitable backgrounds are discarded and explicit retry generates a fresh usable image", async (t) => {
+  const media = temporary(t);
+  const wrong = await sharp({ create: { width: 64, height: 64, channels: 4, background: 'white' } }).png().toBuffer();
+  let calls = 0;
+  const artwork = createArtwork({ images, media, generate: async () => ({ candidates: [{ content: { parts: [{ inlineData: {
+    mimeType: "image/png", data: (++calls === 1 ? wrong : png).toString("base64"),
+  } }] } }] }) });
+  const options = { ...request(), references: [] };
+  await assert.rejects(artwork.render(options), /Try again to draw a new illustration/);
+  assert.equal(calls, 1, "No automatic paid regeneration");
+  assert.deepEqual(fs.readdirSync(media), []);
+  assert.equal((await artwork.render(options)).segmented, true);
+  assert.equal(calls, 2);
+});
+
 test("segmentation failure is explicit and retry reuses the generated original", async (t) => {
   const media = temporary(t);
   let generated = 0;
   let segments = 0;
-  const artwork = createArtwork({ images, media, enabled: () => true, generate: async () => {
+  const artwork = createArtwork({ images, media, generate: async () => {
     generated++;
     return { candidates: [{ content: { parts: [{ inlineData: { mimeType: "image/png", data: png.toString("base64") } }] } }] };
   }, segment: async (_, output) => {
-    if (++segments === 1) throw new Error("Comfy offline");
+    if (++segments === 1) throw new Error("Temporary worker failure");
     await writePng(output, png);
   } });
   const options = { ...request(), references: [] };
-  const fallback = await artwork.render(options);
-  assert.equal(fallback.segmented, false);
-  assert.match(fallback.warning, /retry/);
-  assert.equal(await artwork.available(fallback), false);
+  await assert.rejects(artwork.render(options), /Background removal could not complete/);
+  assert.equal(await artwork.available({ src: "/media/original.png", segmented: false }), false);
   const repaired = await artwork.render(options);
   assert.equal(repaired.segmented, true);
   assert.match(repaired.src, /_seg.png$/);
@@ -71,38 +110,8 @@ test("segmentation failure is explicit and retry reuses the generated original",
 
 test("stock cutouts are reused for raw objects but never substituted for a step output", async (t) => {
   const media = temporary(t);
-  const artwork = createArtwork({ images, media, generate: async () => { throw new Error("generation reached"); }, enabled: () => false });
+  const artwork = createArtwork({ images, media, generate: async () => { throw new Error("generation reached"); } });
   const item = { id: "i1", name: "matcha powder", appearance: "Green powder" };
   assert.deepEqual(await artwork.render({ item, kind: "object", references: [] }), { src: "/images/matcha_powder_seg.png", segmented: true });
   await assert.rejects(artwork.render({ ...request(), item, references: [] }), /generation reached/);
-});
-
-test("ComfyUI transport uploads the input, uses its returned filename and downloads RGBA output", async (t) => {
-  const media = temporary(t);
-  const input = path.join(media, "input.png");
-  const output = path.join(media, "step_00000000000000000000_seg.png");
-  fs.writeFileSync(input, png);
-  const visited = [];
-  const segment = createSegmenter({ fetchImpl: async (url, options) => {
-    const parsed = new URL(url);
-    visited.push(parsed.pathname);
-    if (parsed.pathname === "/upload/image") {
-      assert.ok(options.body instanceof FormData);
-      assert.equal(options.body.get("type"), "input");
-      return Response.json({ name: "uploaded.png", subfolder: "" });
-    }
-    if (parsed.pathname === "/prompt") {
-      const body = JSON.parse(options.body);
-      assert.equal(body.prompt["2"].inputs.image, "uploaded.png");
-      assert.match(body.prompt["3"].inputs.prompt, /prepared matcha/);
-      return Response.json({ prompt_id: "test-job" });
-    }
-    if (parsed.pathname === "/history/test-job") return Response.json({ "test-job": { outputs: { "14": { images: [{ filename: "cutout.png", subfolder: "quiet-cup", type: "output" }] } } } });
-    assert.equal(parsed.pathname, "/view");
-    assert.equal(parsed.searchParams.get("filename"), "cutout.png");
-    return new Response(png);
-  } });
-  await segment(input, output, "prepared matcha");
-  assert.deepEqual(fs.readFileSync(output), png);
-  assert.deepEqual(visited, ["/upload/image", "/prompt", "/history/test-job", "/view"]);
 });

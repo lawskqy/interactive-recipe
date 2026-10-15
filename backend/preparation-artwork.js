@@ -1,76 +1,21 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
-const { setTimeout: delay } = require("node:timers/promises");
+const { removeBackground } = require("./background-removal");
+const { COLOR_KEY_VERSION } = require("./color-key");
 const { fail, hash, safeName, imageReference, singleFlight, createQueue } = require("./core");
 const { cachedPng, writePng } = require("./resources");
 
-const STYLE = "Watercolor and fine ink cafe illustration, muted sage and walnut palette. One isolated object or preparation centered with generous empty margins on a plain white background for segmentation. No scenery, tabletop, text, labels, hands, border or cast shadow. Preserve transparent glass outlines and the entire container. Show the described physical state, not an action or a future result.";
-const segmentationEnabled = () => process.env.COMFY_ENABLED === "true" || Boolean(process.env.COMFY_OUTPUT_DIR);
+const STYLE = "Watercolor and fine ink cafe illustration, muted sage and walnut object palette. One isolated object or preparation centered with generous empty margins; the entire object must fit inside the image. Use a completely uniform flat saturated magenta background, target RGB (255,0,255), hex #FF00FF. Reserve this background color exclusively for the background, including openings through handles and gaps between wires. Render white materials naturally. Use neutral lighting with no magenta reflections or background color cast on the object. Use this background even when reference images have white or transparent backgrounds. No scenery, tabletop, text, labels, hands, border, cast shadow, background texture or gradient. Preserve glass outlines, the entire container and the described contents. Show the described physical state, not an action or a future result.";
 
-// Use ComfyUI's upload/view API, so its filesystem need not be shared with Node.
-function createSegmenter({ fetchImpl = fetch, sleep = delay, timeout = 180000 } = {}) {
-  return async function segment(input, output, label) {
-    const signal = AbortSignal.timeout(timeout);
-    const base = (process.env.COMFY_URL || "http://127.0.0.1:8188").replace(/\/$/, "");
-    const request = async (route, options = {}) => {
-      const response = await fetchImpl(base + route, { ...options, signal });
-      if (!response.ok) fail("Background removal could not complete this request.", 502);
-      return response;
-    };
-    const form = new FormData();
-    form.append("image", new Blob([await fs.promises.readFile(input)], { type: "image/png" }), path.basename(input));
-    form.append("type", "input");
-    form.append("overwrite", "true");
-    const upload = await (await request("/upload/image", { method: "POST", body: form })).json();
-    if (typeof upload.name !== "string" || !/^[\w().-]+\.png$/.test(upload.name) ||
-        (upload.subfolder && !/^[\w/-]+$/.test(upload.subfolder))) fail("Invalid background-removal upload.", 502);
-    const workflow = JSON.parse(await fs.promises.readFile(path.join(__dirname, "segment-anything.json"), "utf8"));
-    workflow["2"].inputs.image = [upload.subfolder, upload.name].filter(Boolean).join("/");
-    workflow["3"].inputs.prompt = label + ", entire container and contents";
-    workflow["14"].inputs.filename_prefix = "quiet-cup/" + path.basename(output, ".png");
-    const { prompt_id } = await (await request("/prompt", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: workflow, client_id: "quiet-cup-preparation" }),
-    })).json();
-    if (typeof prompt_id !== "string" || !prompt_id) fail("Background removal did not accept the job.", 502);
-    while (!signal.aborted) {
-      const history = await (await request("/history/" + encodeURIComponent(prompt_id))).json();
-      const result = history[prompt_id];
-      if (result?.status?.status_str === "error") fail("Background removal failed. Please retry.", 502);
-      const image = result?.outputs?.["14"]?.images?.[0];
-      if (image) {
-        if (typeof image.filename !== "string" || !image.filename.endsWith(".png")) fail("Invalid background-removal output.", 502);
-        const query = new URLSearchParams({ filename: image.filename, subfolder: image.subfolder || "", type: image.type || "output" });
-        const response = await request("/view?" + query);
-        // Bound streamed output even when ComfyUI omits Content-Length.
-        const chunks = [];
-        let size = 0;
-        for await (const chunk of response.body) {
-          size += chunk.length;
-          if (size > 12 * 1024 * 1024) fail("The segmented image is too large.", 502);
-          chunks.push(chunk);
-        }
-        const bytes = Buffer.concat(chunks);
-        if (bytes[25] !== 6 && bytes[25] !== 4) fail("Background removal returned an image without an alpha channel.", 502);
-        await writePng(output, bytes);
-        return;
-      }
-      if (result?.status?.completed) fail("Background removal returned no image.", 502);
-      await sleep(750, undefined, { signal });
-    }
-    signal.throwIfAborted();
-  };
-}
-
-function createArtwork({ generate, images, media, segment = createSegmenter(), enabled = segmentationEnabled }) {
+function createArtwork({ generate, images, media, segment = removeBackground }) {
   const single = singleFlight();
   const queue = createQueue(2, 12, 60000);
   const resolve = (src) => imageReference(src, { images, media });
-  const identity = () => ({ version: 1, style: STYLE, model: process.env.IMAGE_MODEL || "gemini-2.5-flash-image",
-    segmentation: enabled(), workflow: hash(JSON.parse(fs.readFileSync(path.join(__dirname, "segment-anything.json"), "utf8"))) });
+  const identity = () => ({ version: 2, style: STYLE, model: process.env.IMAGE_MODEL || "gemini-2.5-flash-image",
+    backgroundRemoval: COLOR_KEY_VERSION });
   const available = async (asset) => {
-    if (asset.warning && enabled()) return false; // Retrying can repair a failed cutout without regenerating the PNG.
+    if (!asset.segmented) return false;
     try { return asset.src.startsWith("/media/") ? await cachedPng(resolve(asset.src)) : fs.existsSync(resolve(asset.src)); }
     catch { return false; }
   };
@@ -101,7 +46,7 @@ function createArtwork({ generate, images, media, segment = createSegmenter(), e
     return single(key, () => queue(async () => {
       const original = path.join(media, key + ".png");
       const cutout = path.join(media, key + "_seg.png");
-      if (enabled() && await cachedPng(cutout)) return { src: `/media/${key}_seg.png`, segmented: true };
+      if (await cachedPng(cutout)) return { src: `/media/${key}_seg.png`, segmented: true };
       if (!(await cachedPng(original))) {
         onProgress(`Drawing ${item.name}…`);
         const parts = [{ text: prompt }];
@@ -116,20 +61,22 @@ function createArtwork({ generate, images, media, segment = createSegmenter(), e
         if (!image?.data || image.data.length > 17 * 1024 * 1024) fail("The assistant returned no usable PNG illustration. Please retry.", 502);
         await writePng(original, Buffer.from(image.data, "base64"));
       }
-      if (enabled()) {
-        try {
-          onProgress(`Removing the background from ${item.name}…`);
-          await segment(original, cutout, item.name);
-          return { src: `/media/${key}_seg.png`, segmented: true };
-        } catch {
-          return { src: `/media/${key}.png`, segmented: false,
-            warning: "Background removal was unavailable for some artwork. Original illustrations are shown; retry to create the cutouts." };
+      try {
+        onProgress(`Removing the background from ${item.name}…`);
+        await segment(original, cutout, item.name);
+        if (!(await cachedPng(cutout))) throw new Error("Missing cutout");
+        return { src: `/media/${key}_seg.png`, segmented: true };
+      } catch (error) {
+        if (error.code === "UNSUITABLE_BACKGROUND") {
+          // Retrying an unsuitable source cannot improve it. Only an explicit
+          // user retry requests a new drawing; there is no automatic paid retry.
+          await fs.promises.unlink(original);
+          fail("The illustration did not have a usable plain background. Try again to draw a new illustration.", 502);
         }
+        fail("Background removal could not complete. Try again; the saved illustration will be reused.", 502);
       }
-      return { src: `/media/${key}.png`, segmented: false,
-        warning: "Background removal is not configured. New illustrations are shown with their backgrounds." };
     }));
   }
   return { render, available, identity };
 }
-module.exports = { createArtwork, createSegmenter, segmentationEnabled };
+module.exports = { createArtwork };

@@ -39,6 +39,7 @@ test("AI results gather, burst and reveal with pause, replay and reset", async (
   await page.clock.runFor(6000);
   await expect(page.locator(".step-transformation")).toHaveCount(0);
   await expect(page.locator(".generated-result")).toHaveCSS("opacity", "1");
+  await expect(page.locator(".illustration-stage figcaption")).toHaveCount(0);
   await page.getByRole("button", { name: "Replay transformation" }).click();
   await expect(page.locator(".step-transformation")).toBeVisible();
   await page.clock.runFor(700);

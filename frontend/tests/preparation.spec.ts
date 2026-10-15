@@ -86,29 +86,24 @@ test("cancelling a preparation stops polling and allows a fresh request", async 
   await expect(page.locator(".preparation-progress")).toHaveCount(0);
 });
 
-test("failed jobs retain earlier results and log background-removal fallbacks", async ({ page }) => {
-  const warnings: string[] = [];
-  page.on("console", (message) => {
-    if (message.type() === "warning") warnings.push(message.text());
-  });
+test("segmentation failures hide the unfinished result, retain earlier steps and allow retry", async ({ page }) => {
   await page.route("**/api/preparations/*/cancel", (route) => route.fulfill({ json: { cancelled: true } }));
   let attempt = 0;
   await page.route("**/api/preparations", (route) => route.fulfill({ json: {
     id: route.request().postDataJSON().id, status: ++attempt === 1 ? "error" : "complete", message: "Ready",
-    error: "Image generation is temporarily unavailable.", completed: attempt === 1 ? 1 : 7, total: 7,
+    error: "Background removal could not complete. Try again; the saved illustration will be reused.", completed: attempt === 1 ? 1 : 7, total: 7,
     plan: makePlan(), visuals: attempt === 1 ? { 0: visuals[0] } : visuals,
-    warnings: ["Background removal is not configured. New illustrations are shown with their backgrounds."],
+    warnings: [],
   } }));
   await page.goto("/start/blueberry-matcha-fizz");
   await page.getByRole("button", { name: "Step 7", exact: true }).click();
   await page.getByRole("button", { name: "Illustrate with AI" }).click();
-  await expect(page.getByRole("alert")).toContainText("temporarily unavailable");
+  await expect(page.getByRole("alert")).toContainText("Background removal could not complete");
+  await expect(page.locator(".generated-result")).toHaveCount(0);
   await page.getByRole("button", { name: "Step 1", exact: true }).click();
   await expect(page.locator(".generated-result")).toHaveAttribute("src", "/media/matcha.png");
   await page.getByRole("button", { name: "Step 7", exact: true }).click();
   await page.getByRole("button", { name: "Try again", exact: true }).click();
   await expect(page.getByRole("button", { name: "Illustration ready" })).toBeVisible();
-  await expect(page.getByText("Background removal is not configured", { exact: false })).toHaveCount(0);
-  expect(warnings.some((warning) => warning.includes("Background removal is not configured"))).toBe(true);
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
