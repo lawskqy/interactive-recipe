@@ -80,6 +80,25 @@ test("usable rose backgrounds and textured borders are accepted using the remova
   }
 });
 
+test("white padding around a pink backdrop is cleared without cropping or removing white foreground", async () => {
+  const { pixels } = await fixture();
+  for (let x = 0; x < 40; x++) {
+    pixels.set([217, 165, 189, 255], x * 4);
+    pixels.set([241, 223, 234, 255], (39 * 40 + x) * 4);
+  }
+  const png = await sharp(pixels, { raw: { width: 40, height: 40, channels: 4 } }).png().toBuffer();
+  const padded = await sharp(png).extend({ top: 5, bottom: 7, left: 3, right: 6, background: '#fafafa' }).png().toBuffer();
+  const result = await removeMagenta(padded);
+  assert.equal(result.info.width, 49);
+  assert.equal(result.info.height, 52);
+  const actual = await sharp(result.png).raw().toBuffer();
+  const rgba = (x, y) => [...actual.subarray((y * 49 + x) * 4, (y * 49 + x) * 4 + 4)];
+  for (const [x, y] of [[0, 0], [25, 2], [2, 20], [47, 20], [25, 50], [4, 6], [21, 23]])
+    assert.equal(rgba(x, y)[3], 0, 'Padding, pink backdrop and handle opening are transparent');
+  assert.deepEqual(rgba(14, 16), [255, 255, 255, 255], 'White material keeps its original location and opacity');
+  assert.deepEqual(rgba(13, 15), [255, 255, 255, 120], 'Existing foreground alpha is preserved');
+});
+
 test("wrong-color, nonuniform and empty sources fail instead of publishing broken artwork", async () => {
   const invalid = error => error.code === "UNSUITABLE_BACKGROUND";
   const { png } = await fixture([255, 255, 255]);

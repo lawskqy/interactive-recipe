@@ -1,7 +1,7 @@
 const sharp = require("sharp");
 
 // Include this version in artwork cache keys when changing mask or edge behavior.
-const COLOR_KEY_VERSION = "magenta-global-v3";
+const COLOR_KEY_VERSION = "magenta-global-v4";
 const BACKGROUND_TOLERANCE = 32;
 const invalidBackground = (message) => Object.assign(new Error(message), { code: "UNSUITABLE_BACKGROUND" });
 const median = (values) => values.sort((a, b) => a - b)[Math.floor(values.length / 2)];
@@ -31,6 +31,51 @@ async function removeMagenta(input) {
   // Preserve genuine existing transparency, including foreground colors and alpha.
   if (transparentBorder === border.length) return { png: await encode(), info: { width, height, alreadyTransparent: true } };
 
+  // Some drawings have white letterbox strips outside the requested backdrop.
+  // Locate that backdrop without treating white materials inside it as a key.
+  let left = 0, right = width - 1, top = 0, bottom = height - 1;
+  const paper = (p) => {
+    const o = p * 4;
+    return data[o + 3] === 0 || Math.min(data[o], data[o + 1], data[o + 2]) >= 245;
+  };
+  const paperRow = (y, matches = paper) => {
+    for (let x = left; x <= right; x++) if (!matches(y * width + x)) return false;
+    return true;
+  };
+  const paperColumn = (x, matches = paper) => {
+    for (let y = top; y <= bottom; y++) if (!matches(y * width + x)) return false;
+    return true;
+  };
+  while (top < bottom && paperRow(top)) top++;
+  while (bottom > top && paperRow(bottom)) bottom--;
+  while (left < right && paperColumn(left)) left++;
+  while (right > left && paperColumn(right)) right--;
+  const hasPadding = left > 0 || top > 0 || right < width - 1 || bottom < height - 1;
+  if (hasPadding) {
+    // A generated strip can end in 1–2 anti-aliased rows/columns. Clear these
+    // only when the entire line is paper or reserved pink, never object colors.
+    const transitionPixel = (p) => {
+      const o = p * 4;
+      return paper(p) || (data[o] - data[o + 1] > 5 && data[o + 2] >= data[o + 1]);
+    };
+    for (let i = 0; i < 2; i++) {
+      if (top > 0 && top < bottom && paperRow(top, transitionPixel)) top++;
+      if (bottom < height - 1 && bottom > top && paperRow(bottom, transitionPixel)) bottom--;
+      if (left > 0 && left < right && paperColumn(left, transitionPixel)) left++;
+      if (right < width - 1 && right > left && paperColumn(right, transitionPixel)) right--;
+    }
+    border.length = 0;
+    channels.forEach((values) => { values.length = 0; });
+    for (let x = left; x <= right; x++) {
+      sample(top * width + x);
+      if (bottom > top) sample(bottom * width + x);
+    }
+    for (let y = top + 1; y < bottom; y++) {
+      sample(y * width + left);
+      if (right > left) sample(y * width + right);
+    }
+  }
+
   const key = channels.map(median);
   const distance = (p) => {
     const o = p * 4;
@@ -42,9 +87,13 @@ async function removeMagenta(input) {
   if (uniformBorder < 0.95 || key[0] - key[1] < 40 || key[2] - key[1] < 20)
     throw invalidBackground(`The illustration needs a uniform pink or magenta background (border RGB ${key.join(",")}; uniform ${(uniformBorder * 100).toFixed(1)}%).`);
   const keyChroma = Math.min(key[0], key[2]) - key[1];
+  if (hasPadding) for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+    if (x < left || x > right || y < top || y > bottom) data[(y * width + x) * 4 + 3] = 0;
+  }
   let removed = 0, partial = 0, visible = 0;
   for (let p = 0; p < count; p++) {
     const o = p * 4;
+    if (data[o + 3] === 0) { removed++; continue; }
     const chroma = Math.min(data[o], data[o + 2]) - data[o + 1];
     // Generated backdrops have local lighting/texture variations even when the
     // border is uniform. Clear that color neighborhood, then feather into the
