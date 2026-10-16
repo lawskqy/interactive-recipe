@@ -6,6 +6,7 @@ const os = require("node:os");
 const sharp = require("sharp");
 const { createArtwork } = require("../preparation-artwork");
 const { writePng } = require("../resources");
+const { hash } = require("../core");
 const images = path.resolve(__dirname, "../../frontend/public/images");
 const png = fs.readFileSync(path.join(images, "matcha_powder_seg.png"));
 function temporary(t) {
@@ -71,7 +72,7 @@ test("default background worker produces and caches transparent artwork without 
   assert.equal(calls, 1);
 });
 
-test("unsuitable backgrounds are discarded and explicit retry generates a fresh usable image", async (t) => {
+test("unsuitable backgrounds are retained for diagnosis and explicit retry generates a fresh usable image", async (t) => {
   const media = temporary(t);
   const wrong = await sharp({ create: { width: 64, height: 64, channels: 4, background: 'white' } }).png().toBuffer();
   let calls = 0;
@@ -81,9 +82,40 @@ test("unsuitable backgrounds are discarded and explicit retry generates a fresh 
   const options = { ...request(), references: [] };
   await assert.rejects(artwork.render(options), /Try again to draw a new illustration/);
   assert.equal(calls, 1, "No automatic paid regeneration");
-  assert.deepEqual(fs.readdirSync(media), []);
+  const rejected = fs.readdirSync(media);
+  assert.equal(rejected.length, 1);
+  assert.match(rejected[0], /^step_[a-f0-9]{20}\.png$/, 'Rejected image remains subject to cache expiry and size limits');
+  assert.deepEqual(fs.readFileSync(path.join(media, rejected[0])), wrong);
   assert.equal((await artwork.render(options)).segmented, true);
   assert.equal(calls, 2);
+});
+
+test("legacy originals are resegmented under a new URL without paid regeneration or overwriting old URLs", async (t) => {
+  const media = temporary(t);
+  const input = await sharp({ create: { width: 64, height: 64, channels: 4, background: '#d7427c' } })
+    .composite([{ input: await sharp({ create: { width: 30, height: 30, channels: 4, background: 'white' } }).png().toBuffer(), left: 17, top: 17 }]).png().toBuffer();
+  let prompt;
+  const artwork = createArtwork({ images, media, generate: async (options) => {
+    prompt = options.contents[0].parts[0].text;
+    return { candidates: [{ content: { parts: [{ inlineData: { mimeType: 'image/png', data: input.toString('base64') } }] } }] };
+  } });
+  const options = { ...request(), references: [] };
+  const first = await artwork.render(options);
+  const legacyKey = 'step_' + hash({ ...artwork.identity(), backgroundRemoval: 'magenta-global-v1', prompt, references: [] });
+  const original = path.join(media, legacyKey + '.png');
+  assert.deepEqual(fs.readFileSync(original), input, 'Source identity remains compatible with the old cache');
+  const staleCutout = path.join(media, legacyKey + '_seg.png');
+  await writePng(staleCutout, input);
+  fs.unlinkSync(path.join(media, path.basename(first.src)));
+  const restarted = createArtwork({ images, media, generate: async () => { throw new Error('Must reuse the saved drawing'); } });
+  const repaired = await restarted.render(options);
+  assert.notEqual(repaired.src, '/media/' + path.basename(staleCutout));
+  assert.deepEqual(fs.readFileSync(staleCutout), input, 'Previously published immutable URLs are not overwritten');
+  assert.deepEqual(fs.readFileSync(original), input);
+  const pixels = await sharp(path.join(media, path.basename(repaired.src))).raw().toBuffer();
+  assert.equal(pixels[3], 0);
+  assert.equal(pixels[(32 * 64 + 32) * 4 + 3], 255);
+  assert.equal((await restarted.render(options)).src, repaired.src);
 });
 
 test("segmentation failure is explicit and retry reuses the generated original", async (t) => {

@@ -1,7 +1,8 @@
 const sharp = require("sharp");
 
 // Include this version in artwork cache keys when changing mask or edge behavior.
-const COLOR_KEY_VERSION = "magenta-global-v1";
+const COLOR_KEY_VERSION = "magenta-global-v3";
+const BACKGROUND_TOLERANCE = 32;
 const invalidBackground = (message) => Object.assign(new Error(message), { code: "UNSUITABLE_BACKGROUND" });
 const median = (values) => values.sort((a, b) => a - b)[Math.floor(values.length / 2)];
 
@@ -35,18 +36,24 @@ async function removeMagenta(input) {
     const o = p * 4;
     return Math.max(Math.abs(data[o] - key[0]), Math.abs(data[o + 1] - key[1]), Math.abs(data[o + 2] - key[2]));
   };
-  const uniformBorder = border.filter((p) => distance(p) <= 12).length / border.length;
+  const uniformBorder = border.filter((p) => distance(p) <= BACKGROUND_TOLERANCE).length / border.length;
   const exactTargetBorder = border.filter((p) => data[p * 4] === 255 && data[p * 4 + 1] === 0 && data[p * 4 + 2] === 255).length / border.length;
   // Gemini often returns a pink shade rather than exact #FF00FF. Measure it.
-  if (uniformBorder < 0.95 || key[0] - key[1] < 40 || key[2] - key[1] < 35)
-    throw invalidBackground("The illustration needs a uniform magenta background.");
+  if (uniformBorder < 0.95 || key[0] - key[1] < 40 || key[2] - key[1] < 20)
+    throw invalidBackground(`The illustration needs a uniform pink or magenta background (border RGB ${key.join(",")}; uniform ${(uniformBorder * 100).toFixed(1)}%).`);
   const keyChroma = Math.min(key[0], key[2]) - key[1];
   let removed = 0, partial = 0, visible = 0;
   for (let p = 0; p < count; p++) {
     const o = p * 4;
     const chroma = Math.min(data[o], data[o + 2]) - data[o + 1];
-    const alpha = distance(p) <= 12 ? 0
-      : 1 - Math.max(0, Math.min(1, (chroma - 8) / (keyChroma - 8)));
+    // Generated backdrops have local lighting/texture variations even when the
+    // border is uniform. Clear that color neighborhood, then feather into the
+    // chroma matte instead of leaving those variations as translucent patches.
+    const transition = Math.max(0, Math.min(1, (distance(p) - BACKGROUND_TOLERANCE) / 16));
+    // Pale pink keys can be close to neutral foreground colors. Never apply
+    // color-distance cleanup to pixels without the reserved pink chroma.
+    const feather = chroma <= 8 ? 1 : transition * transition * (3 - 2 * transition);
+    const alpha = feather * (1 - Math.max(0, Math.min(1, (chroma - 8) / (keyChroma - 8))));
     if (alpha < 0.01) removed++;
     else if (alpha < 0.99) partial++;
     // Unmix the background from soft edges to avoid a pink fringe.
