@@ -79,6 +79,32 @@ test("invalid AI plans get one correction attempt and never reach artwork unchec
   assert.equal((await finished(broken, broken.start(recipe, 0).id)).status, "error");
 });
 
+test("ready ingredient and tool images are published while another input is still rendering", async (t) => {
+  let release;
+  const blocked = new Promise((resolve) => { release = resolve; });
+  t.after(() => release());
+  const service = createPreparation({ generate: async () => ({ text: JSON.stringify(makePlan()) }),
+    render: async (request) => {
+      if (request.item.id === "i3") await blocked;
+      return fakeRender(request);
+    } });
+  const initial = service.start(recipe, 0);
+  await new Promise(setImmediate);
+  const pending = service.get(initial.id);
+  assert.equal(pending.status, "rendering");
+  assert.deepEqual(pending.visuals, {});
+  assert.equal(pending.assets.i1.src, "/media/i1.png");
+  assert.equal(pending.assets.t1.src, "/media/t1.png");
+  assert.equal(pending.assets.i3, undefined);
+  assert.deepEqual(initial.assets, {}, "Earlier snapshots do not acquire later assets");
+  release();
+  const complete = await finished(service, initial.id);
+  assert.equal(complete.assets.i3.src, "/media/i3.png");
+  assert.equal(complete.assets.s1o1.src, complete.visuals[0].result);
+  const reused = await finished(service, service.start(recipe, 0).id);
+  assert.deepEqual(reused.assets, complete.assets, "Cached inputs remain available on a new request");
+});
+
 test("partial progress survives failure and retry reuses completed preparations", async () => {
   let failOnce = true;
   const rendered = [];

@@ -25,6 +25,7 @@ test("last step uses prepared matcha and its exact earlier result, with visible 
   let id = "";
   let requests = 0;
   let finish = false;
+  let partial = false;
   await page.route("**/api/preparations", (route) => {
     requests++;
     const body = route.request().postDataJSON();
@@ -35,7 +36,7 @@ test("last step uses prepared matcha and its exact earlier result, with visible 
   });
   await page.route("**/api/preparations/*", (route) => route.fulfill({ json: {
     id, status: finish ? "complete" : "rendering", message: finish ? "Ready" : "Drawing prepared matcha…", completed: finish ? 7 : 0, total: 7,
-    plan: makePlan(), visuals: finish ? visuals : {}, warnings: [],
+    plan: makePlan(), visuals: finish ? visuals : partial ? { 0: visuals[0] } : {}, warnings: [],
   } }));
   await page.goto("/start/blueberry-matcha-fizz");
   await page.getByRole("button", { name: "Step 7", exact: true }).click();
@@ -44,6 +45,9 @@ test("last step uses prepared matcha and its exact earlier result, with visible 
   await expect(page.getByRole("progressbar")).toHaveAttribute("max", "7");
   await expect(page.locator(".step-assets")).toContainText("prepared matcha");
   await expect(page.locator(".step-assets")).not.toContainText("matcha powder");
+  partial = true;
+  await expect(page.locator(".step-asset").filter({ hasText: "prepared matcha" }).locator("img")).toHaveAttribute("src", "/media/matcha.png");
+  await expect(page.locator(".step-asset").filter({ hasText: "sparkling blueberry base" }).locator(".asset-placeholder")).toHaveText("✧");
   finish = true;
   await expect(page.getByRole("button", { name: "Illustration ready" })).toBeVisible();
   const prepared = page.locator(".step-asset").filter({ hasText: "prepared matcha" });
@@ -54,6 +58,52 @@ test("last step uses prepared matcha and its exact earlier result, with visible 
   await page.getByRole("button", { name: "Step 7", exact: true }).click();
   await expect(prepared.locator("img")).toHaveAttribute("src", "/media/matcha.png");
   expect(requests).toBe(1);
+});
+
+test("existing artwork stays visible during planning and stars only stand in for unfinished images", async ({ page }) => {
+  const plan = {
+    ingredients: [{ id: "i1", name: "matcha powder", appearance: "Green powder" }, { id: "i2", name: "pumpkin spice", appearance: "Spice" }],
+    tools: [{ id: "t1", name: "bowl", appearance: "Bowl" }, { id: "t2", name: "whisk", appearance: "Whisk" },
+      { id: "t3", name: "special spice scoop", appearance: "Small scoop" }],
+    steps: [{ index: 0, inputs: ["i1", "i2"], tools: ["t1", "t2", "t3"], actions: ["sift"], outputs: [matcha] }],
+  };
+  let ready = false;
+  let imageRequested = false;
+  let releaseImage!: () => void;
+  const imageGate = new Promise<void>((resolve) => { releaseImage = resolve; });
+  const snapshot = (id: string) => ({ id, status: "rendering", message: "Drawing the spice scoop…", completed: 0, total: 1, plan,
+    visuals: {}, assets: ready ? { t3: { id: "t3", name: "special spice scoop", src: "/media/scoop.png", segmented: true } } : {}, warnings: [] });
+  await page.route("**/api/preparations", (route) => route.fulfill({ json: snapshot(route.request().postDataJSON().id) }));
+  await page.route("**/api/preparations/*", (route) => route.fulfill({ json: snapshot("job") }));
+  await page.route("**/api/preparations/*/cancel", (route) => route.fulfill({ json: { cancelled: true } }));
+  await page.route("**/media/scoop.png", async (route) => {
+    imageRequested = true;
+    await imageGate;
+    await route.fulfill({ path: "public/assets/whisk.webp", contentType: "image/webp" });
+  });
+  await page.goto("/start/pumpkin-spice-maple-matcha-latte");
+  const item = (name: string) => page.locator(".step-asset").filter({ hasText: name });
+  const matchaSrc = await item("matcha powder").locator("img").getAttribute("src");
+  await page.getByRole("button", { name: "Illustrate with AI" }).click();
+  for (const [name, file] of [["matcha powder", "matcha_powder"], ["pumpkin spice", "pumpkin_spice"], ["bowl", "bowl"], ["whisk", "whisk"]]) {
+    await expect(item(name).locator("img")).toHaveAttribute("src", `/assets/${file}.webp`);
+    await expect(item(name).locator("img")).toHaveJSProperty("complete", true);
+    await expect(item(name).locator(".asset-placeholder")).toHaveCount(0);
+  }
+  await expect(item("matcha powder").locator("img")).toHaveAttribute("src", matchaSrc!);
+  await expect(item("special spice scoop").locator(".asset-placeholder")).toHaveText("✧");
+  await page.getByRole("button", { name: "Cancel illustration" }).click();
+  await expect(item("special spice scoop").locator(".asset-placeholder")).toBeEmpty();
+  await expect(item("bowl").locator("img")).toBeVisible();
+  await page.getByRole("button", { name: "Illustrate with AI" }).click();
+  ready = true;
+  await expect.poll(() => imageRequested).toBe(true);
+  await expect(item("special spice scoop").locator(".asset-placeholder")).toHaveText("✧");
+  releaseImage();
+  await expect(item("special spice scoop").locator("img")).toHaveAttribute("src", "/media/scoop.png");
+  await expect(item("special spice scoop").locator(".asset-placeholder")).toHaveCount(0);
+  await expect(page.locator(".generated-result")).toHaveCount(0);
+  await page.getByRole("button", { name: "Cancel illustration" }).click();
 });
 
 test("cancelling a preparation stops polling and allows a fresh request", async ({ page }) => {

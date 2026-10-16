@@ -86,7 +86,7 @@ function createPreparation({ generate, render, available = async () => true, cac
   const terminal = (job) => ["complete", "error", "cancelled"].includes(job.status);
   const snapshot = (job) => ({
     id: job.id, status: job.status, message: job.message, completed: job.completed,
-    total: job.total, stepIndex: job.index, plan: job.plan, visuals: job.visuals,
+    total: job.total, stepIndex: job.index, plan: job.plan, visuals: job.visuals, assets: { ...job.assets },
     warnings: [...job.warnings], error: job.error,
   });
   function check(job) {
@@ -140,8 +140,10 @@ function createPreparation({ generate, render, available = async () => true, cac
     }
     check(job);
     if (asset.warning) job.warnings.add(asset.warning);
-    return { id: item.id, name: item.name, src: asset.src, segmented: asset.segmented,
+    const ready = { id: item.id, name: item.name, src: asset.src, segmented: asset.segmented,
       ...(item.sourceStep !== undefined ? { sourceStep: item.sourceStep } : {}) };
+    job.assets[item.id] = ready;
+    return ready;
   }
   async function run(session, job) {
     try {
@@ -227,7 +229,7 @@ function createPreparation({ generate, render, available = async () => true, cac
         sessions.set(key, session);
       }
       const job = { id, key, index, status: "planning", message: "Understanding the recipe and its preparations…",
-        completed: 0, total: 0, visuals: {}, warnings: new Set(), controller: new AbortController(), touched: now() };
+        completed: 0, total: 0, visuals: {}, assets: {}, warnings: new Set(), controller: new AbortController(), touched: now() };
       jobs.set(id, job);
       void run(session, job);
       return snapshot(job);

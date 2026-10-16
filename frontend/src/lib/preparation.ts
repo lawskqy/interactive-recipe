@@ -1,5 +1,5 @@
 import { api, mediaUrl } from "./api";
-import type { StepAsset, StepVisual } from "./recipe";
+import { canonicalName, type StepAsset, type StepVisual } from "./recipe";
 
 interface PlannedObject { id: string; name: string; appearance: string; sourceStep?: number }
 export interface PreparationPlan {
@@ -15,17 +15,38 @@ export interface PreparationJob {
   total: number;
   plan?: PreparationPlan;
   visuals: Record<number, StepVisual>;
+  assets?: Record<string, StepAsset>;
   warnings: string[];
   error?: string;
 }
 
-export function plannedVisual(plan: PreparationPlan, index: number): StepVisual {
+export function plannedVisual(
+  plan: PreparationPlan,
+  index: number,
+  manifest: Record<string, string>,
+  assets: Record<string, StepAsset>,
+  visuals: Record<number, StepVisual>,
+): StepVisual {
   const objects = new Map([...plan.ingredients, ...plan.tools, ...plan.steps.flatMap((step) => step.outputs)]
     .map((item) => [item.id, item]));
   const step = plan.steps[index];
+  const sources = new Map(plan.steps.flatMap((entry, stepIndex) => entry.outputs.map((item) => [item.id, stepIndex] as const)));
+  const resolve = (id: string): StepAsset => {
+    const item = objects.get(id)!;
+    const sourceStep = sources.get(id);
+    const ready = assets[id];
+    // Prepared mixtures must use their exact earlier output, never a stock raw
+    // ingredient with a similar name. Raw ingredients/tools keep library art.
+    const previous = sourceStep === undefined ? undefined : visuals[sourceStep];
+    const src = sourceStep === undefined
+      ? manifest[canonicalName(item.name)] || ready?.src
+      : ready?.src || previous?.outputs?.find((output) => output.id === id)?.src ||
+        (plan.steps[sourceStep].outputs[0]?.id === id ? previous?.result : undefined);
+    return { ...ready, ...item, src, ...(sourceStep !== undefined ? { sourceStep } : {}) };
+  };
   return {
-    ingredients: step.inputs.map((id) => objects.get(id)!),
-    tools: step.tools.map((id) => objects.get(id)!),
+    ingredients: step.inputs.map(resolve),
+    tools: step.tools.map(resolve),
     actions: step.actions,
   };
 }
@@ -58,6 +79,15 @@ function loadImage(src: string, signal: AbortSignal) {
     signal.addEventListener("abort", abort, { once: true });
     image.src = src;
   });
+}
+
+export async function loadAsset(asset: StepAsset, signal: AbortSignal): Promise<StepAsset> {
+  const ready = { ...asset, src: asset.src ? mediaUrl(asset.src) : undefined };
+  if (ready.src) {
+    try { await loadImage(ready.src, signal); }
+    catch (error) { if (signal.aborted) throw error; ready.src = undefined; }
+  }
+  return ready;
 }
 
 export async function loadVisual(visual: StepVisual, signal: AbortSignal): Promise<StepVisual> {

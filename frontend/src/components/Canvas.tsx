@@ -7,10 +7,12 @@ export default function Canvas({
   visual,
   recipe,
   instruction,
+  illustrating = false,
 }: {
   visual: StepVisual;
   recipe: Recipe;
   instruction: string;
+  illustrating?: boolean;
 }) {
   const [playing, setPlaying] = useState(
     () => !!visual.result && !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -75,7 +77,7 @@ export default function Canvas({
               />
             ) : (
               <span className="asset-placeholder" aria-hidden="true">
-                ✧
+                {illustrating ? "✧" : null}
               </span>
             )}
             <span>{item.name}</span>

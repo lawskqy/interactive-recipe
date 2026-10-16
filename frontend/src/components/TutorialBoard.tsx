@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
-import { describeStep, safeManifest, type Recipe, type StepVisual } from "../lib/recipe";
-import { cancelPreparation, loadVisual, pausePolling, plannedVisual, type PreparationJob, type PreparationPlan } from "../lib/preparation";
+import { describeStep, safeManifest, type Recipe, type StepAsset, type StepVisual } from "../lib/recipe";
+import { cancelPreparation, loadAsset, loadVisual, pausePolling, plannedVisual, type PreparationJob, type PreparationPlan } from "../lib/preparation";
 import Canvas from "./Canvas";
 export default function TutorialBoard({
   recipe,
@@ -18,6 +18,7 @@ export default function TutorialBoard({
 }) {
   const [manifest, setManifest] = useState<Record<string, string>>({});
   const [results, setResults] = useState<Record<number, StepVisual>>({});
+  const [assets, setAssets] = useState<Record<string, StepAsset>>({});
   const [busy, setBusy] = useState<number | null>(null);
   const [plan, setPlan] = useState<PreparationPlan | null>(null);
   const [progress, setProgress] = useState<PreparationJob | null>(null);
@@ -44,7 +45,7 @@ export default function TutorialBoard({
       request.current?.abort();
     };
   }, [activeStep]);
-  const local = plan ? plannedVisual(plan, activeStep) : describeStep(recipe, activeStep, manifest);
+  const local = plan ? plannedVisual(plan, activeStep, manifest, assets, results) : describeStep(recipe, activeStep, manifest);
   async function generate() {
     request.current?.abort();
     const controller = new AbortController();
@@ -61,6 +62,7 @@ export default function TutorialBoard({
     try {
       let job = await api<PreparationJob>("preparations", { recipe, index, id: jobId }, controller.signal);
       const loaded = new Set<number>();
+      const loadedAssets = new Map<string, string>();
       const loggedWarnings = new Set<string>();
       while (!controller.signal.aborted && id === requestId.current) {
         setProgress(job);
@@ -72,6 +74,13 @@ export default function TutorialBoard({
             loggedWarnings.add(warning);
           }
         }
+        await Promise.all(Object.entries(job.assets || {}).map(async ([assetId, asset]) => {
+          if (!asset.src || loadedAssets.get(assetId) === asset.src) return;
+          const ready = await loadAsset(asset, controller.signal);
+          if (id !== requestId.current || controller.signal.aborted) return;
+          if (ready.src) setAssets((old) => ({ ...old, [assetId]: ready }));
+          loadedAssets.set(assetId, asset.src);
+        }));
         for (const [step, visual] of Object.entries(job.visuals)) {
           const stepIndex = Number(step);
           if (loaded.has(stepIndex)) continue;
@@ -132,6 +141,7 @@ export default function TutorialBoard({
         visual={results[activeStep] || local}
         recipe={recipe}
         instruction={recipe.steps[activeStep]}
+        illustrating={busy === activeStep}
       />
       <div className="generation-row">
         <span>Want a closer look at this step?</span>
