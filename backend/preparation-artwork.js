@@ -2,7 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const { removeBackground } = require("./background-removal");
-const { COLOR_KEY_VERSION } = require("./color-key");
+const { SEGMENTATION_VERSION } = require("./opencv-segmentation");
 const { fail, hash, safeName, imageReference, singleFlight, createQueue } = require("./core");
 const { cachedPng, writePng } = require("./resources");
 
@@ -16,7 +16,7 @@ function createArtwork({ generate, images, media, segment = removeBackground }) 
   // reusable. Only the cutout's identity changes when the removal algorithm does.
   const sourceIdentity = () => ({ version: 2, style: STYLE, model: process.env.IMAGE_MODEL || "gemini-2.5-flash-image",
     backgroundRemoval: "magenta-global-v1" });
-  const identity = () => ({ ...sourceIdentity(), backgroundRemoval: COLOR_KEY_VERSION });
+  const identity = () => ({ ...sourceIdentity(), backgroundRemoval: SEGMENTATION_VERSION });
   const available = async (asset) => {
     if (!asset.segmented) return false;
     try { return asset.src.startsWith("/media/") ? await cachedPng(resolve(asset.src)) : fs.existsSync(resolve(asset.src)); }
@@ -29,6 +29,22 @@ function createArtwork({ generate, images, media, segment = removeBackground }) 
       const stem = safeName(item.name);
       const file = fs.readdirSync(images).find((name) => name.endsWith("_seg.png") && safeName(name.slice(0, -8)) === stem);
       if (file) return { src: "/images/" + file, segmented: true };
+      const source = fs.readdirSync(images).find((name) => name.endsWith(".png") && safeName(name.slice(0, -4)) === stem);
+      if (source) {
+        const original = path.join(images, source);
+        const digest = crypto.createHash("sha256").update(await fs.promises.readFile(original)).digest("hex");
+        const key = "ingredient_" + hash({ stock: source, digest, backgroundRemoval: SEGMENTATION_VERSION });
+        return single(key, () => queue(async () => {
+          const cutout = path.join(media, key + "_seg.png");
+          if (!(await cachedPng(cutout))) {
+            onProgress(`Removing the background from ${item.name}…`);
+            try { await segment(original, cutout, item.name); }
+            catch { fail("The saved ingredient or tool image could not be separated from its background. Please retry.", 502); }
+          }
+          if (!(await cachedPng(cutout))) fail("Background removal could not complete. Please retry.", 502);
+          return { src: `/media/${key}_seg.png`, segmented: true };
+        }));
+      }
     }
     const referenceData = [];
     for (const reference of references) {
@@ -46,7 +62,7 @@ function createArtwork({ generate, images, media, segment = removeBackground }) 
     const key = (kind === "result" ? "step_" : "ingredient_") + hash({
       ...sourceIdentity(), prompt, references: referenceData.map(({ id, digest }) => ({ id, digest })),
     });
-    const cutoutKey = (kind === "result" ? "step_" : "ingredient_") + hash({ source: key, backgroundRemoval: COLOR_KEY_VERSION });
+    const cutoutKey = (kind === "result" ? "step_" : "ingredient_") + hash({ source: key, backgroundRemoval: SEGMENTATION_VERSION });
     return single(key, () => queue(async () => {
       const original = path.join(media, key + ".png");
       const cutout = path.join(media, cutoutKey + "_seg.png");
@@ -80,7 +96,7 @@ function createArtwork({ generate, images, media, segment = removeBackground }) 
           const rejected = (kind === "result" ? "step_" : "ingredient_") + hash({ rejected: key }) + ".png";
           await fs.promises.rename(original, path.join(media, rejected));
           console.warn(JSON.stringify({ stage: "background-removal", source: rejected, reason: error.message }));
-          fail("The illustration did not have a usable plain background. Try again to draw a new illustration.", 502);
+          fail("The illustration could not be separated from its background. Try again to draw a new illustration.", 502);
         }
         fail("Background removal could not complete. Try again; the saved illustration will be reused.", 502);
       }

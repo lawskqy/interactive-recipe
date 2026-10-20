@@ -107,7 +107,7 @@ function createApp({ generate = generateContent, artwork } = {}) {
         process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
       ),
       segmentationConfigured: true,
-      backgroundRemoval: "color-key",
+      backgroundRemoval: "opencv-grabcut",
       providerVerified: false,
       dailyRequestLimit: 100,
     }),
