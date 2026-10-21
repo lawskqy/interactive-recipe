@@ -1,7 +1,8 @@
 const sharp = require("sharp");
 
 // Include this version in artwork cache keys when changing mask or edge behavior.
-const COLOR_KEY_VERSION = "magenta-global-v1";
+const COLOR_KEY_VERSION = "magenta-global-v4";
+const BACKGROUND_TOLERANCE = 32;
 const invalidBackground = (message) => Object.assign(new Error(message), { code: "UNSUITABLE_BACKGROUND" });
 const median = (values) => values.sort((a, b) => a - b)[Math.floor(values.length / 2)];
 
@@ -30,23 +31,78 @@ async function removeMagenta(input) {
   // Preserve genuine existing transparency, including foreground colors and alpha.
   if (transparentBorder === border.length) return { png: await encode(), info: { width, height, alreadyTransparent: true } };
 
+  // Some drawings have white letterbox strips outside the requested backdrop.
+  // Locate that backdrop without treating white materials inside it as a key.
+  let left = 0, right = width - 1, top = 0, bottom = height - 1;
+  const paper = (p) => {
+    const o = p * 4;
+    return data[o + 3] === 0 || Math.min(data[o], data[o + 1], data[o + 2]) >= 245;
+  };
+  const paperRow = (y, matches = paper) => {
+    for (let x = left; x <= right; x++) if (!matches(y * width + x)) return false;
+    return true;
+  };
+  const paperColumn = (x, matches = paper) => {
+    for (let y = top; y <= bottom; y++) if (!matches(y * width + x)) return false;
+    return true;
+  };
+  while (top < bottom && paperRow(top)) top++;
+  while (bottom > top && paperRow(bottom)) bottom--;
+  while (left < right && paperColumn(left)) left++;
+  while (right > left && paperColumn(right)) right--;
+  const hasPadding = left > 0 || top > 0 || right < width - 1 || bottom < height - 1;
+  if (hasPadding) {
+    // A generated strip can end in 1–2 anti-aliased rows/columns. Clear these
+    // only when the entire line is paper or reserved pink, never object colors.
+    const transitionPixel = (p) => {
+      const o = p * 4;
+      return paper(p) || (data[o] - data[o + 1] > 5 && data[o + 2] >= data[o + 1]);
+    };
+    for (let i = 0; i < 2; i++) {
+      if (top > 0 && top < bottom && paperRow(top, transitionPixel)) top++;
+      if (bottom < height - 1 && bottom > top && paperRow(bottom, transitionPixel)) bottom--;
+      if (left > 0 && left < right && paperColumn(left, transitionPixel)) left++;
+      if (right < width - 1 && right > left && paperColumn(right, transitionPixel)) right--;
+    }
+    border.length = 0;
+    channels.forEach((values) => { values.length = 0; });
+    for (let x = left; x <= right; x++) {
+      sample(top * width + x);
+      if (bottom > top) sample(bottom * width + x);
+    }
+    for (let y = top + 1; y < bottom; y++) {
+      sample(y * width + left);
+      if (right > left) sample(y * width + right);
+    }
+  }
+
   const key = channels.map(median);
   const distance = (p) => {
     const o = p * 4;
     return Math.max(Math.abs(data[o] - key[0]), Math.abs(data[o + 1] - key[1]), Math.abs(data[o + 2] - key[2]));
   };
-  const uniformBorder = border.filter((p) => distance(p) <= 12).length / border.length;
+  const uniformBorder = border.filter((p) => distance(p) <= BACKGROUND_TOLERANCE).length / border.length;
   const exactTargetBorder = border.filter((p) => data[p * 4] === 255 && data[p * 4 + 1] === 0 && data[p * 4 + 2] === 255).length / border.length;
   // Gemini often returns a pink shade rather than exact #FF00FF. Measure it.
-  if (uniformBorder < 0.95 || key[0] - key[1] < 40 || key[2] - key[1] < 35)
-    throw invalidBackground("The illustration needs a uniform magenta background.");
+  if (uniformBorder < 0.95 || key[0] - key[1] < 40 || key[2] - key[1] < 20)
+    throw invalidBackground(`The illustration needs a uniform pink or magenta background (border RGB ${key.join(",")}; uniform ${(uniformBorder * 100).toFixed(1)}%).`);
   const keyChroma = Math.min(key[0], key[2]) - key[1];
+  if (hasPadding) for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+    if (x < left || x > right || y < top || y > bottom) data[(y * width + x) * 4 + 3] = 0;
+  }
   let removed = 0, partial = 0, visible = 0;
   for (let p = 0; p < count; p++) {
     const o = p * 4;
+    if (data[o + 3] === 0) { removed++; continue; }
     const chroma = Math.min(data[o], data[o + 2]) - data[o + 1];
-    const alpha = distance(p) <= 12 ? 0
-      : 1 - Math.max(0, Math.min(1, (chroma - 8) / (keyChroma - 8)));
+    // Generated backdrops have local lighting/texture variations even when the
+    // border is uniform. Clear that color neighborhood, then feather into the
+    // chroma matte instead of leaving those variations as translucent patches.
+    const transition = Math.max(0, Math.min(1, (distance(p) - BACKGROUND_TOLERANCE) / 16));
+    // Pale pink keys can be close to neutral foreground colors. Never apply
+    // color-distance cleanup to pixels without the reserved pink chroma.
+    const feather = chroma <= 8 ? 1 : transition * transition * (3 - 2 * transition);
+    const alpha = feather * (1 - Math.max(0, Math.min(1, (chroma - 8) / (keyChroma - 8))));
     if (alpha < 0.01) removed++;
     else if (alpha < 0.99) partial++;
     // Unmix the background from soft edges to avoid a pink fringe.

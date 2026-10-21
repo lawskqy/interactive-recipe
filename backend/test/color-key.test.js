@@ -41,6 +41,64 @@ test("already transparent artwork keeps its original foreground colors and alpha
   assert.deepEqual(await sharp(result.png).raw().toBuffer(), pixels);
 });
 
+test("local pink backdrop variations disappear without removing pale materials or detached details", async () => {
+  const { pixels } = await fixture([215, 66, 124]);
+  // Colors sampled from the lighter patch above the cream in the reported image.
+  const shades = [[218, 81, 129], [217, 83, 129], [216, 83, 125], [200, 52, 114]];
+  for (let y = 2; y < 6; y++) for (let x = 2; x < 6; x++)
+    pixels.set([...shades[(x + y) % shades.length], 255], (y * 40 + x) * 4);
+  // The same variation can appear in an enclosed handle opening.
+  pixels.set([...shades[0], 255], (18 * 40 + 18) * 4);
+  const details = [[245, 238, 229], [70, 64, 62], [169, 185, 132], [233, 170, 70]];
+  details.forEach((rgb, i) => pixels.set([...rgb, 255], (4 * 40 + 20 + i) * 4));
+  const input = await sharp(pixels, { raw: { width: 40, height: 40, channels: 4 } }).png().toBuffer();
+  const result = await removeMagenta(input);
+  const actual = await sharp(result.png).raw().toBuffer();
+  for (let y = 2; y < 6; y++) for (let x = 2; x < 6; x++)
+    assert.equal(actual[(y * 40 + x) * 4 + 3], 0, "No translucent backdrop residue");
+  assert.equal(actual[(18 * 40 + 18) * 4 + 3], 0);
+  details.forEach((rgb, i) => {
+    const offset = (4 * 40 + 20 + i) * 4;
+    assert.deepEqual([...actual.subarray(offset, offset + 4)], [...rgb, 255]);
+  });
+});
+
+test("usable rose backgrounds and textured borders are accepted using the removal tolerance", async () => {
+  for (const key of [[222, 112, 140], [215, 66, 124]]) {
+    const { pixels } = await fixture(key);
+    // A lighter band reaches the image border. It is still the same backdrop.
+    for (let y = 0; y < 5; y++) for (let x = 0; x < 40; x++)
+      pixels.set([key[0], key[1] + 14, key[2] + 14, 255], (y * 40 + x) * 4);
+    // A neutral material near a rose key must not be erased by RGB distance.
+    pixels.set([222, 140, 140, 255], (11 * 40 + 11) * 4);
+    const input = await sharp(pixels, { raw: { width: 40, height: 40, channels: 4 } }).png().toBuffer();
+    const result = await removeMagenta(input);
+    const actual = await sharp(result.png).raw().toBuffer();
+    for (let y = 0; y < 5; y++) for (let x = 0; x < 40; x++)
+      assert.equal(actual[(y * 40 + x) * 4 + 3], 0);
+    assert.deepEqual([...actual.subarray((11 * 40 + 11) * 4, (11 * 40 + 11) * 4 + 4)], [222, 140, 140, 255]);
+  }
+});
+
+test("white padding around a pink backdrop is cleared without cropping or removing white foreground", async () => {
+  const { pixels } = await fixture();
+  for (let x = 0; x < 40; x++) {
+    pixels.set([217, 165, 189, 255], x * 4);
+    pixels.set([241, 223, 234, 255], (39 * 40 + x) * 4);
+  }
+  const png = await sharp(pixels, { raw: { width: 40, height: 40, channels: 4 } }).png().toBuffer();
+  const padded = await sharp(png).extend({ top: 5, bottom: 7, left: 3, right: 6, background: '#fafafa' }).png().toBuffer();
+  const result = await removeMagenta(padded);
+  assert.equal(result.info.width, 49);
+  assert.equal(result.info.height, 52);
+  const actual = await sharp(result.png).raw().toBuffer();
+  const rgba = (x, y) => [...actual.subarray((y * 49 + x) * 4, (y * 49 + x) * 4 + 4)];
+  for (const [x, y] of [[0, 0], [25, 2], [2, 20], [47, 20], [25, 50], [4, 6], [21, 23]])
+    assert.equal(rgba(x, y)[3], 0, 'Padding, pink backdrop and handle opening are transparent');
+  assert.deepEqual(rgba(14, 16), [255, 255, 255, 255], 'White material keeps its original location and opacity');
+  assert.deepEqual(rgba(13, 15), [255, 255, 255, 120], 'Existing foreground alpha is preserved');
+});
+
 test("wrong-color, nonuniform and empty sources fail instead of publishing broken artwork", async () => {
   const invalid = error => error.code === "UNSUITABLE_BACKGROUND";
   const { png } = await fixture([255, 255, 255]);
