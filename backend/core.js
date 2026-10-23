@@ -55,10 +55,11 @@ function validateRecipe(r) {
 function imageReference(value, directories) {
   if (
     typeof value !== "string" ||
-    !/^\/(images|media)\/[\w().-]+\.(png|webp)$/.test(value)
+    !/^\/(images|media|assets)\/[\w().-]+\.(png|webp)$/.test(value)
   )
     fail("Invalid image reference.");
   const [, kind, filename] = value.split("/");
+  if (!directories[kind]) fail("Invalid image reference.");
   const root = path.resolve(directories[kind]);
   const resolved = path.resolve(root, filename);
   if (path.dirname(resolved) !== root) fail("Invalid image reference.");

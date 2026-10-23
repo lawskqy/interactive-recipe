@@ -129,8 +129,17 @@ function createApp({ generate = generateContent, artwork } = {}) {
     buckets.set(key, bucket);
     next();
   });
+  app.post("/api/artwork/segment", async (req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.json(await renderer.ensureSegmented(req.body.src));
+  });
   app.post("/api/preparations", (req, res) => {
-    res.status(202).json(preparation.start(req.body.recipe, req.body.index, req.body.id));
+    if (req.body.scope !== undefined && !["step", "recipe"].includes(req.body.scope)) fail("Invalid preparation scope.");
+    res.status(202).json(preparation.start(req.body.recipe, req.body.index, req.body.id,
+      req.body.scope === "recipe" ? "recipe" : "results"));
+  });
+  app.post("/api/preparation-assets", (req, res) => {
+    res.status(202).json(preparation.start(req.body.recipe, req.body.index, req.body.id, "objects"));
   });
   app.get("/api/preparations/:id", (req, res) => {
     res.setHeader("Cache-Control", "no-store");

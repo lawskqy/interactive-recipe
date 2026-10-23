@@ -79,6 +79,94 @@ test("invalid AI plans get one correction attempt and never reach artwork unchec
   assert.equal((await finished(broken, broken.start(recipe, 0).id)).status, "error");
 });
 
+test("recipe preparation prioritizes the opened branch and produces all steps once", async () => {
+  const calls = [];
+  const service = createPreparation({ generate: async () => ({ text: JSON.stringify(makePlan()) }),
+    render: async request => { calls.push(request); return fakeRender(request); } });
+  const job = await finished(service, service.start(recipe, 5, randomUUID(), "recipe").id);
+  assert.equal(job.status, "complete");
+  assert.equal(job.total, recipe.steps.length);
+  assert.equal(job.completed, recipe.steps.length);
+  assert.deepEqual(calls.filter(call => call.kind === "result").map(call => call.step.index), [1, 2, 3, 4, 5, 0, 6]);
+  assert.deepEqual(Object.keys(job.visuals), ["0", "1", "2", "3", "4", "5", "6"]);
+  assert.deepEqual(job.visuals[6].ingredients.map(item => item.src), [job.visuals[0].result, job.visuals[5].result]);
+  const count = calls.length;
+  const cached = await finished(service, service.start(recipe, 0, randomUUID(), "recipe").id);
+  assert.equal(cached.status, "complete");
+  assert.equal(calls.length, count);
+});
+
+test("automatic objects publish independently and never generate step results", async (t) => {
+  const calls = [];
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  t.after(() => release());
+  const service = createPreparation({ generate: async () => ({ text: JSON.stringify(makePlan()) }),
+    render: async request => {
+      calls.push(request);
+      if (request.item.id === 'i3') await gate;
+      return fakeRender(request);
+    } });
+  const initial = service.start(recipe, 0, randomUUID(), 'objects');
+  await new Promise(setImmediate);
+  const pending = service.get(initial.id);
+  assert.equal(pending.mode, 'objects');
+  assert.equal(pending.assets.i1.src, '/media/i1.png');
+  assert.equal(pending.assets.t1.src, '/media/t1.png');
+  assert.equal(pending.assets.i3, undefined);
+  assert.deepEqual(pending.visuals, {});
+  release();
+  const done = await finished(service, initial.id);
+  assert.equal(done.status, 'complete');
+  assert.equal(done.completed, 3);
+  assert.ok(calls.every(call => call.kind === 'object'));
+  const finalStep = await finished(service, service.start(recipe, 6, randomUUID(), 'objects').id);
+  assert.equal(finalStep.status, 'complete');
+  assert.equal(calls.length, 3, 'Missing earlier results remain placeholders until explicitly requested');
+  assert.deepEqual(finalStep.visuals, {});
+});
+
+test("automatic objects and result requests share planning and in-flight ingredient generation", async (t) => {
+  const calls = [];
+  let plans = 0, release;
+  const gate = new Promise(resolve => { release = resolve; });
+  t.after(() => release());
+  const service = createPreparation({ generate: async () => { plans++; return { text: JSON.stringify(makePlan()) }; },
+    render: async request => { calls.push(request); if (request.kind === 'object') await gate; return fakeRender(request); } });
+  const objects = service.start(recipe, 0, randomUUID(), 'objects');
+  const results = service.start(recipe, 0);
+  await new Promise(setImmediate);
+  assert.equal(calls.length, 3);
+  release();
+  assert.equal((await finished(service, objects.id)).status, 'complete');
+  assert.equal((await finished(service, results.id)).status, 'complete');
+  assert.equal(plans, 1);
+  assert.equal(calls.filter(call => call.kind === 'object').length, 3);
+  assert.equal(calls.filter(call => call.kind === 'result').length, 1);
+  assert.throws(() => service.start(recipe, 0, objects.id), /another step or task/);
+});
+
+test("automatic object failures retain successful images and retry only missing ones", async () => {
+  const calls = [];
+  let failOnce = true;
+  const service = createPreparation({ generate: async () => ({ text: JSON.stringify(makePlan()) }),
+    render: async request => {
+      calls.push(request.item.id);
+      if (request.item.id === 'i3' && failOnce) { failOnce = false; throw new Error('Failure'); }
+      return fakeRender(request);
+    } });
+  const first = await finished(service, service.start(recipe, 0, randomUUID(), 'objects').id);
+  assert.equal(first.status, 'error');
+  assert.ok(first.assets.i1);
+  assert.ok(first.assets.t1);
+  assert.equal(first.assets.i3, undefined);
+  const retry = await finished(service, service.start(recipe, 0, randomUUID(), 'objects').id);
+  assert.equal(retry.status, 'complete');
+  assert.equal(calls.filter(id => id === 'i1').length, 1);
+  assert.equal(calls.filter(id => id === 'i3').length, 2);
+  assert.deepEqual(retry.visuals, {});
+});
+
 test("ready ingredient and tool images are published while another input is still rendering", async (t) => {
   let release;
   const blocked = new Promise((resolve) => { release = resolve; });
@@ -182,6 +270,7 @@ test("preparation HTTP API validates inputs, reports progress and keeps provider
   const base = `http://127.0.0.1:${server.address().port}/api/preparations`;
   const post = (body, suffix = "") => fetch(base + suffix, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   assert.equal((await post({ recipe, index: -1 })).status, 400);
+  assert.equal((await post({ recipe, index: 0, scope: "unknown" })).status, 400);
   const id = randomUUID();
   assert.equal((await post({ recipe, index: 6, id })).status, 202);
   const status = await fetch(base + "/" + id);
@@ -190,4 +279,12 @@ test("preparation HTTP API validates inputs, reports progress and keeps provider
   assert.equal((await post({ recipe, index: 1, id })).status, 409);
   assert.equal((await post({}, `/${id}/cancel`)).status, 200);
   assert.equal((await fetch(base + "/missing")).status, 404);
+  const auto = await fetch(base.replace('/preparations', '/preparation-assets'), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipe, index: 0, id: randomUUID() }),
+  });
+  assert.equal(auto.status, 202);
+  assert.equal((await auto.json()).mode, 'objects');
+  const all = await post({ recipe, index: 0, id: randomUUID(), scope: "recipe" });
+  assert.equal(all.status, 202);
+  assert.equal((await all.json()).mode, "recipe");
 });

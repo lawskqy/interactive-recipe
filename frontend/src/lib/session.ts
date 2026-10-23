@@ -1,4 +1,5 @@
 import { isRecipe, type Message, type Recipe } from "./recipe";
+import { isOutdatedCatalogRecipe } from "./recipe-updates";
 
 export interface Session {
   recipe: Recipe;
@@ -11,10 +12,15 @@ export interface Session {
   proposal: Recipe | null;
 }
 const key = (id: string) => `quiet-cup:v1:${id}`;
-export function readSession(id: string): Session | null {
+export function readSession(id: string, current?: Recipe): Session | null {
   try {
     const value = JSON.parse(localStorage.getItem(key(id)) || "null");
     if (!value || !isRecipe(value.recipe) || value.recipe.id !== id) return null;
+    if (current && !value.previous && !value.proposal && isOutdatedCatalogRecipe(value.recipe, current)) {
+      value.recipe = current;
+      value.step = 0;
+      value.completed = [];
+    }
     const indices = (items: unknown, length: number): number[] =>
       Array.isArray(items) ? items.filter((n) => Number.isInteger(n) && n >= 0 && n < length) : [];
     return {

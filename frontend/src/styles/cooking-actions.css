@@ -1,0 +1,24 @@
+.action-scene.cooking-scene { max-width: 390px; margin: auto; }
+.action-scene.cooking-scene > svg { display: block; width: 100%; height: auto; max-height: 300px; overflow: visible; }
+.action-scene.cooking-scene p { margin: 8px 0 0; font-size: 24px; }
+.cooking-scene .whisk-motion { transform-origin: 180px 185px; }
+.cooking-scene .sieve-motion { transform-origin: 177px 110px; }
+.cooking-scene .pitcher-motion { transform-origin: 172px 76px; }
+.cooking-scene .liquid-stream { transform-origin: 172px 76px; }
+.cooking-scene .mixture-ripple { transform-origin: 180px 194px; }
+.cooking-scene .pour-ripple { transform-origin: 205px 185px; }
+.cooking-scene .powder-pile { transform-origin: 180px 193px; }
+.cooking-overlay { position: absolute; inset: 0; margin: auto; width: min(100%, 360px); }
+.action-sequence { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 0; margin: 12px 0; list-style: none; }
+.action-sequence li { border: 1px solid var(--line); border-radius: 20px; padding: 5px 13px; color: var(--muted); font-size: 12px; text-transform: capitalize; }
+.action-sequence li[aria-current="step"] { color: var(--espresso); background: var(--paper); border-color: var(--brass); }
+.animation-lab { max-width: 900px; margin: 0 auto; padding: 36px 24px 64px; }
+.animation-lab h1 { font-family: "Cormorant Garamond", serif; font-weight: 500; font-size: clamp(38px, 7vw, 58px); margin: 24px 0 8px; }
+.animation-lab > p { color: var(--muted); line-height: 1.7; max-width: 620px; }
+.animation-lab .lab-examples { display: flex; flex-wrap: wrap; gap: 10px; margin: 28px 0 20px; }
+.lab-examples button[aria-pressed="true"] { border-color: var(--sage); color: var(--sage); }
+.animation-lab label { display: block; font-size: 13px; margin-bottom: 8px; }
+.animation-lab textarea { box-sizing: border-box; width: 100%; min-height: 86px; resize: vertical; padding: 14px; font: inherit; line-height: 1.6; color: var(--paper); background: var(--walnut); border: 1px solid var(--line); border-radius: 8px; }
+.animation-lab form > button { margin: 12px 0 24px; }
+.animation-lab .visual-board { border: 1px solid var(--line); border-radius: 18px; padding: 24px 12px 8px; }
+.animation-lab .lab-instruction { margin: 0 auto 12px; max-width: 600px; text-align: center; line-height: 1.6; }

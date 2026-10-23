@@ -28,6 +28,7 @@ export interface StepVisual {
   tools: StepAsset[];
   actions: string[];
   result?: string;
+  resultSegmented?: boolean;
   resultName?: string;
   outputs?: StepAsset[];
 }

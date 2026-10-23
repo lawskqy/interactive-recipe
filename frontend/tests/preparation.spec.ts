@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { allStepVisuals } from "./artwork-fixtures";
 
 const matcha = { id: "s1o1", name: "prepared matcha", appearance: "Smooth green matcha in a bowl", sourceStep: 0 };
 const base = { id: "s6o1", name: "sparkling blueberry base", appearance: "Purple sparkling drink in a glass", sourceStep: 5 };
@@ -17,8 +18,10 @@ const visuals = {
     tools: [], actions: ["pour"], result: "/media/final.png", resultName: "layered blueberry matcha fizz" },
 };
 test.beforeEach(async ({ page }) => {
+  await page.route("**/api/preparation-assets", route => route.fulfill({ json: { id: route.request().postDataJSON().id, status: "complete", message: "Ready", assets: {}, visuals: {}, warnings: [] } }));
   await page.route("**/api/health", (route) => route.fulfill({ json: { aiConfigured: true } }));
-  await page.route("**/media/*.png", (route) => route.fulfill({ path: "public/thumbnails/blueberry-matcha-fizz.webp", contentType: "image/webp" }));
+  await page.route("**/media/*.png", (route) => route.fulfill({ path: "public/images/matcha_powder_seg.png", contentType: "image/png" }));
+  await page.route("**/assets/pumpkin_spice.webp", (route) => route.fulfill({ path: "public/images/matcha_powder_seg.png", contentType: "image/png" }));
 });
 
 test("last step uses prepared matcha and its exact earlier result, with visible dependency progress", async ({ page }) => {
@@ -31,16 +34,16 @@ test("last step uses prepared matcha and its exact earlier result, with visible 
     const body = route.request().postDataJSON();
     id = body.id;
     expect(body.recipe.steps).toHaveLength(7);
-    expect(body.index).toBe(6);
+    expect(body.index).toBe(0);
+    expect(body.scope).toBe("recipe");
     return route.fulfill({ json: { id, status: "rendering", message: "Drawing prepared matcha…", completed: 0, total: 7, plan: makePlan(), visuals: {}, warnings: [] } });
   });
   await page.route("**/api/preparations/*", (route) => route.fulfill({ json: {
     id, status: finish ? "complete" : "rendering", message: finish ? "Ready" : "Drawing prepared matcha…", completed: finish ? 7 : 0, total: 7,
-    plan: makePlan(), visuals: finish ? visuals : partial ? { 0: visuals[0] } : {}, warnings: [],
+    plan: makePlan(), visuals: finish ? allStepVisuals(visuals, 7) : partial ? { 0: visuals[0] } : {}, warnings: [],
   } }));
   await page.goto("/start/blueberry-matcha-fizz");
   await page.getByRole("button", { name: "Step 7", exact: true }).click();
-  await page.getByRole("button", { name: "Illustrate with AI" }).click();
   await expect(page.getByText("Drawing prepared matcha…")).toBeVisible();
   await expect(page.getByRole("progressbar")).toHaveAttribute("max", "7");
   await expect(page.locator(".step-assets")).toContainText("prepared matcha");
@@ -49,12 +52,12 @@ test("last step uses prepared matcha and its exact earlier result, with visible 
   await expect(page.locator(".step-asset").filter({ hasText: "prepared matcha" }).locator("img")).toHaveAttribute("src", "/media/matcha.png");
   await expect(page.locator(".step-asset").filter({ hasText: "sparkling blueberry base" }).locator(".asset-placeholder")).toHaveText("✧");
   finish = true;
-  await expect(page.getByRole("button", { name: "Illustration ready" })).toBeVisible();
+  await expect(page.locator(".preparation-progress")).toHaveCount(0);
   const prepared = page.locator(".step-asset").filter({ hasText: "prepared matcha" });
   await expect(prepared).toContainText("From step 1");
   await expect(prepared.locator("img")).toHaveAttribute("src", "/media/matcha.png");
   await page.getByRole("button", { name: "Step 1", exact: true }).click();
-  await expect(page.locator(".generated-result")).toHaveAttribute("src", "/media/matcha.png");
+  await expect(page.locator(".generated-result")).toHaveAttribute("href", "/media/matcha.png");
   await page.getByRole("button", { name: "Step 7", exact: true }).click();
   await expect(prepared.locator("img")).toHaveAttribute("src", "/media/matcha.png");
   expect(requests).toBe(1);
@@ -84,7 +87,6 @@ test("existing artwork stays visible during planning and stars only stand in for
   await page.goto("/start/pumpkin-spice-maple-matcha-latte");
   const item = (name: string) => page.locator(".step-asset").filter({ hasText: name });
   const matchaSrc = await item("matcha powder").locator("img").getAttribute("src");
-  await page.getByRole("button", { name: "Illustrate with AI" }).click();
   for (const [name, file] of [["matcha powder", "matcha_powder"], ["pumpkin spice", "pumpkin_spice"], ["bowl", "bowl"], ["whisk", "whisk"]]) {
     await expect(item(name).locator("img")).toHaveAttribute("src", `/assets/${file}.webp`);
     await expect(item(name).locator("img")).toHaveJSProperty("complete", true);
@@ -92,10 +94,10 @@ test("existing artwork stays visible during planning and stars only stand in for
   }
   await expect(item("matcha powder").locator("img")).toHaveAttribute("src", matchaSrc!);
   await expect(item("special spice scoop").locator(".asset-placeholder")).toHaveText("✧");
-  await page.getByRole("button", { name: "Cancel illustration" }).click();
-  await expect(item("special spice scoop").locator(".asset-placeholder")).toBeEmpty();
+  await page.getByRole("button", { name: "Stop preparing illustrations" }).click();
+  await expect(item("special spice scoop").locator(".asset-placeholder")).toHaveText("✧");
   await expect(item("bowl").locator("img")).toBeVisible();
-  await page.getByRole("button", { name: "Illustrate with AI" }).click();
+  await page.getByRole("button", { name: "Resume illustrations" }).click();
   ready = true;
   await expect.poll(() => imageRequested).toBe(true);
   await expect(item("special spice scoop").locator(".asset-placeholder")).toHaveText("✧");
@@ -103,7 +105,7 @@ test("existing artwork stays visible during planning and stars only stand in for
   await expect(item("special spice scoop").locator("img")).toHaveAttribute("src", "/media/scoop.png");
   await expect(item("special spice scoop").locator(".asset-placeholder")).toHaveCount(0);
   await expect(page.locator(".generated-result")).toHaveCount(0);
-  await page.getByRole("button", { name: "Cancel illustration" }).click();
+  await page.getByRole("button", { name: "Stop preparing illustrations" }).click();
 });
 
 test("cancelling a preparation stops polling and allows a fresh request", async ({ page }) => {
@@ -123,16 +125,17 @@ test("cancelling a preparation stops polling and allows a fresh request", async 
     return route.fulfill({ json: { cancelled: true } });
   });
   await page.goto("/start/blueberry-matcha-fizz");
-  await page.getByRole("button", { name: "Illustrate with AI" }).click();
   await expect(page.getByText("Planning preparations…")).toBeVisible();
-  await page.getByRole("button", { name: "Cancel illustration" }).click();
+  await page.getByRole("button", { name: "Stop preparing illustrations" }).click();
   await expect.poll(() => cancelled).toContain("/cancel");
   const stopped = polls;
   await page.waitForTimeout(1300);
   expect(polls).toBe(stopped);
-  await page.getByRole("button", { name: "Illustrate with AI" }).click();
+  await page.getByRole("button", { name: "Resume illustrations" }).click();
   await expect.poll(() => requests).toBe(2);
   await page.getByRole("button", { name: "Next step" }).click();
+  await expect(page.locator(".preparation-progress")).toBeVisible();
+  await page.getByRole("link", { name: "All recipes" }).click();
   await expect(page.locator(".preparation-progress")).toHaveCount(0);
 });
 
@@ -142,18 +145,17 @@ test("segmentation failures hide the unfinished result, retain earlier steps and
   await page.route("**/api/preparations", (route) => route.fulfill({ json: {
     id: route.request().postDataJSON().id, status: ++attempt === 1 ? "error" : "complete", message: "Ready",
     error: "Background removal could not complete. Try again; the saved illustration will be reused.", completed: attempt === 1 ? 1 : 7, total: 7,
-    plan: makePlan(), visuals: attempt === 1 ? { 0: visuals[0] } : visuals,
+    plan: makePlan(), visuals: attempt === 1 ? { 0: visuals[0] } : allStepVisuals(visuals, 7),
     warnings: [],
   } }));
   await page.goto("/start/blueberry-matcha-fizz");
   await page.getByRole("button", { name: "Step 7", exact: true }).click();
-  await page.getByRole("button", { name: "Illustrate with AI" }).click();
   await expect(page.getByRole("alert")).toContainText("Background removal could not complete");
   await expect(page.locator(".generated-result")).toHaveCount(0);
   await page.getByRole("button", { name: "Step 1", exact: true }).click();
-  await expect(page.locator(".generated-result")).toHaveAttribute("src", "/media/matcha.png");
+  await expect(page.locator(".generated-result")).toHaveAttribute("href", "/media/matcha.png");
   await page.getByRole("button", { name: "Step 7", exact: true }).click();
-  await page.getByRole("button", { name: "Try again", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Illustration ready" })).toBeVisible();
+  await page.getByRole("button", { name: "Retry illustrations", exact: true }).click();
+  await expect(page.locator(".preparation-progress")).toHaveCount(0);
   await expect(page.getByRole("alert")).toHaveCount(0);
 });

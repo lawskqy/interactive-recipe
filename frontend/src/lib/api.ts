@@ -1,6 +1,6 @@
 const base = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 export function mediaUrl(value: string): string {
-  if (!/^\/(?:images|media)\/[\w().-]+\.(?:png|webp)$/.test(value))
+  if (!/^\/(?:images|media|assets)\/[\w().-]+\.(?:png|webp)$/.test(value))
     throw new Error("The server returned an invalid image reference.");
   return `${base}${value}`;
 }

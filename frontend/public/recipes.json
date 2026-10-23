@@ -123,7 +123,7 @@
   {
     "category": "cold drinks",
     "name": "pumpkin spice maple matcha latte",
-    "description": "A cozy autumn-inspired iced matcha drink with pumpkin spice, maple sweetness, and creamy foam.",
+    "description": "Iced matcha layered over pumpkin-maple milk and topped with pumpkin-spice cream foam.",
     "portion": 1,
     "ingredients": [
       {
@@ -172,13 +172,13 @@
       }
     ],
     "steps": [
-      "Sift matcha powder into a bowl and add pumpkin spice.",
-      "Pour hot water over the matcha and whisk until smooth and frothy.",
-      "Add 10g pumpkin puree and the 15ml maple syrup to the matcha mixture and whisk until combined.",
-      "In a separate cup, froth the heavy cream, 15ml milk, 5ml maple syrup (foam), and remaining 5g pumpkin puree until thick and creamy.",
-      "Fill a glass with ice and pour in the matcha base.",
-      "Add the non-dairy milk and stir gently.",
-      "Spoon the sweet cream foam on top and finish with a pinch of ground cinnamon."
+      "Sift the 4g matcha powder into a bowl.",
+      "Add the 60ml hot water to the sifted matcha and whisk until smooth and frothy. Set the prepared matcha aside.",
+      "In a serving glass, stir 10g pumpkin puree with the 15ml maple syrup until smooth.",
+      "In a separate cup, froth the 45ml heavy cream, 15ml milk, 5ml maple syrup (foam), 0.5g pumpkin spice, and remaining 5g pumpkin puree until thick but pourable. Set this pumpkin-spice cream foam aside.",
+      "Pour the 60ml cold non-dairy milk into the serving glass and stir it into the pumpkin-maple base. Add a few ice cubes.",
+      "Slowly pour the prepared matcha over the iced pumpkin-maple milk.",
+      "Spoon the pumpkin-spice cream foam on top and finish with a pinch of ground cinnamon."
     ],
     "image": "pumpkin-spice-maple-matcha-latte.png",
     "id": "pumpkin-spice-maple-matcha-latte"

@@ -119,6 +119,7 @@ test("recipe works without AI, navigation and accessible controls", async ({
   });
 });
 test("AI failure stays bounded and retry is explicit", async ({ page }) => {
+  await page.route("**/api/health", route => route.fulfill({ json: { aiConfigured: true } }));
   let calls = 0;
   await page.route("**/api/preparations", (route) => {
     calls++;
@@ -128,16 +129,16 @@ test("AI failure stays bounded and retry is explicit", async ({ page }) => {
     });
   });
   await page.goto("/start/iced-matcha-latte");
-  await page.getByRole("button", { name: "Illustrate with AI" }).click();
   await expect(page.getByRole("alert")).toContainText(
     "Illustration unavailable.",
   );
   await page.waitForTimeout(500);
   expect(calls).toBe(1);
-  await page.getByRole("button", { name: "Try again", exact: true }).click();
+  await page.getByRole("button", { name: "Retry illustrations", exact: true }).click();
   await expect.poll(() => calls).toBe(2);
   await page.getByRole("button", { name: "Next step" }).click();
-  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.getByRole("alert")).toContainText("Illustration unavailable.");
+  expect(calls).toBe(2);
 });
 test("chat edits reset the selected step and undo restores the original", async ({
   page,
@@ -195,28 +196,28 @@ test("invalid AI recipe is rejected and duplicate sends are prevented", async ({
     "iced matcha latte",
   );
 });
-test("leaving a pending illustration does not overwrite the next step or block retry", async ({
-  page,
-}) => {
-  await page.route("**/api/preparations/*/cancel", (route) => route.fulfill({ json: { cancelled: true } }));
-  await page.route("**/api/preparations", async (route) => {
-    await new Promise((r) => setTimeout(r, 400));
-    await route
-      .fulfill({ json: { id: route.request().postDataJSON().id, status: "complete", message: "Ready", completed: 1, total: 1, warnings: [], visuals: {
-        0: { ingredients: [], tools: [], actions: ["whisk"], result: "/images/iced-matcha-latte.png" },
-      } } })
-      .catch(() => {});
+test("a late step result stays with its own step during navigation", async ({ page }) => {
+  let requests = 0, ready = false;
+  const snapshot = () => ({ status: "rendering", message: "Preparing remaining illustrations", completed: ready ? 1 : 0, total: 6, warnings: [],
+    visuals: ready ? { 0: { ingredients: [], tools: [], actions: ["whisk"], result: "/media/matcha.png" } } : {} });
+  await page.route("**/api/health", route => route.fulfill({ json: { aiConfigured: true } }));
+  await page.route("**/media/matcha.png", route => route.fulfill({ path: "public/images/matcha_powder_seg.png", contentType: "image/png" }));
+  await page.route("**/api/preparations/*/cancel", route => route.fulfill({ json: { cancelled: true } }));
+  await page.route("**/api/preparations", route => {
+    requests++;
+    return route.fulfill({ json: { ...snapshot(), id: route.request().postDataJSON().id } });
   });
+  await page.route("**/api/preparations/*", route => route.fulfill({ json: snapshot() }));
   await page.goto("/start/iced-matcha-latte");
-  await page.getByRole("button", { name: "Illustrate with AI" }).click();
+  await expect.poll(() => requests).toBe(1);
   await page.getByRole("button", { name: "Next step" }).click();
+  ready = true;
   await expect(page.locator(".step-counter")).toHaveText("Step 2 of 6");
-  await page.waitForTimeout(500);
+  await expect(page.getByRole("progressbar")).toHaveAttribute("value", "1");
   await expect(page.locator(".generated-result")).toHaveCount(0);
   await page.getByRole("button", { name: "Previous" }).click();
-  await expect(
-    page.getByRole("button", { name: "Illustrate with AI" }),
-  ).toBeEnabled();
+  await expect(page.locator(".generated-result")).toHaveAttribute("href", "/media/matcha.png");
+  expect(requests).toBe(1);
 });
 test("reduced motion keeps the tutorial static and missing recipes recover", async ({
   page,
@@ -245,7 +246,8 @@ test("illustration playback can pause and reset without a stale timer", async ({
   await expect(
     page.getByRole("button", { name: "Play illustration" }),
   ).toBeVisible();
-  await expect(page.locator(".action-scene")).toHaveCount(0);
+  await expect(page.locator(".cooking-scene")).toBeVisible();
+  await expect(page.locator(".cooking-scene")).not.toHaveClass(/is-playing/);
 });
 
 test("collection and recipe pass automated accessibility checks", async ({

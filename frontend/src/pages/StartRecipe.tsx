@@ -38,10 +38,11 @@ export default function StartRecipe() {
   const [checked, setChecked] = useState<number[]>([]);
   const [completed, setCompleted] = useState<number[]>([]);
   const [saved, setSaved] = useState(true);
+  const [aiConfigured, setAiConfigured] = useState(false);
   useEffect(() => {
     const abort = new AbortController();
     api<{ aiConfigured: boolean }>("health", undefined, abort.signal)
-      .then((health) => console.debug("[Assistant] Configuration status (provider availability is checked on request):", health))
+      .then((health) => { if (!abort.signal.aborted) setAiConfigured(health.aiConfigured); })
       .catch((error) => { if (!abort.signal.aborted) console.warn("[Assistant] Health check failed:", error); });
     return () => abort.abort();
   }, []);
@@ -53,7 +54,7 @@ export default function StartRecipe() {
       .then((data) => {
         const found = data.find((r) => r.id === name || r.name === name);
         if (!found) throw new Error("This recipe could not be found.");
-        const session = readSession(found.id);
+        const session = readSession(found.id, found);
         setRecipe(session?.recipe || found);
         setPrevious(session?.previous || null);
         setStep(session?.step || 0);
@@ -226,8 +227,9 @@ export default function StartRecipe() {
         </nav>
         <div className="cooking-layout">
           <TutorialBoard
-            key={revision}
+            key={`${recipe.id}:${revision}`}
             recipe={recipe}
+            aiConfigured={aiConfigured}
             activeStep={step}
             onStep={setStep}
             completed={completed}

@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
+  const pending = { status: "planning", message: "Preparing illustrations…", assets: {}, visuals: {}, warnings: [] };
+  await page.route("**/api/preparations", route => route.fulfill({ json: { ...pending, id: route.request().postDataJSON().id } }));
+  await page.route("**/api/preparations/*", route => route.fulfill({ json: pending }));
+  await page.route("**/api/preparations/*/cancel", route => route.fulfill({ json: { cancelled: true } }));
   await page.route("**/api/health", (route) => route.fulfill({ json: { aiConfigured: true } }));
 });
 for (const approval of ["button", "typed yes"] as const) {

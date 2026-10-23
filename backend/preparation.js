@@ -85,7 +85,7 @@ function createPreparation({ generate, render, available = async () => true, cac
   const single = singleFlight();
   const terminal = (job) => ["complete", "error", "cancelled"].includes(job.status);
   const snapshot = (job) => ({
-    id: job.id, status: job.status, message: job.message, completed: job.completed,
+    id: job.id, mode: job.mode, status: job.status, message: job.message, completed: job.completed,
     total: job.total, stepIndex: job.index, plan: job.plan, visuals: job.visuals, assets: { ...job.assets },
     warnings: [...job.warnings], error: job.error,
   });
@@ -149,9 +149,44 @@ function createPreparation({ generate, render, available = async () => true, cac
     try {
       job.plan = await planRecipe(session, job);
       check(job);
-      const order = dependencyOrder(job.plan, job.index);
-      job.total = order.length;
       const raw = new Map([...job.plan.ingredients, ...job.plan.tools].map((item) => [item.id, item]));
+      if (job.mode === "objects") {
+        const step = job.plan.steps[job.index];
+        const ids = [...new Set([...step.inputs, ...step.tools])];
+        const objects = ids.filter((id) => raw.has(id));
+        job.total = objects.length;
+        job.status = "rendering";
+        job.message = "Preparing ingredients and tools…";
+        // Earlier preparations may already exist, but never generate a result
+        // as a side effect of opening a step.
+        for (const id of ids.filter((id) => !raw.has(id))) {
+          const saved = session.assets.get(id);
+          if (saved && await available(saved)) {
+            const item = job.plan.steps.flatMap((entry) => entry.outputs).find((entry) => entry.id === id);
+            job.assets[id] = { ...item, src: saved.src, segmented: true };
+          }
+        }
+        const completed = await Promise.allSettled(objects.map(async (id) => {
+          await artwork(session, raw.get(id), { kind: "object", references: [] }, job);
+          job.completed++;
+        }));
+        const failed = completed.find((result) => result.status === "rejected");
+        if (failed) throw failed.reason;
+        check(job);
+        job.status = "complete";
+        job.message = "Ingredients and tools ready.";
+        return;
+      }
+      const order = dependencyOrder(job.plan, job.index);
+      if (job.mode === "recipe") {
+        // Prepare the opened step and its dependencies first, then every
+        // remaining branch in recipe order within this same cancellable job.
+        const included = new Set(order);
+        for (const step of job.plan.steps) {
+          if (!included.has(step.index)) { order.push(step.index); included.add(step.index); }
+        }
+      }
+      job.total = order.length;
       const outputs = new Map();
       for (const index of order) {
         check(job);
@@ -196,16 +231,16 @@ function createPreparation({ generate, render, available = async () => true, cac
     } finally { job.finished = now(); }
   }
   return {
-    start(recipe, index, id = crypto.randomUUID()) {
+    start(recipe, index, id = crypto.randomUUID(), mode = "results") {
       validateRecipe(recipe);
       if (!Number.isInteger(index) || index < 0 || index >= recipe.steps.length ||
-          typeof id !== "string" || !/^[a-f0-9-]{36}$/.test(id)) fail("Invalid preparation request.");
+          typeof id !== "string" || !/^[a-f0-9-]{36}$/.test(id) || !["objects", "results", "recipe"].includes(mode)) fail("Invalid preparation request.");
       for (const [cancelledId, at] of cancellations) if (now() - at > 300000) cancellations.delete(cancelledId);
       if (cancellations.has(id)) fail("This illustration was cancelled.", 409);
       const key = hash({ version: 1, model: process.env.CHAT_MODEL || "gemini-3.5-flash-lite", recipe, artwork: cacheIdentity() });
       const existing = jobs.get(id);
       if (existing) {
-        if (existing.key !== key || existing.index !== index) fail("This illustration request belongs to another step.", 409);
+        if (existing.key !== key || existing.index !== index || existing.mode !== mode) fail("This illustration request belongs to another step or task.", 409);
         return snapshot(existing);
       }
       for (const [jobId, job] of jobs) {
@@ -228,7 +263,7 @@ function createPreparation({ generate, render, available = async () => true, cac
         session = { key, recipe: structuredClone(recipe), assets: new Map() };
         sessions.set(key, session);
       }
-      const job = { id, key, index, status: "planning", message: "Understanding the recipe and its preparations…",
+      const job = { id, key, index, mode, status: "planning", message: "Understanding the recipe and its preparations…",
         completed: 0, total: 0, visuals: {}, assets: {}, warnings: new Set(), controller: new AbortController(), touched: now() };
       jobs.set(id, job);
       void run(session, job);

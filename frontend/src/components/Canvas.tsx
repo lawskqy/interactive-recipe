@@ -1,24 +1,25 @@
 import { useEffect, useRef, useState } from "react";
-import type { Recipe, StepVisual } from "../lib/recipe";
-import RecipeCover from "./RecipeCover";
+import type { StepVisual } from "../lib/recipe";
 import StepTransformation from "./StepTransformation";
+import CookingActionScene from "./CookingActionScene";
+import { ACTION_DURATION, cookingActions } from "../lib/cooking-actions";
 import "../styles/canvas.css";
 export default function Canvas({
   visual,
-  recipe,
   instruction,
   illustrating = false,
 }: {
   visual: StepVisual;
-  recipe: Recipe;
   instruction: string;
   illustrating?: boolean;
 }) {
+  const cues = cookingActions(instruction);
+  const duration = cues.length ? cues.length * ACTION_DURATION + 1000 : 6000;
   const [playing, setPlaying] = useState(
-    () => !!visual.result && !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    () => !!visual.result && !!visual.resultSegmented && !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
   const [failedResult, setFailedResult] = useState<string | null>(null);
-  const hasResult = !!visual.result && failedResult !== visual.result;
+  const hasResult = !!visual.result && !!visual.resultSegmented && failedResult !== visual.result;
   const [elapsed, setElapsed] = useState(0);
   const [reduced, setReduced] = useState(
     () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -38,34 +39,41 @@ export default function Canvas({
     let frame = 0;
     let last = performance.now();
     const tick = (now: number) => {
-      const delta = Math.min(now - last, 100);
+      // A frame timestamp can precede performance.now() from the effect.
+      const delta = Math.max(0, Math.min(now - last, 100));
       last = now;
-      elapsedRef.current = Math.min(6000, elapsedRef.current + delta);
+      elapsedRef.current = Math.min(duration, elapsedRef.current + delta);
       setElapsed(elapsedRef.current);
-      if (elapsedRef.current < 6000) frame = requestAnimationFrame(tick);
+      if (elapsedRef.current < duration) frame = requestAnimationFrame(tick);
       else setPlaying(false);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [playing, reduced]);
+  }, [playing, reduced, duration]);
   const action =
     visual.actions.find((a) =>
       ["pour", "whisk", "froth", "stir", "heat", "chill", "steep"].includes(a),
     ) || "prepare";
-  const complete = elapsed >= 6000;
+  const complete = elapsed >= duration;
+  const cueIndex = Math.max(0, Math.min(cues.length - 1, Math.floor(elapsed / ACTION_DURATION)));
+  const cue = cues[cueIndex];
   const transforming = hasResult && !reduced && !complete && (playing || elapsed > 0);
+  const blendStart = cue ? (cues.length - 1) * ACTION_DURATION + 900 : 1800;
+  const blendDuration = cue ? ACTION_DURATION - 900 : 2800;
+  const blend = Math.max(0, Math.min(1, (elapsed - blendStart) / blendDuration));
   const reveal = transforming
-    ? 1 - (1 - Math.max(0, Math.min(1, (elapsed - 3100) / 1500))) ** 3
+    ? blend * blend * (3 - 2 * blend)
     : 1;
   return (
     <div className="visual-board">
       <div
         className="step-assets"
+        role="group"
         aria-label="Ingredients, preparations and tools used in this step"
       >
         {[...visual.ingredients, ...visual.tools].map((item, index) => (
           <div className="step-asset" key={item.name + index}>
-            {item.src ? (
+            {item.src && item.segmented ? (
               <img
                 src={item.src}
                 alt=""
@@ -77,7 +85,7 @@ export default function Canvas({
               />
             ) : (
               <span className="asset-placeholder" aria-hidden="true">
-                {illustrating ? "✧" : null}
+                ✧
               </span>
             )}
             <span>{item.name}</span>
@@ -86,13 +94,19 @@ export default function Canvas({
         ))}
       </div>
       <div className="illustration-stage">
-        {hasResult ? (
+        {cue ? (
+          <CookingActionScene key={cueIndex} cue={cue}
+            visual={hasResult ? visual : { ...visual, result: undefined, resultSegmented: false }}
+            elapsed={reduced ? 0 : elapsed - cueIndex * ACTION_DURATION} playing={playing && !reduced}
+            resultProgress={hasResult ? reveal : 0}
+            onResultError={() => { setFailedResult(visual.result || null); setPlaying(false); elapsedRef.current = 0; setElapsed(0); }} />
+        ) : hasResult ? (
           <figure>
             <div className="transformation-stage">
               <img
                 className="generated-result"
                 src={visual.result}
-                style={{ opacity: reveal, transform: `scale(${0.86 + reveal * 0.14})` }}
+                style={{ opacity: reveal }}
                 onError={() => {
                   setFailedResult(visual.result || null);
                   setPlaying(false);
@@ -101,9 +115,9 @@ export default function Canvas({
                 }}
                 alt={`Illustrated result: ${instruction}`}
               />
-              {transforming && (
+              {transforming && !cue && (
                 <StepTransformation
-                  assets={[...visual.ingredients, ...visual.tools]}
+                  assets={[...visual.ingredients, ...visual.tools].map((asset) => asset.segmented ? asset : { ...asset, src: undefined })}
                   elapsed={elapsed}
                 />
               )}
@@ -174,18 +188,18 @@ export default function Canvas({
             </p>
           </div>
         ) : (
-          <figure>
-            <RecipeCover
-              className="cover-preview"
-              recipe={recipe}
-              alt="The finished drink, for inspiration"
-            />
-          </figure>
+          <div className="result-placeholder" role="status">
+            <span aria-hidden="true">✧</span>
+            <p>{illustrating ? "Preparing a transparent illustration…" : "Your step illustration will appear here"}</p>
+          </div>
         )}
       </div>
-      {!!visual.outputs && visual.outputs.length > 1 && <div className="step-assets" aria-label="Preparations made in this step">
+      {cues.length > 1 && <ol className="action-sequence" aria-label="Actions in this step">
+        {cues.map((item, index) => <li key={index} aria-current={index === cueIndex ? "step" : undefined}>{item.kind}</li>)}
+      </ol>}
+      {!!visual.outputs && visual.outputs.length > 1 && <div className="step-assets" role="group" aria-label="Preparations made in this step">
         {visual.outputs.map((output) => <div className="step-asset" key={output.id}>
-          {output.src && <img src={output.src} alt="" />}
+          {output.src && output.segmented ? <img src={output.src} alt="" /> : <span className="asset-placeholder" aria-hidden="true">✧</span>}
           <span>{output.name}</span>
         </div>)}
       </div>}
@@ -193,6 +207,7 @@ export default function Canvas({
         {!reduced && (
           <>
             <button
+              disabled={illustrating && !hasResult}
               onClick={() => {
                 if (complete) {
                   elapsedRef.current = 0;
@@ -201,15 +216,16 @@ export default function Canvas({
                 setPlaying((p) => !p);
               }}
             >
-              {playing
+              {illustrating && !hasResult ? "Preparing illustration…" : playing
                 ? "Pause"
                 : elapsed > 0 && !complete
                   ? "Resume"
                   : hasResult
                     ? "Replay transformation"
-                    : "Play illustration"}
+                    : complete && cue ? "Replay illustration" : "Play illustration"}
             </button>
             <button
+              disabled={illustrating && !hasResult}
               onClick={() => {
                 elapsedRef.current = 0;
                 setElapsed(0);

@@ -1,33 +1,27 @@
 import { useEffect, useRef, useState } from "react";
-import { api } from "../lib/api";
-import { describeStep, safeManifest, type Recipe, type StepAsset, type StepVisual } from "../lib/recipe";
-import { cancelPreparation, loadAsset, loadVisual, pausePolling, plannedVisual, type PreparationJob, type PreparationPlan } from "../lib/preparation";
+import { describeStep, safeManifest, type Recipe, type StepAsset } from "../lib/recipe";
+import { loadAsset, plannedVisual } from "../lib/preparation";
+import { useRecipePreparation } from "../lib/use-recipe-preparation";
 import Canvas from "./Canvas";
 export default function TutorialBoard({
   recipe,
+  aiConfigured,
   activeStep,
   onStep,
   completed,
   onComplete,
 }: {
   recipe: Recipe;
+  aiConfigured: boolean;
   activeStep: number;
   onStep: (index: number) => void;
   completed: number[];
   onComplete: () => void;
 }) {
   const [manifest, setManifest] = useState<Record<string, string>>({});
-  const [results, setResults] = useState<Record<number, StepVisual>>({});
-  const [assets, setAssets] = useState<Record<string, StepAsset>>({});
-  const [busy, setBusy] = useState<number | null>(null);
-  const [plan, setPlan] = useState<PreparationPlan | null>(null);
-  const [progress, setProgress] = useState<PreparationJob | null>(null);
-  const [warnings, setWarnings] = useState<string[]>([]);
-  const [error, setError] = useState<{ index: number; text: string } | null>(
-    null,
-  );
-  const request = useRef<AbortController | null>(null);
-  const requestId = useRef(0);
+  const [library, setLibrary] = useState<Record<string, StepAsset>>({});
+  const libraryCache = useRef<Record<string, StepAsset>>({});
+  const { results, assets, plan, progress, error, preparing, stopped, waiting, cancel, retry } = useRecipePreparation(recipe, aiConfigured, activeStep);
   useEffect(() => {
     const controller = new AbortController();
     fetch("/asset-manifest.json", { signal: controller.signal })
@@ -38,82 +32,27 @@ export default function TutorialBoard({
       });
     return () => controller.abort();
   }, []);
+  const proposed = plan ? plannedVisual(plan, activeStep, manifest, assets, results) : describeStep(recipe, activeStep, manifest);
+  const pendingLibrary = JSON.stringify([...new Set([...proposed.ingredients, ...proposed.tools]
+    .filter((asset) => asset.src && !asset.segmented).map((asset) => asset.src!))]);
   useEffect(() => {
-    setBusy(null);
-    setProgress(null);
-    return () => {
-      request.current?.abort();
-    };
-  }, [activeStep]);
-  const local = plan ? plannedVisual(plan, activeStep, manifest, assets, results) : describeStep(recipe, activeStep, manifest);
-  async function generate() {
-    request.current?.abort();
     const controller = new AbortController();
-    request.current = controller;
-    const id = ++requestId.current;
-    const index = activeStep;
-    const jobId = crypto.randomUUID();
-    const cancel = () => { void cancelPreparation(jobId); };
-    controller.signal.addEventListener("abort", cancel, { once: true });
-    setBusy(index);
-    setError(null);
-    setWarnings([]);
-    setProgress(null);
-    try {
-      let job = await api<PreparationJob>("preparations", { recipe, index, id: jobId }, controller.signal);
-      const loaded = new Set<number>();
-      const loadedAssets = new Map<string, string>();
-      const loggedWarnings = new Set<string>();
-      while (!controller.signal.aborted && id === requestId.current) {
-        setProgress(job);
-        if (job.plan) setPlan(job.plan);
-        setWarnings(job.warnings);
-        for (const warning of job.warnings) {
-          if (!loggedWarnings.has(warning)) {
-            console.warn("[Illustration]", warning);
-            loggedWarnings.add(warning);
-          }
+    // Keep every candidate hidden while its pixels are checked or segmented.
+    void (async () => {
+      for (const src of JSON.parse(pendingLibrary) as string[]) {
+        if (libraryCache.current[src]) continue;
+        const ready = await loadAsset({ name: "Ingredient or tool", src }, controller.signal);
+        if (!controller.signal.aborted) {
+          libraryCache.current[src] = ready;
+          setLibrary((old) => ({ ...old, [src]: ready }));
         }
-        await Promise.all(Object.entries(job.assets || {}).map(async ([assetId, asset]) => {
-          if (!asset.src || loadedAssets.get(assetId) === asset.src) return;
-          const ready = await loadAsset(asset, controller.signal);
-          if (id !== requestId.current || controller.signal.aborted) return;
-          if (ready.src) setAssets((old) => ({ ...old, [assetId]: ready }));
-          loadedAssets.set(assetId, asset.src);
-        }));
-        for (const [step, visual] of Object.entries(job.visuals)) {
-          const stepIndex = Number(step);
-          if (loaded.has(stepIndex)) continue;
-          const ready = await loadVisual(visual, controller.signal);
-          if (id !== requestId.current || controller.signal.aborted) return;
-          setResults((old) => ({ ...old, [stepIndex]: ready }));
-          loaded.add(stepIndex);
-        }
-        if (job.status === "error") throw new Error(job.error || job.message);
-        if (job.status === "cancelled") break;
-        if (job.status === "complete") {
-          if (!loaded.has(index)) throw new Error("The preparation returned no artwork for this step. Please retry.");
-          break;
-        }
-        await pausePolling(controller.signal);
-        job = await api<PreparationJob>(`preparations/${jobId}`, undefined, controller.signal);
       }
-    } catch (err) {
-      if (id === requestId.current && !controller.signal.aborted) {
-        void cancelPreparation(jobId);
-        setError({
-          index,
-          text:
-            err instanceof Error
-              ? err.message
-              : "Unable to illustrate this step.",
-        });
-      }
-    } finally {
-      controller.signal.removeEventListener("abort", cancel);
-      if (id === requestId.current && !controller.signal.aborted) setBusy(null);
-    }
-  }
+    })().catch(() => { /* Aborted checks keep their placeholders. */ });
+    return () => controller.abort();
+  }, [pendingLibrary]);
+  const checked = (asset: StepAsset): StepAsset => asset.segmented ? asset :
+    { ...asset, src: asset.src ? library[asset.src]?.src : undefined, segmented: !!(asset.src && library[asset.src]?.segmented) };
+  const local = { ...proposed, ingredients: proposed.ingredients.map(checked), tools: proposed.tools.map(checked) };
   return (
     <section className="tutorial-panel" aria-label="Step-by-step tutorial">
       <div className="tutorial-top">
@@ -139,40 +78,19 @@ export default function TutorialBoard({
       <Canvas
         key={`${activeStep}:${results[activeStep]?.result || "local"}`}
         visual={results[activeStep] || local}
-        recipe={recipe}
         instruction={recipe.steps[activeStep]}
-        illustrating={busy === activeStep}
+        illustrating={waiting}
       />
-      <div className="generation-row">
-        <span>Want a closer look at this step?</span>
-        <button
-          disabled={busy === activeStep || !!results[activeStep]}
-          onClick={() => void generate()}
-        >
-          {busy === activeStep
-            ? "Illustrating…"
-            : results[activeStep]
-              ? "Illustration ready"
-              : "Illustrate with AI ✧"}
-        </button>
-      </div>
-      {busy === activeStep && (
+      {preparing && (
         <div className="preparation-progress">
-          <p role="status">{progress?.message || "Understanding the recipe and its preparations…"}</p>
-          {!!progress?.total && <progress value={progress.completed} max={progress.total} aria-label="Preparation steps illustrated" />}
-          <p className="ai-note">This can take a few minutes.</p>
-          <button onClick={() => { request.current?.abort(); setBusy(null); setProgress(null); }}>Cancel illustration</button>
+          <p role="status">{progress?.message || "Preparing your recipe illustrations…"}</p>
+          {!!progress?.total && <progress value={progress.completed} max={progress.total} aria-label="Recipe steps illustrated" />}
+          <p className="ai-note">{results[activeStep] ? "Preparing the remaining steps in the background." : "The animation will start when this step’s artwork is ready."}</p>
+          <button onClick={cancel}>Stop preparing illustrations</button>
         </div>
       )}
-      {warnings.some((warning) => warning.includes("retry")) && busy === null && <div className="preparation-warnings">
-        <button onClick={() => void generate()}>Retry background removal</button>
-      </div>}
-      {error?.index === activeStep && (
-        <div className="notice" role="alert">
-          {error.text}
-          <button onClick={() => void generate()}>Try again</button>
-        </div>
-      )}
+      {error && <div className="notice" role="alert">{error}<button onClick={retry}>Retry illustrations</button></div>}
+      {stopped && !error && <div className="generation-row"><span>Illustration preparation paused.</span><button onClick={retry}>Resume illustrations</button></div>}
       <nav className="step-navigation" aria-label="Recipe steps">
         <button aria-pressed={completed.includes(activeStep)} onClick={onComplete}>{completed.includes(activeStep) ? "Step completed" : "Mark step complete"}</button>
         <button

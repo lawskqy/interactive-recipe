@@ -37,7 +37,8 @@ test("result generation attaches both named preparation images and caches by ref
   assert.equal(first.segmented, true);
   assert.match(first.src, /_seg.png$/);
   const parts = calls[0].contents[0].parts;
-  assert.match(parts[0].text, /#FF00FF/);
+  assert.match(parts[0].text, /#FFFFFF/);
+  assert.doesNotMatch(parts[0].text, /magenta|#FF00FF/);
   assert.match(parts[0].text, /including openings through handles and gaps between wires/);
   assert.match(artwork.identity().backgroundRemoval, /opencv-grabcut-v/);
   assert.equal(artwork.identity().workflow, undefined);
@@ -90,7 +91,7 @@ test("unsuitable backgrounds are retained for diagnosis and explicit retry gener
   assert.equal(calls, 2);
 });
 
-test("legacy originals are resegmented under a new URL without paid regeneration or overwriting old URLs", async (t) => {
+test("saved originals are resegmented under a new URL without paid regeneration or overwriting old URLs", async (t) => {
   const media = temporary(t);
   const input = await sharp({ create: { width: 64, height: 64, channels: 4, background: '#d7427c' } })
     .composite([{ input: await sharp({ create: { width: 30, height: 30, channels: 4, background: 'white' } }).png().toBuffer(), left: 17, top: 17 }]).png().toBuffer();
@@ -101,7 +102,8 @@ test("legacy originals are resegmented under a new URL without paid regeneration
   } });
   const options = { ...request(), references: [] };
   const first = await artwork.render(options);
-  const legacyKey = 'step_' + hash({ ...artwork.identity(), backgroundRemoval: 'magenta-global-v1', prompt, references: [] });
+  const { backgroundRemoval, validation, ...sourceIdentity } = artwork.identity();
+  const legacyKey = 'step_' + hash({ ...sourceIdentity, prompt, references: [] });
   const original = path.join(media, legacyKey + '.png');
   assert.deepEqual(fs.readFileSync(original), input, 'Source identity remains compatible with the old cache');
   const staleCutout = path.join(media, legacyKey + '_seg.png');

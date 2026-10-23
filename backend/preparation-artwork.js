@@ -5,43 +5,59 @@ const { removeBackground } = require("./background-removal");
 const { SEGMENTATION_VERSION } = require("./opencv-segmentation");
 const { fail, hash, safeName, imageReference, singleFlight, createQueue } = require("./core");
 const { cachedPng, writePng } = require("./resources");
+const { isCutout } = require("./cutout-validation");
 
-const STYLE = "Watercolor and fine ink cafe illustration, muted sage and walnut object palette. One isolated object or preparation centered with generous empty margins; the entire object must fit inside the image. Use a completely uniform flat saturated magenta background, target RGB (255,0,255), hex #FF00FF. Reserve this background color exclusively for the background, including openings through handles and gaps between wires. Render white materials naturally. Use neutral lighting with no magenta reflections or background color cast on the object. Use this background even when reference images have white or transparent backgrounds. No scenery, tabletop, text, labels, hands, border, cast shadow, background texture or gradient. Preserve glass outlines, the entire container and the described contents. Show the described physical state, not an action or a future result.";
+const STYLE = "Watercolor and fine ink cafe illustration, muted sage and walnut object palette. One isolated object or preparation centered with generous empty margins; the entire object must fit inside the image. Use only a completely uniform pure white background, RGB (255,255,255), hex #FFFFFF, including openings through handles and gaps between wires. Render white materials naturally with clear fine ink outlines to distinguish them from the white background. Use neutral lighting with no background color cast. Use this white background even when reference images have colored or transparent backgrounds. No scenery, tabletop, text, labels, hands, border, cast shadow, background texture, glow or gradient. Preserve glass outlines, the entire container and the described contents. Show the described physical state, not an action or a future result.";
 
 function createArtwork({ generate, images, media, segment = removeBackground }) {
   const single = singleFlight();
   const queue = createQueue(2, 12, 60000);
-  const resolve = (src) => imageReference(src, { images, media });
-  // Retain the original generation identity so existing source drawings remain
-  // reusable. Only the cutout's identity changes when the removal algorithm does.
-  const sourceIdentity = () => ({ version: 2, style: STYLE, model: process.env.IMAGE_MODEL || "gemini-2.5-flash-image",
-    backgroundRemoval: "magenta-global-v1" });
-  const identity = () => ({ ...sourceIdentity(), backgroundRemoval: SEGMENTATION_VERSION });
+  const resolve = (src) => imageReference(src, { images, media, assets: path.join(path.dirname(images), "assets") });
+  const sourceIdentity = () => ({ version: 3, style: STYLE, model: process.env.IMAGE_MODEL || "gemini-2.5-flash-image",
+    background: "white-v1" });
+  const identity = () => ({ ...sourceIdentity(), backgroundRemoval: SEGMENTATION_VERSION, validation: 1 });
+  const cachedCutout = async (file) => await cachedPng(file) && await isCutout(file);
   const available = async (asset) => {
     if (!asset.segmented) return false;
-    try { return asset.src.startsWith("/media/") ? await cachedPng(resolve(asset.src)) : fs.existsSync(resolve(asset.src)); }
+    try { return asset.src.startsWith("/media/") ? await cachedCutout(resolve(asset.src)) : await isCutout(resolve(asset.src)); }
     catch { return false; }
   };
+  async function ensureSegmented(src) {
+    const original = resolve(src);
+    if (!fs.existsSync(original)) fail("The illustration could not be loaded. Please retry.", 404);
+    if (await isCutout(original)) return { src, segmented: true };
+    const digest = crypto.createHash("sha256").update(await fs.promises.readFile(original)).digest("hex");
+    const key = (src.startsWith("/media/step_") ? "step_" : "ingredient_") + hash({ src, digest, backgroundRemoval: SEGMENTATION_VERSION, validation: 1 });
+    return single(key, () => queue(async () => {
+      const target = path.join(media, key + "_seg.png");
+      if (!(await cachedCutout(target))) {
+        try { await segment(original, target); }
+        catch { fail("Background removal could not complete. Please retry.", 502); }
+      }
+      if (!(await cachedCutout(target))) fail("Background removal is incomplete. Please retry.", 502);
+      return { src: `/media/${key}_seg.png`, segmented: true };
+    }));
+  }
   async function render({ item, kind, recipe, step, references, onProgress = () => {} }) {
     // Only raw ingredients/tools may use the bundled object library. A preparation
     // must use its own actual earlier result, never a similarly named stock image.
     if (kind === "object") {
       const stem = safeName(item.name);
       const file = fs.readdirSync(images).find((name) => name.endsWith("_seg.png") && safeName(name.slice(0, -8)) === stem);
-      if (file) return { src: "/images/" + file, segmented: true };
+      if (file) return ensureSegmented("/images/" + file);
       const source = fs.readdirSync(images).find((name) => name.endsWith(".png") && safeName(name.slice(0, -4)) === stem);
       if (source) {
         const original = path.join(images, source);
         const digest = crypto.createHash("sha256").update(await fs.promises.readFile(original)).digest("hex");
-        const key = "ingredient_" + hash({ stock: source, digest, backgroundRemoval: SEGMENTATION_VERSION });
+        const key = "ingredient_" + hash({ stock: source, digest, backgroundRemoval: SEGMENTATION_VERSION, validation: 1 });
         return single(key, () => queue(async () => {
           const cutout = path.join(media, key + "_seg.png");
-          if (!(await cachedPng(cutout))) {
+          if (!(await cachedCutout(cutout))) {
             onProgress(`Removing the background from ${item.name}…`);
             try { await segment(original, cutout, item.name); }
             catch { fail("The saved ingredient or tool image could not be separated from its background. Please retry.", 502); }
           }
-          if (!(await cachedPng(cutout))) fail("Background removal could not complete. Please retry.", 502);
+          if (!(await cachedCutout(cutout))) fail("Background removal could not complete. Please retry.", 502);
           return { src: `/media/${key}_seg.png`, segmented: true };
         }));
       }
@@ -62,11 +78,11 @@ function createArtwork({ generate, images, media, segment = removeBackground }) 
     const key = (kind === "result" ? "step_" : "ingredient_") + hash({
       ...sourceIdentity(), prompt, references: referenceData.map(({ id, digest }) => ({ id, digest })),
     });
-    const cutoutKey = (kind === "result" ? "step_" : "ingredient_") + hash({ source: key, backgroundRemoval: SEGMENTATION_VERSION });
+    const cutoutKey = (kind === "result" ? "step_" : "ingredient_") + hash({ source: key, backgroundRemoval: SEGMENTATION_VERSION, validation: 1 });
     return single(key, () => queue(async () => {
       const original = path.join(media, key + ".png");
       const cutout = path.join(media, cutoutKey + "_seg.png");
-      if (await cachedPng(cutout)) return { src: `/media/${cutoutKey}_seg.png`, segmented: true };
+      if (await cachedCutout(cutout)) return { src: `/media/${cutoutKey}_seg.png`, segmented: true };
       if (!(await cachedPng(original))) {
         onProgress(`Drawing ${item.name}…`);
         const parts = [{ text: prompt }];
@@ -84,7 +100,7 @@ function createArtwork({ generate, images, media, segment = removeBackground }) 
       try {
         onProgress(`Removing the background from ${item.name}…`);
         await segment(original, cutout, item.name);
-        if (!(await cachedPng(cutout))) throw new Error("Missing cutout");
+        if (!(await cachedCutout(cutout))) throw new Error("Missing or opaque cutout");
         return { src: `/media/${cutoutKey}_seg.png`, segmented: true };
       } catch (error) {
         if (error.code === "UNSUITABLE_BACKGROUND") {
@@ -102,6 +118,6 @@ function createArtwork({ generate, images, media, segment = removeBackground }) 
       }
     }));
   }
-  return { render, available, identity };
+  return { render, available, identity, ensureSegmented };
 }
 module.exports = { createArtwork };

@@ -390,7 +390,7 @@
   .tutorial-panel .transformation-stage {
     height: clamp(340px, 30dvh, 460px);
   }
-  .tutorial-panel .generated-result {
+  .tutorial-panel img.generated-result {
     height: clamp(340px, 30dvh, 460px);
     max-height: none;
   }
@@ -401,7 +401,7 @@
   .tutorial-panel .action-scene {
     max-width: 400px;
   }
-  .tutorial-panel .action-scene svg {
+  .tutorial-panel .action-scene > svg {
     height: 300px;
   }
   .journal-panel {
