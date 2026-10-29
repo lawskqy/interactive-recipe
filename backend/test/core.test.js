@@ -133,7 +133,7 @@ test("HTTP boundary: malformed requests, origins, cached assets and missing AI c
   assert.equal(health.status, 200);
   const configuration = await health.json();
   assert.equal(configuration.segmentationConfigured, true);
-  assert.equal(configuration.backgroundRemoval, "color-key");
+  assert.equal(configuration.backgroundRemoval, "opencv-grabcut");
   assert.equal(
     (await post("send-message", {}, "https://untrusted.example")).status,
     403,

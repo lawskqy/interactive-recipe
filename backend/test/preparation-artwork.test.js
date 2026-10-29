@@ -39,7 +39,7 @@ test("result generation attaches both named preparation images and caches by ref
   const parts = calls[0].contents[0].parts;
   assert.match(parts[0].text, /#FF00FF/);
   assert.match(parts[0].text, /including openings through handles and gaps between wires/);
-  assert.match(artwork.identity().backgroundRemoval, /magenta-global-v/);
+  assert.match(artwork.identity().backgroundRemoval, /opencv-grabcut-v/);
   assert.equal(artwork.identity().workflow, undefined);
   assert.equal(parts.filter((part) => part.inlineData).length, 2);
   assert.match(parts[1].text, /prepared matcha, prepared in step 1/);
@@ -146,4 +146,29 @@ test("stock cutouts are reused for raw objects but never substituted for a step 
   const item = { id: "i1", name: "matcha powder", appearance: "Green powder" };
   assert.deepEqual(await artwork.render({ item, kind: "object", references: [] }), { src: "/images/matcha_powder_seg.png", segmented: true });
   await assert.rejects(artwork.render({ ...request(), item, references: [] }), /generation reached/);
+});
+
+test("opaque library artwork is segmented locally and cached without generating another drawing", async (t) => {
+  const media = temporary(t);
+  const stock = temporary(t);
+  const input = await sharp({ create: { width: 64, height: 64, channels: 4, background: 'white' } })
+    .composite([{ input: await sharp({ create: { width: 30, height: 30, channels: 4, background: '#8b6645' } }).png().toBuffer(), left: 17, top: 17 }]).png().toBuffer();
+  const original = path.join(stock, 'pumpkin_spice.png');
+  fs.writeFileSync(original, input);
+  let segments = 0;
+  const { removeBackground } = require('../background-removal');
+  const artwork = createArtwork({ images: stock, media,
+    generate: async () => { throw new Error('Library artwork must not trigger paid generation'); },
+    segment: async (source, target) => { segments++; await removeBackground(source, target); },
+  });
+  const options = { item: { id: 'i1', name: 'pumpkin spice', appearance: 'Ground spice' }, kind: 'object', references: [] };
+  const result = await artwork.render(options);
+  assert.equal(result.segmented, true);
+  const pixels = await sharp(path.join(media, path.basename(result.src))).raw().toBuffer();
+  assert.equal(pixels[3], 0);
+  assert.equal(pixels[(32 * 64 + 32) * 4 + 3], 255);
+  assert.deepEqual(fs.readFileSync(original), input, 'Bundled source artwork is never changed');
+  assert.equal((await artwork.render(options)).src, result.src);
+  assert.equal(segments, 1);
+  await assert.rejects(artwork.render({ ...request(), item: options.item, references: [] }), /must not trigger paid generation/);
 });

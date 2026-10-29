@@ -10,7 +10,7 @@ A local café recipe app with 50 illustrated drinks: 27 warm and 23 cold. Explor
 - Generate step illustrations with automatic background removal, pause and replay.
 - Resume saved recipes, conversations and preparation progress in the same browser.
 
-Browsing and preparation work without an API key. AI chat and illustration require a Gemini API key. Background removal runs inside the app; no ComfyUI installation, Python setup or GPU is needed.
+Browsing and preparation work without an API key. AI chat and illustration require a Gemini API key. Background removal uses OpenCV.js inside the app; no ComfyUI installation, Python setup or GPU is needed.
 
 ## Requirements
 
@@ -66,7 +66,7 @@ The app is intended for local use. Saved progress belongs to the browser and add
 
 ## Development
 
-The frontend uses React, TypeScript and Vite. The backend uses Express, the Google GenAI SDK and Sharp, with background removal running in a Node worker.
+The frontend uses React, TypeScript and Vite. The backend uses Express, the Google GenAI SDK, Sharp and OpenCV.js. GrabCut background removal runs in a Node worker, using image borders to seed background regions. White, pink and other distinguishable backgrounds are supported; ambiguous or empty images can still require a new drawing. Existing ingredient and tool images are reused, with background removal applied locally when needed. Cutout cache keys include the segmentation version so algorithm changes do not reuse stale cutouts.
 
 From the repository root:
 
