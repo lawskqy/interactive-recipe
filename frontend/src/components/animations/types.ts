@@ -18,3 +18,4 @@ export interface ActionAnimation {
 
 export const BOWL: Anchor = { x: 180, y: 193, width: 182, radiusY: 22 };
 export const CUP: Anchor = { x: 205, y: 166, width: 96, radiusY: 8 };
+export const PAN: Anchor = { x: 180, y: 180, width: 170, radiusY: 17 };
