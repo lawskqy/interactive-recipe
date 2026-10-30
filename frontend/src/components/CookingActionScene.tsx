@@ -69,7 +69,8 @@ export default function CookingActionScene({ cue, elapsed, playing, visual, resu
         </defs>
         <ellipse cx={anchor.x} cy={ground} rx={anchor.width * 0.6} ry="8" fill="#b9a081" opacity="0.12" />
         <g className="action-content">
-          <Scene clip={clip} anchor={anchor} openingRadiusY={openingRadiusY} color={color} receiver={receiver}
+          <Scene clip={clip} anchor={anchor} openingRadiusY={openingRadiusY} color={color}
+            resultColor={cue.resultColor || color} receiver={receiver}
             implement={implement?.src} source={source?.src} result={result} resultImage={resultImage}
             resultProgress={resultProgress} />
         </g>

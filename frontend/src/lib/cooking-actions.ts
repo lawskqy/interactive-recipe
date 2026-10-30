@@ -9,13 +9,13 @@ export interface PlannedAction {
 }
 export interface ActionCue {
   kind: CookingAction; context: string;
-  color?: string; items?: string[]; container?: string; tool?: string;
+  color?: string; resultColor?: string; items?: string[]; container?: string; tool?: string;
 }
 export const ACTION_DURATION = 4800;
 
 export function plannedCues(actions: PlannedAction[], names: Record<string, string>): ActionCue[] {
   return actions.map(action => ({
-    kind: action.type, color: action.color, items: action.items, container: action.container, tool: action.tool,
+    kind: action.type, color: action.color, resultColor: action.resultColor, items: action.items, container: action.container, tool: action.tool,
     context: [action.type, ...action.items.map(id => names[id] || "")].join(" ").toLowerCase(),
   }));
 }

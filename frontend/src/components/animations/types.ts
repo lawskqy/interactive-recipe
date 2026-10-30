@@ -3,7 +3,7 @@ import type { createTimeline } from "animejs";
 
 export interface Anchor { x: number; y: number; width: number; radiusY: number }
 export interface SceneProps {
-  clip: string; anchor: Anchor; openingRadiusY: number; color: string;
+  clip: string; anchor: Anchor; openingRadiusY: number; color: string; resultColor: string;
   receiver?: string; implement?: string; source?: string;
   result?: string; resultImage: ReactNode; resultProgress: number;
 }
@@ -17,3 +17,4 @@ export interface ActionAnimation {
 }
 
 export const BOWL: Anchor = { x: 180, y: 193, width: 182, radiusY: 22 };
+export const CUP: Anchor = { x: 205, y: 166, width: 96, radiusY: 8 };

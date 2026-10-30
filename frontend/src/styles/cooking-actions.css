@@ -8,6 +8,11 @@
 .cooking-scene .mixture-ripple { transform-origin: 180px 194px; }
 .cooking-scene .pour-ripple { transform-origin: 205px 185px; }
 .cooking-scene .powder-pile { transform-origin: 180px 193px; }
+.cooking-scene .stir-motion { transform-origin: 207px 200px; }
+.cooking-scene .stir-swirl { transform-origin: 205px 186px; }
+.cooking-scene .frother-motion { transform-origin: 206px 120px; }
+.cooking-scene .froth-foam { transform-origin: 205px 208px; }
+.cooking-scene :is(.stir-drop, .ice-cube, .ice-splash, .froth-bubble, .frother-coil) { transform-box: fill-box; transform-origin: center; }
 .cooking-overlay { position: absolute; inset: 0; margin: auto; width: min(100%, 360px); }
 .action-sequence { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 0; margin: 12px 0; list-style: none; }
 .action-sequence li { border: 1px solid var(--line); border-radius: 20px; padding: 5px 13px; color: var(--muted); font-size: 12px; text-transform: capitalize; }
@@ -21,4 +26,12 @@
 .animation-lab textarea { box-sizing: border-box; width: 100%; min-height: 86px; resize: vertical; padding: 14px; font: inherit; line-height: 1.6; color: var(--paper); background: var(--walnut); border: 1px solid var(--line); border-radius: 8px; }
 .animation-lab form > button { margin: 12px 0 24px; }
 .animation-lab .visual-board { border: 1px solid var(--line); border-radius: 18px; padding: 24px 12px 8px; }
+.lab-actions { margin: 8px 0 28px; padding-top: 20px; border-top: 1px solid var(--line); }
+.lab-actions h2 { font-family: "Cormorant Garamond", serif; font-weight: 500; font-size: 30px; margin: 0 0 6px; }
+.lab-actions p { color: var(--muted); line-height: 1.6; margin: 0; }
+.lab-actions .lab-examples { margin: 16px 0; }
+.lab-actions .lab-colors { display: flex; flex-wrap: wrap; gap: 20px; }
+.lab-actions .lab-colors label { display: flex; align-items: center; gap: 10px; margin: 0; }
+.lab-actions input[type="color"] { width: 56px; height: 34px; padding: 2px; background: var(--walnut); border: 1px solid var(--line); border-radius: 8px; }
+.lab-actions .lab-pending { margin-top: 14px; font-size: 13px; }
 .animation-lab .lab-instruction { margin: 0 auto 12px; max-width: 600px; text-align: center; line-height: 1.6; }

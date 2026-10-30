@@ -1,10 +1,10 @@
 import ActionCutout from "../ActionCutout";
-import ActionVessel from "../ActionVessel";
-import type { ActionAnimation } from "./types";
+import { CupBack } from "./Cup";
+import { CUP, type ActionAnimation } from "./types";
 
 const pour: ActionAnimation = {
   caption: "Pour in a steady stream",
-  anchor: { x: 205, y: 166, width: 96, radiusY: 8 },
+  anchor: CUP,
   container: /cup|glass|mug/i,
   motion(tl) {
     tl.add(".pitcher-motion", { rotate: [0, 32], duration: 850 }, 150);
@@ -17,23 +17,12 @@ const pour: ActionAnimation = {
     tl.add(".pitcher-motion", { rotate: 0, duration: 700 }, 3800);
     tl.add(".pitcher-motion", { opacity: 0, duration: 300 }, 4500);
   },
-  Scene({ clip, anchor, color, receiver, source, resultImage, resultProgress }) {
+  Scene(props) {
+    const { color, source, resultImage, resultProgress } = props;
     return <>
-      <g className="receiver-content" style={{ opacity: 1 - resultProgress }}>
-        <ActionVessel src={receiver} anchor={anchor} fallback={<>
-          <path d="M253 180Q288 174 278 209Q275 224 249 222" fill="none" stroke="#b9aa8e" strokeWidth="6" />
-          <path d="M157 166H253L242 244Q205 256 168 244Z" fill="#eee4ce" fillOpacity="0.12" stroke="#b9aa8e" strokeWidth="2" />
-          <g clipPath={`url(#${clip})`}>
-            <g className="cup-liquid">
-              <path d="M152 185Q205 170 259 185V258H152Z" fill={color} />
-              <ellipse cx="205" cy="185" rx="49" ry="10" fill="#fff7e2" opacity="0.3" />
-              <ellipse className="pour-ripple" cx="205" cy="185" rx="28" ry="5" fill="none" stroke="#fff7e2" strokeWidth="2" />
-            </g>
-          </g>
-          <path d="M174 180L181 237" fill="none" stroke="#fff9eb" strokeWidth="4" opacity="0.55" />
-          <ellipse cx="205" cy="166" rx="48" ry="8" fill="none" stroke="#b9aa8e" strokeWidth="2" />
-        </>} />
-      </g>
+      <CupBack {...props} liquid={color}>
+        <ellipse className="pour-ripple" cx="205" cy="185" rx="28" ry="5" fill="none" stroke="#fff7e2" strokeWidth="2" />
+      </CupBack>
       {resultImage}
       <path className="liquid-stream" d="M172 76Q183 101 195 126Q203 148 205 184"
         fill="none" stroke={color} strokeWidth="7" strokeLinecap="round" opacity="0" />

@@ -1,5 +1,7 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { plannedAction } from "./artwork-fixtures";
+
+const examples = (page: Page) => page.getByRole("group", { name: "Example instructions" });
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/api/health", route => route.fulfill({ json: { aiConfigured: false } }));
@@ -18,7 +20,7 @@ for (const [name, action, movingPart] of [
     page.on("request", request => { if (request.url().includes("/api/")) apiCalls++; });
     await page.clock.install();
     await page.goto("/animations");
-    await page.getByRole("button", { name, exact: true }).click();
+    await examples(page).getByRole("button", { name, exact: true }).click();
     const scene = page.locator(`[data-action="${action}"]`);
     const part = scene.locator(movingPart);
     await expect(scene).toBeVisible();
@@ -55,10 +57,25 @@ test("compound steps play actions in instruction order and cancel cleanly", asyn
   await expect(page.locator("[data-action=pour]")).toBeVisible();
   await page.clock.runFor(5000);
   await expect(page.locator("[data-action=whisk]")).toBeVisible();
-  await page.getByRole("button", { name: "Pour", exact: true }).click();
+  await examples(page).getByRole("button", { name: "Pour", exact: true }).click();
   await page.clock.runFor(6000);
   await expect(page.locator("[data-action=pour]")).toBeVisible();
   await expect(page.getByRole("button", { name: "Play illustration", exact: true })).toBeVisible();
+});
+
+test("every drawn action plays on its own in the chosen colour", async ({ page }) => {
+  await page.goto("/animations");
+  const actions = page.getByRole("group", { name: "Drawn actions" }).getByRole("button");
+  const names = await actions.allTextContents();
+  expect(names).toContain("Layer");
+  for (const name of names) {
+    await actions.filter({ hasText: new RegExp(`^${name}$`) }).click();
+    await expect(page.locator(`[data-action="${name.toLowerCase().replace(" ", "-")}"]`)).toBeVisible();
+  }
+  await actions.filter({ hasText: /^Layer$/ }).click();
+  await page.getByLabel("Ingredient colour").fill("#123456");
+  await expect(page.locator(".liquid-stream")).toHaveAttribute("stroke", "#123456");
+  await expect(page.getByText(/^Not drawn yet:/)).toBeVisible();
 });
 
 test("action detection ignores tool nouns, prepared ingredients and negations", async ({ page }) => {
@@ -88,8 +105,8 @@ test("planner actions replace keyword matching and colour the scene", async ({ p
     ingredients: [{ id: "i1", name: "matcha powder", appearance: "Green powder" }, { id: "i2", name: "water", appearance: "Water" }],
     tools: [{ id: "t1", name: "bowl", appearance: "Bowl" }],
     steps: Array.from({ length: 6 }, (_, index) => ({ index, inputs: ["i1", "i2"], tools: ["t1"],
-      actions: index ? [plannedAction("stir", ["i1"])] : [plannedAction("sift", ["i1"], { container: "t1" }),
-        plannedAction("stir", ["i1"]), plannedAction("layer", ["i2"], { color: "#123456" })],
+      actions: index ? [plannedAction("serve", [])] : [plannedAction("sift", ["i1"], { container: "t1" }),
+        plannedAction("serve", []), plannedAction("layer", ["i2"], { color: "#123456" })],
       outputs: [{ id: `s${index + 1}o1`, name: "result", appearance: "Drink", sourceStep: index }] })),
   };
   await page.route("**/api/health", route => route.fulfill({ json: { aiConfigured: true } }));
@@ -98,7 +115,7 @@ test("planner actions replace keyword matching and colour the scene", async ({ p
     status: "cancelled", message: "Illustration cancelled.", plan, visuals: {}, assets: {}, warnings: [], total: 0, completed: 0 } }));
   await page.clock.install();
   await page.goto("/start/iced-matcha-latte");
-  await expect(page.getByRole("list", { name: "Actions in this step" }).locator("li")).toHaveText(["sift", "stir", "layer"]);
+  await expect(page.getByRole("list", { name: "Actions in this step" }).locator("li")).toHaveText(["sift", "serve", "layer"]);
   await expect(page.locator("[data-action=sift]")).toBeVisible();
   await page.getByRole("button", { name: "Play illustration", exact: true }).click();
   await page.clock.runFor(5000);
