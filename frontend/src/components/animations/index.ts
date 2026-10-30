@@ -16,11 +16,12 @@ import sift from "./Sift";
 import simmer from "./Simmer";
 import spoonIn from "./SpoonIn";
 import spoonTop from "./SpoonTop";
+import sprinkle from "./Sprinkle";
 import steep from "./Steep";
 import stir from "./Stir";
 import strain from "./Strain";
 import whisk from "./Whisk";
 
 export const animations: Partial<Record<CookingAction, ActionAnimation>> = {
-  "add-ice": addIce, "add-pieces": addPieces, blend, brew, froth, heat, layer, mash, melt, pour, remove, shake, sift, simmer, "spoon-in": spoonIn, "spoon-top": spoonTop, steep, stir, strain, whisk,
+  "add-ice": addIce, "add-pieces": addPieces, blend, brew, froth, heat, layer, mash, melt, pour, remove, shake, sift, simmer, "spoon-in": spoonIn, "spoon-top": spoonTop, sprinkle, steep, stir, strain, whisk,
 };
