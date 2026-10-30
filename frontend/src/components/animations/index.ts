@@ -6,6 +6,7 @@ import brew from "./Brew";
 import froth from "./Froth";
 import heat from "./Heat";
 import layer from "./Layer";
+import mash from "./Mash";
 import melt from "./Melt";
 import pour from "./Pour";
 import remove from "./Remove";
@@ -17,5 +18,5 @@ import stir from "./Stir";
 import whisk from "./Whisk";
 
 export const animations: Partial<Record<CookingAction, ActionAnimation>> = {
-  "add-ice": addIce, "add-pieces": addPieces, brew, froth, heat, layer, melt, pour, remove, sift, simmer, "spoon-in": spoonIn, steep, stir, whisk,
+  "add-ice": addIce, "add-pieces": addPieces, brew, froth, heat, layer, mash, melt, pour, remove, sift, simmer, "spoon-in": spoonIn, steep, stir, whisk,
 };
