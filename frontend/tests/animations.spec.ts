@@ -75,7 +75,7 @@ test("every drawn action plays on its own in the chosen colour", async ({ page }
   await actions.filter({ hasText: /^Layer$/ }).click();
   await page.getByLabel("Ingredient colour").fill("#123456");
   await expect(page.locator(".liquid-stream")).toHaveAttribute("stroke", "#123456");
-  await expect(page.getByText(/^Not drawn yet:/)).toBeVisible();
+  await expect(page.getByText(/^Not drawn yet:/)).toHaveCount(0);
 });
 
 test("action detection ignores tool nouns, prepared ingredients and negations", async ({ page }) => {
@@ -106,7 +106,7 @@ test("planner actions replace keyword matching and colour the scene", async ({ p
     tools: [{ id: "t1", name: "bowl", appearance: "Bowl" }],
     steps: Array.from({ length: 6 }, (_, index) => ({ index, inputs: ["i1", "i2"], tools: ["t1"],
       actions: index ? [plannedAction("serve", [])] : [plannedAction("sift", ["i1"], { container: "t1" }),
-        plannedAction("serve", []), plannedAction("layer", ["i2"], { color: "#123456" })],
+        plannedAction("layer", ["i2"], { color: "#123456" })],
       outputs: [{ id: `s${index + 1}o1`, name: "result", appearance: "Drink", sourceStep: index }] })),
   };
   await page.route("**/api/health", route => route.fulfill({ json: { aiConfigured: true } }));
@@ -115,7 +115,7 @@ test("planner actions replace keyword matching and colour the scene", async ({ p
     status: "cancelled", message: "Illustration cancelled.", plan, visuals: {}, assets: {}, warnings: [], total: 0, completed: 0 } }));
   await page.clock.install();
   await page.goto("/start/iced-matcha-latte");
-  await expect(page.getByRole("list", { name: "Actions in this step" }).locator("li")).toHaveText(["sift", "serve", "layer"]);
+  await expect(page.getByRole("list", { name: "Actions in this step" }).locator("li")).toHaveText(["sift", "layer"]);
   await expect(page.locator("[data-action=sift]")).toBeVisible();
   await page.getByRole("button", { name: "Play illustration", exact: true }).click();
   await page.clock.runFor(5000);
@@ -123,7 +123,7 @@ test("planner actions replace keyword matching and colour the scene", async ({ p
   await expect(page.locator(".liquid-stream")).toHaveAttribute("stroke", "#123456");
   await expect(page.locator(".action-sequence [aria-current=step]")).toHaveText("layer");
   await page.getByRole("button", { name: "Step 2", exact: true }).click();
-  await expect(page.locator("[data-action]")).toHaveCount(0);
+  await expect(page.locator("[data-action=serve]")).toBeVisible();
 });
 
 test("reduced motion gives a still scene and stops an active demonstration", async ({ page }) => {
