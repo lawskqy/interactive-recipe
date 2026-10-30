@@ -1,5 +1,3 @@
-// The complete animation vocabulary. The planner may only choose these, and
-// the frontend mirrors the same list in src/lib/cooking-actions.ts.
 const ACTIONS = {
   pour: "pour a liquid, syrup, foam or loose mixture from one container into another (also \"add\", \"combine\" or \"top with\" a pourable item)",
   layer: "pour slowly so it floats or forms a separate layer, including over the back of a spoon",

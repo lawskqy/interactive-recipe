@@ -30,7 +30,6 @@ test("whole-recipe plan retains a set-aside branch and rejects broken references
   assert.deepEqual(dependencyOrder(plan, 5), [1, 2, 3, 4, 5]);
   assert.deepEqual(dependencyOrder(plan, 6), [0, 1, 2, 3, 4, 5, 6]);
   assert.deepEqual(plan.steps[6].inputs, ["s1o1", "s6o1"]);
-  // An item can be inside an earlier preparation without being a step input.
   const removal = makePlan();
   removal.steps[2].actions = [action("remove", ["i2"]), action("wait", [], { seconds: 120 })];
   assert.deepEqual(validatePlan(removal, recipe).steps[2].actions.map((item) => item.type), ["remove", "wait"]);

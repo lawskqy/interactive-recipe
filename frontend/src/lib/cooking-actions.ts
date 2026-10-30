@@ -1,4 +1,3 @@
-// Mirrors backend/cooking-actions.js; a backend test keeps the lists equal.
 export const ACTION_TYPES = ["pour", "layer", "stir", "whisk", "sift", "froth", "heat", "simmer", "melt", "brew", "steep", "remove",
   "add-ice", "add-pieces", "spoon-in", "mash", "blend", "shake", "strain", "spoon-top", "sprinkle", "garnish", "squeeze", "cut",
   "rinse", "wait", "tap", "serve"] as const;
@@ -13,10 +12,6 @@ export interface ActionCue {
   color?: string; items?: string[]; container?: string; tool?: string;
 }
 export const ACTION_DURATION = 4800;
-
-// Actions with a drawn scene so far; a layered pour plays the pour scene.
-const SCENES: Partial<Record<CookingAction, "whisk" | "sift" | "pour">> = { whisk: "whisk", sift: "sift", pour: "pour", layer: "pour" };
-export const sceneFor = (kind: CookingAction) => SCENES[kind];
 
 export function plannedCues(actions: PlannedAction[], names: Record<string, string>): ActionCue[] {
   return actions.map(action => ({

@@ -94,7 +94,6 @@ test("planner actions replace keyword matching and colour the scene", async ({ p
   };
   await page.route("**/api/health", route => route.fulfill({ json: { aiConfigured: true } }));
   await page.route("**/api/preparations/*/cancel", route => route.fulfill({ json: { cancelled: true } }));
-  // A stopped job still delivers its plan, so the step can animate without artwork.
   await page.route("**/api/preparations", route => route.fulfill({ json: { id: route.request().postDataJSON().id,
     status: "cancelled", message: "Illustration cancelled.", plan, visuals: {}, assets: {}, warnings: [], total: 0, completed: 0 } }));
   await page.clock.install();

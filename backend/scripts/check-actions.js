@@ -1,5 +1,3 @@
-// Compares the planner's step actions with the reference list in
-// test/fixtures/recipe-actions.json. Each recipe is one paid planning call.
 // Usage: npm run check:actions -- all | <recipe-id> [<recipe-id> ...]
 const fs = require("node:fs");
 const path = require("node:path");

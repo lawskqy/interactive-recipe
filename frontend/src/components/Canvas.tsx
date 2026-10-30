@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { StepVisual } from "../lib/recipe";
 import StepTransformation from "./StepTransformation";
 import CookingActionScene from "./CookingActionScene";
-import { ACTION_DURATION, cookingActions, sceneFor, type ActionCue } from "../lib/cooking-actions";
+import { animations } from "./animations";
+import { ACTION_DURATION, cookingActions, type ActionCue } from "../lib/cooking-actions";
 import "../styles/canvas.css";
 export default function Canvas({
   visual,
@@ -12,13 +13,11 @@ export default function Canvas({
 }: {
   visual: StepVisual;
   instruction: string;
-  // Planner actions in order; keyword matching is the offline fallback.
   cues?: ActionCue[];
   illustrating?: boolean;
 }) {
   const sequence = planned ?? cookingActions(instruction);
-  // Only actions with a drawn scene play; the sequence still lists them all.
-  const cues = sequence.filter((item) => sceneFor(item.kind));
+  const cues = sequence.filter((item) => animations[item.kind]);
   const duration = cues.length ? cues.length * ACTION_DURATION + 1000 : 6000;
   const [playing, setPlaying] = useState(
     () => !!visual.result && !!visual.resultSegmented && !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
