@@ -1,6 +1,6 @@
 import { stagger } from "animejs";
-import ActionCutout from "../ActionCutout";
 import { CupBack, CupFront } from "./Cup";
+import { StirringSpoon } from "./Spoon";
 import { CUP, type ActionAnimation } from "./types";
 
 const stir: ActionAnimation = {
@@ -33,12 +33,7 @@ const stir: ActionAnimation = {
       </CupBack>
       {resultImage}
       <g className="action-implement" visibility={resultProgress === 1 ? "hidden" : "visible"}>
-        <g className="stir-motion">
-          <ActionCutout src={implement} x={176} y={48} width={56} height={170} tool fallback={<>
-            <path d="M226 52L208 196" stroke="#c5a16a" strokeWidth="6" strokeLinecap="round" />
-            <ellipse cx="206" cy="204" rx="9" ry="14" transform="rotate(8 206 204)" fill="#d8bd8a" stroke="#b89a70" strokeWidth="2" />
-          </>} />
-        </g>
+        <StirringSpoon src={implement} className="stir-motion" />
       </g>
       <CupFront {...props} liquid={resultColor} />
     </>;
