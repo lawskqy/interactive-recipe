@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { describeStep, safeManifest, type Recipe, type StepAsset } from "../lib/recipe";
-import { loadAsset, plannedVisual } from "../lib/preparation";
+import { loadAsset, plannedVisual, stepCues } from "../lib/preparation";
 import { useRecipePreparation } from "../lib/use-recipe-preparation";
 import Canvas from "./Canvas";
 export default function TutorialBoard({
@@ -76,8 +76,9 @@ export default function TutorialBoard({
         {recipe.steps[activeStep]}
       </h2>
       <Canvas
-        key={`${activeStep}:${results[activeStep]?.result || "local"}`}
+        key={`${activeStep}:${results[activeStep]?.result || "local"}:${plan ? "planned" : "keywords"}`}
         visual={results[activeStep] || local}
+        cues={plan ? stepCues(plan, activeStep) : undefined}
         instruction={recipe.steps[activeStep]}
         illustrating={waiting}
       />

@@ -70,7 +70,7 @@ function createArtwork({ generate, images, media, segment = removeBackground }) 
     }
     const prompt = JSON.stringify({
       subject: { name: item.name, appearance: item.appearance },
-      ...(kind === "result" ? { recipe: recipe.name, current_step: step.instruction, actions: step.actions,
+      ...(kind === "result" ? { recipe: recipe.name, current_step: step.instruction, actions: step.actions.map((action) => action.type),
         inputs: references.map(({ id, name, sourceStep }) => ({ id, name, sourceStep })) } : {}),
     }) + (kind === "result"
       ? "\nRender only this named OUTPUT after the current step. Attached images are the actual named inputs and tools, not examples of the final drink. Preserve their container shapes, colors and material appearance unless this instruction changes them. Combine only the specified preparations. Do not add ingredients or decorations from later steps."

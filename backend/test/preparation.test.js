@@ -6,10 +6,13 @@ const { createApp } = require("../server");
 const recipe = require("../../frontend/public/recipes.json").find((item) => item.id === "blueberry-matcha-fizz");
 const inputs = [["i1", "i3"], ["i2"], ["s2o1", "i4", "i5"], ["s3o1", "i7"], ["s4o1", "i7"], ["s5o1", "i6"], ["s1o1", "s6o1"]];
 const names = ["prepared matcha", "muddled blueberries", "blueberry lemon mixture", "chilled blueberry mixture", "strained blueberry base", "sparkling blueberry base", "layered blueberry matcha fizz"];
+const action = (type, items, extra = {}) => ({ type, items: [...items], container: "", tool: "", color: "#e9dfc5",
+  resultColor: "#8d9d65", texture: "liquid", seconds: 0, optional: false, ...extra });
 const makePlan = () => ({
   ingredients: recipe.ingredients.map((item, index) => ({ id: `i${index + 1}`, appearance: item.name })),
   tools: [{ id: "t1", name: "whisk", appearance: "Bamboo whisk" }],
-  steps: inputs.map((refs, index) => ({ inputs: [...refs], tools: index === 0 ? ["t1"] : [], actions: [index === 0 ? "whisk" : "pour"],
+  steps: inputs.map((refs, index) => ({ inputs: [...refs], tools: index === 0 ? ["t1"] : [],
+    actions: [index === 0 ? action("whisk", refs, { tool: "t1", color: "#7f9a4a" }) : action("pour", [refs[0]])],
     outputs: [{ id: `s${index + 1}o1`, name: names[index], appearance: names[index] + " in its glass or bowl" }] })),
 });
 async function finished(service, id) {
@@ -27,6 +30,10 @@ test("whole-recipe plan retains a set-aside branch and rejects broken references
   assert.deepEqual(dependencyOrder(plan, 5), [1, 2, 3, 4, 5]);
   assert.deepEqual(dependencyOrder(plan, 6), [0, 1, 2, 3, 4, 5, 6]);
   assert.deepEqual(plan.steps[6].inputs, ["s1o1", "s6o1"]);
+  // An item can be inside an earlier preparation without being a step input.
+  const removal = makePlan();
+  removal.steps[2].actions = [action("remove", ["i2"]), action("wait", [], { seconds: 120 })];
+  assert.deepEqual(validatePlan(removal, recipe).steps[2].actions.map((item) => item.type), ["remove", "wait"]);
   for (const change of [
     (value) => value.steps[0].inputs.push("s7o1"),
     (value) => value.steps[0].inputs.push("s1o1"),
@@ -36,6 +43,16 @@ test("whole-recipe plan retains a set-aside branch and rejects broken references
     (value) => { value.ingredients[1].id = "i1"; },
     (value) => value.steps.pop(),
     (value) => value.steps[0].tools.push("t99"),
+    (value) => { value.steps[0].actions[0].type = "dance"; },
+    (value) => { value.steps[0].actions = []; },
+    (value) => value.steps[0].actions[0].items.push("s1o1"),
+    (value) => value.steps[1].actions[0].items.push("s3o1"),
+    (value) => { value.steps[1].actions[0].items = []; },
+    (value) => { value.steps[1].actions[0].tool = "t1"; },
+    (value) => { value.steps[0].actions[0].color = "green"; },
+    (value) => { value.steps[0].actions[0].texture = "goo"; },
+    (value) => { value.steps[0].actions[0].seconds = 1.5; },
+    (value) => { delete value.steps[0].actions[0].optional; },
   ]) {
     const invalid = makePlan();
     change(invalid);

@@ -1,0 +1,35 @@
+// The complete animation vocabulary. The planner may only choose these, and
+// the frontend mirrors the same list in src/lib/cooking-actions.ts.
+const ACTIONS = {
+  pour: "pour a liquid, syrup, foam or loose mixture from one container into another (also \"add\", \"combine\" or \"top with\" a pourable item)",
+  layer: "pour slowly so it floats or forms a separate layer, including over the back of a spoon",
+  stir: "stir or mix with a spoon until combined or dissolved, including thick mixtures in a bowl",
+  whisk: "whisk with a whisk or bamboo chasen",
+  sift: "sift a powder through a sieve",
+  froth: "froth or steam milk or cream into foam",
+  heat: "warm or heat on a stove or in a microwave without bubbling",
+  simmer: "simmer or boil with visible bubbles",
+  melt: "melt chocolate or another solid into a liquid",
+  brew: "brew or prepare espresso or coffee",
+  steep: "steep tea, flowers or herbs in hot water",
+  remove: "lift out a tea bag, leaves or spices",
+  "add-ice": "add ice cubes or fill a glass with ice",
+  "add-pieces": "place fruit, slices, leaves, spices or chopped solids into a container",
+  "spoon-in": "add a spoonful of sugar, salt, powder or paste",
+  mash: "mash, muddle, press or crush",
+  blend: "blend in a blender",
+  shake: "shake in a closed shaker",
+  strain: "strain through a sieve or out of a shaker",
+  "spoon-top": "spoon or dollop foam, cream or whipped cream on top",
+  sprinkle: "sprinkle a pinch of spice, salt or petals on top",
+  garnish: "place a garnish such as a leaf or slice on top",
+  squeeze: "squeeze citrus by hand",
+  cut: "cut, dice, slice, peel, hull or pit fruit",
+  rinse: "wash or rinse produce",
+  wait: "let something cool, chill, rest, stand or macerate",
+  tap: "tap a jug to settle bubbles",
+  serve: "serve; nothing else physically happens",
+};
+const TEXTURES = ["liquid", "fizzy", "foam", "thick", "powder", "granules", "pieces", "ice", "solid"];
+
+module.exports = { ACTIONS, ACTION_TYPES: Object.keys(ACTIONS), TEXTURES };

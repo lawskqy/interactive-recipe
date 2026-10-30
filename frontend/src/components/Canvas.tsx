@@ -2,18 +2,23 @@ import { useEffect, useRef, useState } from "react";
 import type { StepVisual } from "../lib/recipe";
 import StepTransformation from "./StepTransformation";
 import CookingActionScene from "./CookingActionScene";
-import { ACTION_DURATION, cookingActions } from "../lib/cooking-actions";
+import { ACTION_DURATION, cookingActions, sceneFor, type ActionCue } from "../lib/cooking-actions";
 import "../styles/canvas.css";
 export default function Canvas({
   visual,
   instruction,
+  cues: planned,
   illustrating = false,
 }: {
   visual: StepVisual;
   instruction: string;
+  // Planner actions in order; keyword matching is the offline fallback.
+  cues?: ActionCue[];
   illustrating?: boolean;
 }) {
-  const cues = cookingActions(instruction);
+  const sequence = planned ?? cookingActions(instruction);
+  // Only actions with a drawn scene play; the sequence still lists them all.
+  const cues = sequence.filter((item) => sceneFor(item.kind));
   const duration = cues.length ? cues.length * ACTION_DURATION + 1000 : 6000;
   const [playing, setPlaying] = useState(
     () => !!visual.result && !!visual.resultSegmented && !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -194,8 +199,8 @@ export default function Canvas({
           </div>
         )}
       </div>
-      {cues.length > 1 && <ol className="action-sequence" aria-label="Actions in this step">
-        {cues.map((item, index) => <li key={index} aria-current={index === cueIndex ? "step" : undefined}>{item.kind}</li>)}
+      {sequence.length > 1 && <ol className="action-sequence" aria-label="Actions in this step">
+        {sequence.map((item, index) => <li key={index} aria-current={item === cue ? "step" : undefined}>{item.kind.replace("-", " ")}</li>)}
       </ol>}
       {!!visual.outputs && visual.outputs.length > 1 && <div className="step-assets" role="group" aria-label="Preparations made in this step">
         {visual.outputs.map((output) => <div className="step-asset" key={output.id}>

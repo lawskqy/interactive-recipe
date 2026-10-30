@@ -19,7 +19,7 @@ function temporary(t) {
   return dir;
 }
 const request = () => ({ item: { id: "s7o1", name: "layered drink", appearance: "Green matcha floating over a purple blueberry base" },
-  kind: "result", recipe: { name: "blueberry matcha fizz" }, step: { instruction: "Pour the prepared matcha on top.", actions: ["pour"] },
+  kind: "result", recipe: { name: "blueberry matcha fizz" }, step: { instruction: "Pour the prepared matcha on top.", actions: [{ type: "layer" }] },
   references: [{ id: "s1o1", name: "prepared matcha", src: "/media/prepared.png", sourceStep: 0 },
     { id: "s6o1", name: "blueberry base", src: "/media/base.png", sourceStep: 5 }] });
 

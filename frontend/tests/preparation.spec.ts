@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { allStepVisuals } from "./artwork-fixtures";
+import { allStepVisuals, plannedAction } from "./artwork-fixtures";
 
 const matcha = { id: "s1o1", name: "prepared matcha", appearance: "Smooth green matcha in a bowl", sourceStep: 0 };
 const base = { id: "s6o1", name: "sparkling blueberry base", appearance: "Purple sparkling drink in a glass", sourceStep: 5 };
@@ -7,7 +7,7 @@ const makePlan = () => ({
   ingredients: [{ id: "i1", name: "matcha powder", appearance: "Green powder" }],
   tools: [],
   steps: Array.from({ length: 7 }, (_, index) => ({ index, inputs: index === 6 ? ["s1o1", "s6o1"] : ["i1"],
-    tools: [], actions: ["pour"], outputs: [index === 0 ? matcha : index === 5 ? base : {
+    tools: [], actions: [plannedAction("pour", ["i1"])], outputs: [index === 0 ? matcha : index === 5 ? base : {
       id: `s${index + 1}o1`, name: "step result", appearance: "Drink", sourceStep: index,
     }] })),
 });
@@ -68,7 +68,7 @@ test("existing artwork stays visible during planning and stars only stand in for
     ingredients: [{ id: "i1", name: "matcha powder", appearance: "Green powder" }, { id: "i2", name: "pumpkin spice", appearance: "Spice" }],
     tools: [{ id: "t1", name: "bowl", appearance: "Bowl" }, { id: "t2", name: "whisk", appearance: "Whisk" },
       { id: "t3", name: "special spice scoop", appearance: "Small scoop" }],
-    steps: [{ index: 0, inputs: ["i1", "i2"], tools: ["t1", "t2", "t3"], actions: ["sift"], outputs: [matcha] }],
+    steps: [{ index: 0, inputs: ["i1", "i2"], tools: ["t1", "t2", "t3"], actions: [plannedAction("sift", ["i1"], { container: "t1" })], outputs: [matcha] }],
   };
   let ready = false;
   let imageRequested = false;

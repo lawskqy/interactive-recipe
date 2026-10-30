@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef } from "react";
 import { createScope, createTimeline, stagger } from "animejs";
-import { ACTION_DURATION, ingredientColor, type ActionCue } from "../lib/cooking-actions";
-import type { StepVisual } from "../lib/recipe";
+import { ACTION_DURATION, ingredientColor, sceneFor, type ActionCue } from "../lib/cooking-actions";
+import type { StepAsset, StepVisual } from "../lib/recipe";
 import ActionCutout from "./ActionCutout";
 import ActionVessel from "./ActionVessel";
 import { useCutoutLayout } from "../lib/cutout-layout";
@@ -11,6 +11,7 @@ const captions = {
   whisk: "Whisk until smooth",
   sift: "Sift gently into the bowl",
   pour: "Pour in a steady stream",
+  layer: "Pour slowly so it floats on top",
 };
 
 export default function CookingActionScene({ cue, elapsed, playing, visual, resultProgress = 0, onResultError }: {
@@ -20,20 +21,26 @@ export default function CookingActionScene({ cue, elapsed, playing, visual, resu
   const root = useRef<HTMLDivElement>(null);
   const timeline = useRef<ReturnType<typeof createTimeline> | null>(null);
   const clip = useId().replace(/:/g, "");
-  const color = ingredientColor(cue.context);
+  const kind = sceneFor(cue.kind) || "pour";
+  const color = cue.color || ingredientColor(cue.context);
   const tools = visual?.tools.filter(asset => asset.src && asset.segmented) || [];
   const ingredients = visual?.ingredients.filter(asset => asset.src && asset.segmented) || [];
-  const implement = tools.find(asset => (cue.kind === "whisk" ? /\bwhisk\b/i : /sifter|sieve|strainer/i).test(asset.name));
+  // Planned actions name their exact tool, container and items; keyword cues
+  // fall back to matching artwork names.
+  const byId = (assets: StepAsset[], id?: string) => id ? assets.find(asset => asset.id === id) : undefined;
+  const implement = byId(tools, cue.tool) ||
+    tools.find(asset => (kind === "whisk" ? /\bwhisk\b/i : /sifter|sieve|strainer/i).test(asset.name));
   const sourceText = cue.context.split(/\b(?:into|over|onto)\b/)[0];
-  const source = ingredients.find(asset => sourceText.includes(asset.name.toLowerCase())) ||
+  const source = cue.items?.map(id => byId(ingredients, id)).find(Boolean) ||
+    ingredients.find(asset => sourceText.includes(asset.name.toLowerCase())) ||
     ingredients.find(asset => /milk|water|cream|coffee|espresso|mixture|tea/i.test(asset.name) &&
       asset.name.toLowerCase().split(/\s+/).some(word => word.length > 2 && sourceText.includes(word)));
   const pitcher = source || tools.find(asset => /pitcher|jug|measuring cup/i.test(asset.name));
-  const vessel = tools.find(asset => (cue.kind === "pour" ? /cup|glass|mug/i : /bowl/i).test(asset.name));
+  const vessel = byId(tools, cue.container) || tools.find(asset => (kind === "pour" ? /cup|glass|mug/i : /bowl/i).test(asset.name));
   // Keep the empty vessel underneath the result as its contents develop.
   const receiver = vessel?.src;
   const receiverLayout = useCutoutLayout(receiver);
-  const anchor = cue.kind === "pour"
+  const anchor = kind === "pour"
     ? { x: 205, y: 166, width: 96, radiusY: 8 }
     : { x: 180, y: 193, width: 182, radiusY: 22 };
   const openingRadiusY = receiverLayout
@@ -50,7 +57,7 @@ export default function CookingActionScene({ cue, elapsed, playing, visual, resu
     const scope = createScope({ root }).add(() => {
       const tl = createTimeline({ autoplay: false, defaults: { ease: "inOutSine" } });
       timeline.current = tl;
-      if (cue.kind === "whisk") {
+      if (kind === "whisk") {
         tl.add(".whisk-motion", { y: [-18, 0], duration: 500 }, 0);
         for (let i = 0; i < 10; i++) {
           tl.add(".whisk-motion", { x: [-13, 13, -13], rotate: [-9, 9, -9], duration: 340 }, 500 + i * 340);
@@ -63,7 +70,7 @@ export default function CookingActionScene({ cue, elapsed, playing, visual, resu
         tl.add(".mixture-ripple", { opacity: 0, duration: 500 }, 4000);
         tl.add(".whisk-foam", { opacity: [0, 0.7], delay: stagger(70), duration: 1200 }, 1700);
         tl.add(".whisk-motion", { y: -38, opacity: 0, duration: 600 }, 4000);
-      } else if (cue.kind === "sift") {
+      } else if (kind === "sift") {
         for (let i = 0; i < 10; i++) {
           tl.add(".sieve-motion", { x: [-7, 7, -7], rotate: [-2, 2, -2], duration: 340 }, 400 + i * 340);
         }
@@ -92,8 +99,8 @@ export default function CookingActionScene({ cue, elapsed, playing, visual, resu
       tl.seek(0, true);
     });
     return () => { timeline.current = null; scope.revert(); };
-  }, [cue.kind]);
-  useEffect(() => { timeline.current?.seek(Math.min(elapsed, ACTION_DURATION), true); }, [elapsed, cue.kind]);
+  }, [kind]);
+  useEffect(() => { timeline.current?.seek(Math.min(elapsed, ACTION_DURATION), true); }, [elapsed, kind]);
 
   return (
     <div ref={root} className={`cooking-scene action-scene ${playing ? "is-playing" : ""}`}
@@ -108,16 +115,16 @@ export default function CookingActionScene({ cue, elapsed, playing, visual, resu
         </defs>
         <ellipse cx={anchor.x} cy={ground} rx={anchor.width * 0.6} ry="8" fill="#b9a081" opacity="0.12" />
         <g className="action-content">
-        {cue.kind !== "pour" ? <>
+        {kind !== "pour" ? <>
           <g className="receiver-content" style={{ opacity: 1 - resultProgress }}>
           <ActionVessel src={receiver} anchor={anchor} fallback={<>
           <path d="M89 193Q98 255 180 255Q262 255 271 193Z" fill="#ddd0b6" stroke="#b89a70" strokeWidth="2" />
           <ellipse cx="180" cy="193" rx="91" ry="25" fill="#f5edda" stroke="#b89a70" strokeWidth="2" />
-          <ellipse cx="180" cy="194" rx="75" ry="17" fill={cue.kind === "whisk" ? color : "#e8dbc1"} />
+          <ellipse cx="180" cy="194" rx="75" ry="17" fill={kind === "whisk" ? color : "#e8dbc1"} />
           </>} />
           </g>
           {resultImage}
-          {cue.kind === "whisk" ? <>
+          {kind === "whisk" ? <>
             <g clipPath={`url(#${clip}-surface)`} style={{ opacity: 1 - resultProgress }}>
             <g className="mixture-ripple" fill="none" stroke="#f5edda" strokeWidth="2" opacity="0">
               <ellipse cx="180" cy="194" rx="47" ry="9" /><path d="M124 191Q179 167 237 192" />
@@ -201,7 +208,7 @@ export default function CookingActionScene({ cue, elapsed, playing, visual, resu
         </>}
         </g>
       </svg>
-      <p>{result && resultProgress === 1 ? visual?.resultName || "Step ready" : captions[cue.kind]}</p>
+      <p>{result && resultProgress === 1 ? visual?.resultName || "Step ready" : captions[cue.kind as keyof typeof captions] || captions[kind]}</p>
     </div>
   );
 }

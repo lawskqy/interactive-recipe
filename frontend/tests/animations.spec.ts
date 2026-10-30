@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { plannedAction } from "./artwork-fixtures";
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/api/health", route => route.fulfill({ json: { aiConfigured: false } }));
@@ -80,6 +81,33 @@ test("recipe steps select their action and reset when navigating", async ({ page
   await page.getByRole("button", { name: "Step 4", exact: true }).click();
   await expect(page.locator("[data-action=pour]")).toBeVisible();
   await expect(page.getByRole("button", { name: "Play illustration", exact: true })).toBeVisible();
+});
+
+test("planner actions replace keyword matching and colour the scene", async ({ page }) => {
+  const plan = {
+    ingredients: [{ id: "i1", name: "matcha powder", appearance: "Green powder" }, { id: "i2", name: "water", appearance: "Water" }],
+    tools: [{ id: "t1", name: "bowl", appearance: "Bowl" }],
+    steps: Array.from({ length: 6 }, (_, index) => ({ index, inputs: ["i1", "i2"], tools: ["t1"],
+      actions: index ? [plannedAction("stir", ["i1"])] : [plannedAction("sift", ["i1"], { container: "t1" }),
+        plannedAction("stir", ["i1"]), plannedAction("layer", ["i2"], { color: "#123456" })],
+      outputs: [{ id: `s${index + 1}o1`, name: "result", appearance: "Drink", sourceStep: index }] })),
+  };
+  await page.route("**/api/health", route => route.fulfill({ json: { aiConfigured: true } }));
+  await page.route("**/api/preparations/*/cancel", route => route.fulfill({ json: { cancelled: true } }));
+  // A stopped job still delivers its plan, so the step can animate without artwork.
+  await page.route("**/api/preparations", route => route.fulfill({ json: { id: route.request().postDataJSON().id,
+    status: "cancelled", message: "Illustration cancelled.", plan, visuals: {}, assets: {}, warnings: [], total: 0, completed: 0 } }));
+  await page.clock.install();
+  await page.goto("/start/iced-matcha-latte");
+  await expect(page.getByRole("list", { name: "Actions in this step" }).locator("li")).toHaveText(["sift", "stir", "layer"]);
+  await expect(page.locator("[data-action=sift]")).toBeVisible();
+  await page.getByRole("button", { name: "Play illustration", exact: true }).click();
+  await page.clock.runFor(5000);
+  await expect(page.locator("[data-action=layer]")).toBeVisible();
+  await expect(page.locator(".liquid-stream")).toHaveAttribute("stroke", "#123456");
+  await expect(page.locator(".action-sequence [aria-current=step]")).toHaveText("layer");
+  await page.getByRole("button", { name: "Step 2", exact: true }).click();
+  await expect(page.locator("[data-action]")).toHaveCount(0);
 });
 
 test("reduced motion gives a still scene and stops an active demonstration", async ({ page }) => {

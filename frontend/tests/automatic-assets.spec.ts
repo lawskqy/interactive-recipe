@@ -1,11 +1,12 @@
 import { test, expect } from "@playwright/test";
+import { plannedAction } from "./artwork-fixtures";
 
 const ingredient = { id: "i1", name: "matcha powder", src: "/media/ingredient.png", segmented: true };
 const tool = { id: "t1", name: "whisk", src: "/media/tool.png", segmented: true };
 const plan = {
   ingredients: [{ id: "i1", name: "matcha powder", appearance: "Green powder" }],
   tools: [{ id: "t1", name: "whisk", appearance: "Whisk" }],
-  steps: Array.from({ length: 6 }, (_, index) => ({ index, inputs: ["i1"], tools: ["t1"], actions: ["whisk"],
+  steps: Array.from({ length: 6 }, (_, index) => ({ index, inputs: ["i1"], tools: ["t1"], actions: [plannedAction("whisk", ["i1"], { tool: "t1" })],
     outputs: [{ id: `s${index + 1}o1`, name: "prepared drink", appearance: "Drink", sourceStep: index }] })),
 };
 const visual = (index: number) => ({ ingredients: [ingredient], tools: [tool], actions: ["whisk"], result: `/media/result_${index}.png` });

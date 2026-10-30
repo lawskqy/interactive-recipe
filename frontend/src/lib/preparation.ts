@@ -1,11 +1,18 @@
 import { api, mediaUrl } from "./api";
 import { canonicalName, type StepAsset, type StepVisual } from "./recipe";
+import { plannedCues, type ActionCue, type PlannedAction } from "./cooking-actions";
 
 interface PlannedObject { id: string; name: string; appearance: string; sourceStep?: number }
 export interface PreparationPlan {
   ingredients: PlannedObject[];
   tools: PlannedObject[];
-  steps: { index: number; inputs: string[]; tools: string[]; actions: string[]; outputs: PlannedObject[] }[];
+  steps: { index: number; inputs: string[]; tools: string[]; actions: PlannedAction[]; outputs: PlannedObject[] }[];
+}
+
+export function stepCues(plan: PreparationPlan, index: number): ActionCue[] {
+  const names = Object.fromEntries([...plan.ingredients, ...plan.tools, ...plan.steps.flatMap((step) => step.outputs)]
+    .map((item) => [item.id, item.name]));
+  return plannedCues(plan.steps[index].actions, names);
 }
 export interface PreparationJob {
   id: string;
@@ -50,7 +57,7 @@ export function plannedVisual(
   return {
     ingredients: step.inputs.map(resolve),
     tools: step.tools.map(resolve),
-    actions: step.actions,
+    actions: step.actions.map((action) => action.type),
   };
 }
 

@@ -1,10 +1,33 @@
-export type CookingAction = "whisk" | "sift" | "pour";
-export interface ActionCue { kind: CookingAction; context: string }
+// Mirrors backend/cooking-actions.js; a backend test keeps the lists equal.
+export const ACTION_TYPES = ["pour", "layer", "stir", "whisk", "sift", "froth", "heat", "simmer", "melt", "brew", "steep", "remove",
+  "add-ice", "add-pieces", "spoon-in", "mash", "blend", "shake", "strain", "spoon-top", "sprinkle", "garnish", "squeeze", "cut",
+  "rinse", "wait", "tap", "serve"] as const;
+export type CookingAction = typeof ACTION_TYPES[number];
+export type ActionTexture = "liquid" | "fizzy" | "foam" | "thick" | "powder" | "granules" | "pieces" | "ice" | "solid";
+export interface PlannedAction {
+  type: CookingAction; items: string[]; container: string; tool: string;
+  color: string; resultColor: string; texture: ActionTexture; seconds: number; optional: boolean;
+}
+export interface ActionCue {
+  kind: CookingAction; context: string;
+  color?: string; items?: string[]; container?: string; tool?: string;
+}
 export const ACTION_DURATION = 4800;
 
-// A deliberately small, offline prototype vocabulary. Whole words avoid
-// “whiskey” and “whisked milk”; clause checks exclude tools and negated actions.
-// A semantic recipe planner can supply richer cues in a later iteration.
+// Actions with a drawn scene so far; a layered pour plays the pour scene.
+const SCENES: Partial<Record<CookingAction, "whisk" | "sift" | "pour">> = { whisk: "whisk", sift: "sift", pour: "pour", layer: "pour" };
+export const sceneFor = (kind: CookingAction) => SCENES[kind];
+
+export function plannedCues(actions: PlannedAction[], names: Record<string, string>): ActionCue[] {
+  return actions.map(action => ({
+    kind: action.type, color: action.color, items: action.items, container: action.container, tool: action.tool,
+    context: [action.type, ...action.items.map(id => names[id] || "")].join(" ").toLowerCase(),
+  }));
+}
+
+// A deliberately small, offline vocabulary for when no planner is available.
+// Whole words avoid “whiskey” and “whisked milk”; clause checks exclude tools
+// and negated actions.
 export function cookingActions(instruction: string): ActionCue[] {
   const text = instruction.toLowerCase().replace(/[’‘]/g, "'");
   const matches = [...text.matchAll(/\b(whisk|sift|pour)(?:ing|s)?\b/g)];
