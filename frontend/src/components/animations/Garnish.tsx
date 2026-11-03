@@ -17,7 +17,7 @@ const garnish: ActionAnimation = {
     tl.add(".garnish-ripple", { scale: [0.3, 1.3], opacity: [0, 0.6, 0], duration: 900 }, 2850);
   },
   Scene(props) {
-    const { color, resultColor, resultImage } = props;
+    const { color, resultColor, resultImage, resultProgress } = props;
     const leaf = isGreen(color);
     const [x, y] = leaf ? [222, 178] : [246, 160];
     return <>
@@ -26,7 +26,7 @@ const garnish: ActionAnimation = {
           opacity="0" style={{ transformOrigin: "222px 184px" }} />}
       </CupBack>
       {resultImage}
-      <g transform={`translate(${x} ${y})`}>
+      <g transform={`translate(${x} ${y})`} style={{ opacity: 1 - resultProgress }}>
         <g className="garnish-piece" opacity="0">
           {leaf ? <>
             <path d="M-18 4Q-6 -14 18 -6Q6 12 -18 4Z" fill={color} stroke="#00000030" strokeWidth="1.5" />

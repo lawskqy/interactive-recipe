@@ -2,7 +2,8 @@ import { stagger } from "animejs";
 import { CupBack, CupFront } from "./Cup";
 import { CUP, type ActionAnimation } from "./types";
 
-const cubes = [[174, 222, -8], [200, 226, 6], [226, 220, 12], [186, 200, 14], [214, 202, -10], [200, 180, 4]];
+// [offset from the vessel centre, stack row, tilt]
+const cubes = [[-31, 0, -8], [-5, 0, 6], [21, 0, 12], [-19, 1, 14], [9, 1, -10], [-5, 2, 4]];
 
 const addIce: ActionAnimation = {
   caption: "Fill the glass with ice",
@@ -14,18 +15,24 @@ const addIce: ActionAnimation = {
     tl.add(".ice-glint", { opacity: [0, 0.9, 0.4], duration: 700 }, 3200);
   },
   Scene(props) {
-    const { resultImage } = props;
+    const { anchor, openingRadiusY, floor = 236, resultImage, resultProgress } = props;
+    const step = Math.max(0, Math.min(22, (floor - 12 - (anchor.y + openingRadiusY + 10)) / 2));
+    const placed = cubes.map(([dx, row, angle]) => [anchor.x + dx * (row ? 1 : 0.85), floor - 12 - row * step, angle]);
     return <>
       <CupBack {...props} />
       {resultImage}
-      {cubes.map(([x, y, angle], i) => <g key={i} transform={`translate(${x} ${y}) rotate(${angle})`}>
-        <g className="ice-cube" opacity="0">
-          <rect x="-12" y="-12" width="24" height="24" rx="5" fill="#e3f0f2" fillOpacity="0.85" stroke="#a9c6cb" strokeWidth="1.5" />
-          <path d="M-7 -6L-1 -8" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" className="ice-glint" opacity="0" />
-        </g>
-      </g>)}
-      {cubes.slice(0, 3).map(([x, y], i) => <ellipse key={i} className="ice-splash" cx={x} cy={y + 12}
-        rx="14" ry="3" fill="none" stroke="#cfe3e6" strokeWidth="1.5" opacity="0" />)}
+      <g style={{ opacity: 1 - resultProgress }}>
+        {placed.map(([x, y, angle], i) => <g key={i} transform={`translate(${x} ${y})`}>
+          <g className="ice-cube" opacity="0">
+            <g transform={`rotate(${angle})`}>
+              <rect x="-12" y="-12" width="24" height="24" rx="5" fill="#e3f0f2" fillOpacity="0.85" stroke="#a9c6cb" strokeWidth="1.5" />
+              <path d="M-7 -6L-1 -8" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" className="ice-glint" opacity="0" />
+            </g>
+          </g>
+        </g>)}
+        {placed.slice(0, 3).map(([x, y], i) => <ellipse key={i} className="ice-splash" cx={x} cy={y + 12}
+          rx="14" ry="3" fill="none" stroke="#cfe3e6" strokeWidth="1.5" opacity="0" />)}
+      </g>
       <CupFront {...props} />
     </>;
   },

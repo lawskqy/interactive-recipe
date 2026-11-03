@@ -39,6 +39,8 @@ export default function CookingActionScene({ cue, elapsed, playing, visual, resu
   const vesselBottom = (layout: typeof receiverLayout) => layout
     ? anchor.y + (layout.bottom - layout.opening.y) * anchor.width / layout.opening.width : 255;
   const ground = Math.max(vesselBottom(receiverLayout), result ? vesselBottom(resultLayout) : 255) + 4;
+  // Leave room for the base of the glass so pieces rest inside it.
+  const floor = receiverLayout ? anchor.y + (vesselBottom(receiverLayout) - anchor.y) * 0.9 : undefined;
   const resultImage = <ActionVessel id={`${clip}-result`} src={result} anchor={anchor}
     result opacity={resultProgress} onError={onResultError} />;
   useEffect(() => {
@@ -69,7 +71,7 @@ export default function CookingActionScene({ cue, elapsed, playing, visual, resu
         </defs>
         <ellipse cx={anchor.x} cy={ground} rx={anchor.width * 0.6} ry="8" fill="#b9a081" opacity="0.12" />
         <g className="action-content">
-          <Scene clip={clip} anchor={anchor} openingRadiusY={openingRadiusY} color={color}
+          <Scene clip={clip} anchor={anchor} openingRadiusY={openingRadiusY} floor={floor} color={color}
             resultColor={cue.resultColor || color} receiver={receiver}
             implement={implement?.src} source={source?.src} result={result} resultImage={resultImage}
             resultProgress={resultProgress} />

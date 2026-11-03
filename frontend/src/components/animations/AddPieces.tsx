@@ -2,7 +2,8 @@ import { stagger } from "animejs";
 import { CupBack, CupFront } from "./Cup";
 import { CUP, type ActionAnimation } from "./types";
 
-const pieces = [[178, 228, 0], [204, 232, 40], [230, 226, -30], [190, 212, 70], [218, 210, 15], [204, 196, -50], [182, 196, 25]];
+// [offset from the vessel centre, stack row, tilt]
+const pieces = [[-27, 0, 0], [-1, 0, 40], [25, 0, -30], [-15, 1, 70], [13, 1, 15], [-1, 2, -50], [-23, 2, 25]];
 
 function piece(shape: number, color: string) {
   if (shape === 0) return <circle r="9" fill={color} stroke="#00000026" strokeWidth="1.5" />;
@@ -19,16 +20,22 @@ const addPieces: ActionAnimation = {
     tl.add(".piece-shine", { opacity: [0, 0.8, 0.5], duration: 600 }, 3200);
   },
   Scene(props) {
-    const { color, resultImage } = props;
+    const { anchor, openingRadiusY, floor = 236, color, resultImage, resultProgress } = props;
+    const step = Math.max(0, Math.min(16, (floor - 8 - (anchor.y + openingRadiusY + 10)) / 2));
+    const placed = pieces.map(([dx, row, angle]) => [anchor.x + dx * (row ? 1 : 0.85), floor - 8 - row * step, angle]);
     return <>
       <CupBack {...props} />
       {resultImage}
-      {pieces.map(([x, y, angle], i) => <g key={i} transform={`translate(${x} ${y}) rotate(${angle})`}>
-        <g className="piece-drop" opacity="0">
-          {piece(i % 3, color)}
-          <circle className="piece-shine" cx="-3" cy="-3" r="2" fill="#ffffff" opacity="0" />
-        </g>
-      </g>)}
+      <g style={{ opacity: 1 - resultProgress }}>
+        {placed.map(([x, y, angle], i) => <g key={i} transform={`translate(${x} ${y})`}>
+          <g className="piece-drop" opacity="0">
+            <g transform={`rotate(${angle})`}>
+              {piece(i % 3, color)}
+              <circle className="piece-shine" cx="-3" cy="-3" r="2" fill="#ffffff" opacity="0" />
+            </g>
+          </g>
+        </g>)}
+      </g>
       <CupFront {...props} />
     </>;
   },

@@ -3,7 +3,7 @@ import type { createTimeline } from "animejs";
 
 export interface Anchor { x: number; y: number; width: number; radiusY: number }
 export interface SceneProps {
-  clip: string; anchor: Anchor; openingRadiusY: number; color: string; resultColor: string;
+  clip: string; anchor: Anchor; openingRadiusY: number; floor?: number; color: string; resultColor: string;
   receiver?: string; implement?: string; source?: string;
   result?: string; resultImage: ReactNode; resultProgress: number;
 }
