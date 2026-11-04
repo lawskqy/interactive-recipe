@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import type { StepVisual } from "../lib/recipe";
+import type { StepAsset, StepVisual } from "../lib/recipe";
 import StepTransformation from "./StepTransformation";
 import CookingActionScene from "./CookingActionScene";
+import ResultStill from "./ResultStill";
 import { animations } from "./animations";
 import { ACTION_DURATION, cookingActions, type ActionCue } from "../lib/cooking-actions";
 import "../styles/canvas.css";
@@ -10,11 +11,13 @@ export default function Canvas({
   instruction,
   cues: planned,
   illustrating = false,
+  vessel,
 }: {
   visual: StepVisual;
   instruction: string;
   cues?: ActionCue[];
   illustrating?: boolean;
+  vessel?: StepAsset;
 }) {
   const sequence = planned ?? cookingActions(instruction);
   const cues = sequence.filter((item) => animations[item.kind]);
@@ -102,12 +105,18 @@ export default function Canvas({
           <CookingActionScene key={cueIndex} cue={cue}
             visual={hasResult ? visual : { ...visual, result: undefined, resultSegmented: false }}
             elapsed={reduced ? 0 : elapsed - cueIndex * ACTION_DURATION} playing={playing && !reduced}
-            resultProgress={hasResult ? reveal : 0}
+            resultProgress={hasResult ? reveal : 0} holder={vessel}
             onResultError={() => { setFailedResult(visual.result || null); setPlaying(false); elapsedRef.current = 0; setElapsed(0); }} />
         ) : hasResult ? (
           <figure>
             <div className="transformation-stage">
-              <img
+              {vessel?.src ? <ResultStill vessel={vessel.src} result={visual.result!} opacity={reveal}
+                label={`Illustrated result: ${instruction}`} onError={() => {
+                  setFailedResult(visual.result || null);
+                  setPlaying(false);
+                  elapsedRef.current = 0;
+                  setElapsed(0);
+                }} /> : <img
                 className="generated-result"
                 src={visual.result}
                 style={{ opacity: reveal }}
@@ -118,7 +127,7 @@ export default function Canvas({
                   setElapsed(0);
                 }}
                 alt={`Illustrated result: ${instruction}`}
-              />
+              />}
               {transforming && !cue && (
                 <StepTransformation
                   assets={[...visual.ingredients, ...visual.tools].map((asset) => asset.segmented ? asset : { ...asset, src: undefined })}

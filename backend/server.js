@@ -51,7 +51,8 @@ function client() {
 function createApp({ generate = generateContent, artwork } = {}) {
   const app = express();
   const renderer = artwork || createArtwork({ generate, images: IMAGE_DIR, media: MEDIA_DIR });
-  const preparation = createPreparation({ generate, render: renderer.render, available: renderer.available, cacheIdentity: renderer.identity });
+  const preparation = createPreparation({ generate, render: renderer.render, available: renderer.available, cacheIdentity: renderer.identity,
+    plans: generate === generateContent ? path.join(MEDIA_DIR, "plans") : undefined });
   app.disable("x-powered-by");
   app.use((req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");

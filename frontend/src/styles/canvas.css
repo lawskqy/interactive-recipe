@@ -220,3 +220,13 @@ img.generated-result {
   width: 100%;
   accent-color: var(--sage);
 }
+
+.result-still {
+  display: block;
+  width: 100%;
+  max-width: 390px;
+  height: auto;
+  max-height: 300px;
+  margin: auto;
+  overflow: visible;
+}

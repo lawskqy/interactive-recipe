@@ -1,17 +1,23 @@
 import { stagger } from "animejs";
 import ActionCutout from "../ActionCutout";
 import { BowlBack, BowlFront } from "./Bowl";
-import { BOWL, type ActionAnimation } from "./types";
+import { swingRoom, toolTip } from "./reach";
+import { BOWL, type ActionAnimation, type SceneGeometry } from "./types";
+
+const whiskTip = (scene: SceneGeometry) => toolTip(scene, 249, 0.45, 8);
 
 const whisk: ActionAnimation = {
   caption: "Whisk until smooth",
   anchor: BOWL,
   container: /bowl/i,
   implement: /\bwhisk\b/i,
-  motion(tl) {
+  motion(tl, geometry) {
+    const tip = whiskTip(geometry);
+    // The whisk head and its 9° tilt widen the swept path.
+    const swing = swingRoom(geometry, tip, 13, 20 + (tip - geometry.anchor.y) * 0.16);
     tl.add(".whisk-motion", { y: [-18, 0], duration: 500 }, 0);
     for (let i = 0; i < 10; i++) {
-      tl.add(".whisk-motion", { x: [-13, 13, -13], rotate: [-9, 9, -9], duration: 340 }, 500 + i * 340);
+      tl.add(".whisk-motion", { x: [-swing, swing, -swing], rotate: [-9, 9, -9], duration: 340 }, 500 + i * 340);
     }
     tl.add(".whisk-motion", { x: 0, rotate: 0, y: -10, duration: 650 }, 3900);
     tl.add(".mixture-ripple", { opacity: [0, 0.8], duration: 500 }, 500);
@@ -23,7 +29,8 @@ const whisk: ActionAnimation = {
     tl.add(".whisk-motion", { y: -38, opacity: 0, duration: 600 }, 4000);
   },
   Scene(props) {
-    const { clip, implement, resultImage, resultProgress, color } = props;
+    const { clip, implement, resultImage, resultProgress, color, anchor } = props;
+    const tip = whiskTip(props);
     return <>
       <BowlBack {...props} contents={color} />
       {resultImage}
@@ -37,15 +44,16 @@ const whisk: ActionAnimation = {
       </g>
       <g className="action-implement" visibility={resultProgress === 1 ? "hidden" : "visible"}>
         <g className="whisk-motion">
-          <ActionCutout src={implement} x={148} y={60} width={64} height={140} tool fallback={<>
-            <path d="M180 62V130" stroke="#b8955c" strokeWidth="12" strokeLinecap="round" />
-            <path d="M176 62V121" stroke="#e2c995" strokeWidth="3" strokeLinecap="round" />
-            <g fill="none" stroke="#c5a878" strokeWidth="2.5">
-              <path d="M176 126C137 168 149 191 180 195C211 191 223 168 184 126" />
-              <path d="M178 126C160 161 160 190 180 195C200 190 200 161 182 126" />
-              <path d="M180 126V195" />
-            </g>
-          </>} />
+          <ActionCutout src={implement} x={anchor.x - 32} y={tip - 140} width={64} height={140} tool tipDown fallback={
+            <g transform={`translate(${anchor.x - 180} ${tip - 200})`}>
+              <path d="M180 62V130" stroke="#b8955c" strokeWidth="12" strokeLinecap="round" />
+              <path d="M176 62V121" stroke="#e2c995" strokeWidth="3" strokeLinecap="round" />
+              <g fill="none" stroke="#c5a878" strokeWidth="2.5">
+                <path d="M176 126C137 168 149 191 180 195C211 191 223 168 184 126" />
+                <path d="M178 126C160 161 160 190 180 195C200 190 200 161 182 126" />
+                <path d="M180 126V195" />
+              </g>
+            </g>} />
         </g>
       </g>
       <BowlFront {...props} />

@@ -1,6 +1,7 @@
 import { stagger } from "animejs";
 import { CupBack, CupFront } from "./Cup";
-import { StirringSpoon } from "./Spoon";
+import { StirringSpoon, spoonTip } from "./Spoon";
+import { swingRoom } from "./reach";
 import { CUP, type ActionAnimation } from "./types";
 
 const pieces = [[180, 186, 10], [204, 182, -14], [228, 188, 20], [194, 198, -6], [218, 200, 12], [170, 200, 30]];
@@ -10,10 +11,12 @@ const melt: ActionAnimation = {
   anchor: CUP,
   container: /cup|mug|glass|saucepan|pan|bowl/i,
   implement: /spoon|spatula/i,
-  motion(tl) {
+  motion(tl, geometry) {
+    const tip = spoonTip(geometry);
+    const swing = swingRoom(geometry, tip, 10, 12 + (tip - geometry.anchor.y) * 0.07);
     tl.add(".melt-spoon", { y: [-40, 0], opacity: [0, 1], duration: 600 }, 300);
     for (let i = 0; i < 6; i++) {
-      tl.add(".melt-spoon", { x: [-10, 10, -10], rotate: [-4, 4, -4], duration: 520 }, 900 + i * 520);
+      tl.add(".melt-spoon", { x: [-swing, swing, -swing], rotate: [-4, 4, -4], duration: 520 }, 900 + i * 520);
     }
     tl.add(".melt-piece", { scale: [1, 0.15], opacity: [1, 0], rotate: [0, 30], delay: stagger(220), duration: 2200 }, 900);
     tl.add(".melt-swirl", { opacity: [0, 0.85, 0.5], scaleX: [0.4, 1], duration: 2600 }, 1200);
@@ -32,7 +35,7 @@ const melt: ActionAnimation = {
       </CupBack>
       {resultImage}
       <g className="action-implement" visibility={resultProgress === 1 ? "hidden" : "visible"}>
-        <StirringSpoon src={implement} className="melt-spoon" />
+        <StirringSpoon scene={props} src={implement} className="melt-spoon" />
       </g>
       <CupFront {...props} liquid={resultColor} />
     </>;

@@ -1,4 +1,6 @@
 const crypto = require("node:crypto");
+const fs = require("node:fs");
+const path = require("node:path");
 const { fail, hash, text, strings, validateRecipe, singleFlight } = require("./core");
 const { ACTIONS, ACTION_TYPES, TEXTURES } = require("./cooking-actions");
 
@@ -125,7 +127,7 @@ function publicError(error) {
   return "The preparation artwork could not be completed. Please retry.";
 }
 
-function createPreparation({ generate, render, available = async () => true, cacheIdentity = () => "", now = Date.now }) {
+function createPreparation({ generate, render, available = async () => true, cacheIdentity = () => "", now = Date.now, plans }) {
   const sessions = new Map();
   const jobs = new Map();
   const cancellations = new Map();
@@ -136,6 +138,12 @@ function createPreparation({ generate, render, available = async () => true, cac
     total: job.total, stepIndex: job.index, plan: job.plan, visuals: job.visuals, assets: { ...job.assets },
     warnings: [...job.warnings], error: job.error,
   });
+  function stop(job) {
+    job.controller.abort();
+    job.status = "cancelled";
+    job.message = "Illustration cancelled.";
+    job.finished = now();
+  }
   function check(job) {
     if (now() - job.touched > 120000) job.controller.abort();
     job.controller.signal.throwIfAborted();
@@ -143,7 +151,22 @@ function createPreparation({ generate, render, available = async () => true, cac
   async function planRecipe(session, job) {
     if (session.plan) return session.plan;
     return single(session.key + ":plan", async () => {
+      // The same recipe keeps its plan across restarts, so its saved drawings
+      // keep their identities; a recipe changed in chat is planned anew.
+      const file = plans && path.join(plans, hash({ version: 1, recipe: session.recipe }) + ".json");
+      if (file) {
+        try {
+          session.plan = validatePlan(JSON.parse(await fs.promises.readFile(file, "utf8")), session.recipe);
+          return session.plan;
+        } catch { /* missing or outdated: plan again */ }
+      }
       session.plan = await requestPlan(generate, session.recipe);
+      if (file) {
+        await fs.promises.mkdir(plans, { recursive: true });
+        const temporary = file + "." + crypto.randomUUID() + ".tmp";
+        await fs.promises.writeFile(temporary, JSON.stringify(session.plan));
+        await fs.promises.rename(temporary, file);
+      }
       return session.plan;
     });
   }
@@ -271,6 +294,9 @@ function createPreparation({ generate, render, available = async () => true, cac
       }
       for (const [jobId, job] of jobs) {
         if (!terminal(job) && now() - job.touched > 120000) job.controller.abort();
+        // Reopening the same recipe (e.g. after a reload whose cancel was lost)
+        // takes over; finished artwork and in-flight drawings are shared.
+        if (!terminal(job) && job.key === key && job.mode === mode) stop(job);
         if (terminal(job) && now() - job.finished > 1800000) jobs.delete(jobId);
       }
       if ([...jobs.values()].filter((job) => !terminal(job)).length >= 2)
@@ -308,12 +334,7 @@ function createPreparation({ generate, render, available = async () => true, cac
         if (cancellations.size >= 32) cancellations.delete(cancellations.keys().next().value);
         cancellations.set(id, now());
       }
-      if (job && !terminal(job)) {
-        job.controller.abort();
-        job.status = "cancelled";
-        job.message = "Illustration cancelled.";
-        job.finished = now();
-      }
+      if (job && !terminal(job)) stop(job);
       return { cancelled: true };
     },
   };

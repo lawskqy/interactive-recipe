@@ -1,6 +1,7 @@
 import { stagger } from "animejs";
 import ActionCutout from "../ActionCutout";
 import { CupBack, CupFront } from "./Cup";
+import { toolTip } from "./reach";
 import { CUP, type ActionAnimation } from "./types";
 
 const froth: ActionAnimation = {
@@ -22,7 +23,8 @@ const froth: ActionAnimation = {
     tl.add(".frother-motion", { y: -40, opacity: 0, duration: 600 }, 4000);
   },
   Scene(props) {
-    const { color, resultColor, implement, resultImage, resultProgress } = props;
+    const { color, resultColor, implement, resultImage, resultProgress, anchor } = props;
+    const tip = toolTip(props, 236, 0.6, 8);
     return <>
       <CupBack {...props} liquid={color}>
         <g className="froth-foam" opacity="0">
@@ -34,12 +36,13 @@ const froth: ActionAnimation = {
       {resultImage}
       <g className="action-implement" visibility={resultProgress === 1 ? "hidden" : "visible"}>
         <g className="frother-motion">
-          <ActionCutout src={implement} x={186} y={36} width={40} height={180} tool fallback={<>
-            <rect x="198" y="38" width="16" height="66" rx="7" fill="#5c4a3d" stroke="#3f3129" strokeWidth="2" />
-            <circle cx="206" cy="58" r="3" fill="#d9c8aa" />
-            <path d="M206 104V196" stroke="#b8b0a4" strokeWidth="3" strokeLinecap="round" />
-            <ellipse className="frother-coil" cx="206" cy="200" rx="10" ry="5" fill="none" stroke="#9e958a" strokeWidth="2.5" />
-          </>} />
+          <ActionCutout src={implement} x={anchor.x - 19} y={tip - 180} width={40} height={180} tool tipDown fallback={
+            <g transform={`translate(${anchor.x - 205} ${tip - 205})`}>
+              <rect x="198" y="38" width="16" height="66" rx="7" fill="#5c4a3d" stroke="#3f3129" strokeWidth="2" />
+              <circle cx="206" cy="58" r="3" fill="#d9c8aa" />
+              <path d="M206 104V196" stroke="#b8b0a4" strokeWidth="3" strokeLinecap="round" />
+              <ellipse className="frother-coil" cx="206" cy="200" rx="10" ry="5" fill="none" stroke="#9e958a" strokeWidth="2.5" />
+            </g>} />
         </g>
       </g>
       <CupFront {...props} />

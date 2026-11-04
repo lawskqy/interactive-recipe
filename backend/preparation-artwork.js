@@ -63,28 +63,33 @@ function createArtwork({ generate, images, media, segment = removeBackground }) 
       }
     }
     const referenceData = [];
-    for (const reference of references) {
-      const file = resolve(reference.src);
-      const bytes = await fs.promises.readFile(file);
-      referenceData.push({ ...reference, bytes, digest: crypto.createHash("sha256").update(bytes).digest("hex") });
-    }
+    const loadReferences = async () => {
+      for (const reference of references) referenceData.push({ ...reference, bytes: await fs.promises.readFile(resolve(reference.src)) });
+    };
     const prompt = JSON.stringify({
       subject: { name: item.name, appearance: item.appearance },
       ...(kind === "result" ? { recipe: recipe.name, current_step: step.instruction, actions: step.actions.map((action) => action.type),
         inputs: references.map(({ id, name, sourceStep }) => ({ id, name, sourceStep })) } : {}),
     }) + (kind === "result"
-      ? "\nRender only this named OUTPUT after the current step. Attached images are the actual named inputs and tools, not examples of the final drink. Preserve their container shapes, colors and material appearance unless this instruction changes them. Combine only the specified preparations. Do not add ingredients or decorations from later steps."
+      ? "\nRender only this named OUTPUT after the current step. Attached images are the actual named inputs and tools, not examples of the final drink. Preserve their container shapes, colors and material appearance unless this instruction changes them. Combine only the specified preparations. Do not add ingredients or decorations from later steps." +
+        "\nDraw exactly one single object: the receiving container holding the result. Keep that container's exact shape, proportions and design from its reference image. Utensils and appliances (spoons, whisks, stirrers, frothers, sieves, knives, shakers) and any jug or container it was poured from were only used to make it: never draw them in, on, above or beside the result, and draw no pouring stream. No separate ingredients, packaging, saucers or props around it."
       : "\nIllustrate exactly this individual ingredient or tool in its stated raw state.") + "\nStyle: " + STYLE;
-    const key = (kind === "result" ? "step_" : "ingredient_") + hash({
-      ...sourceIdentity(), prompt, references: referenceData.map(({ id, digest }) => ({ id, digest })),
-    });
-    const cutoutKey = (kind === "result" ? "step_" : "ingredient_") + hash({ source: key, backgroundRemoval: SEGMENTATION_VERSION, validation: 1 });
+    // A drawing is identified by what it depicts, not by prompt wording, style or
+    // reference pixels: a result by its recipe and output, an object by its
+    // description. Only a changed recipe (e.g. edited in chat) draws anew.
+    const key = (kind === "result" ? "step_" : "ingredient_") + hash(kind === "result"
+      ? { version: 4, recipe: hash(recipe), output: item.id }
+      : { version: 4, name: item.name, appearance: item.appearance });
+    const oneObject = kind === "result";
+    const cutoutKey = (oneObject ? "step_" : "ingredient_") + hash({ source: key, backgroundRemoval: SEGMENTATION_VERSION, validation: 1,
+      ...(oneObject ? { single: 1 } : {}) });
     return single(key, () => queue(async () => {
       const original = path.join(media, key + ".png");
       const cutout = path.join(media, cutoutKey + "_seg.png");
       if (await cachedCutout(cutout)) return { src: `/media/${cutoutKey}_seg.png`, segmented: true };
       if (!(await cachedPng(original))) {
         onProgress(`Drawing ${item.name}…`);
+        await loadReferences();
         const parts = [{ text: prompt }];
         for (const reference of referenceData) {
           parts.push({ text: `Reference ${reference.id}: ${reference.name}${reference.sourceStep !== undefined ? `, prepared in step ${reference.sourceStep + 1}` : ""}.` });
@@ -99,7 +104,7 @@ function createArtwork({ generate, images, media, segment = removeBackground }) 
       }
       try {
         onProgress(`Removing the background from ${item.name}…`);
-        await segment(original, cutout, item.name);
+        await segment(original, cutout, item.name, { single: oneObject });
         if (!(await cachedCutout(cutout))) throw new Error("Missing or opaque cutout");
         return { src: `/media/${cutoutKey}_seg.png`, segmented: true };
       } catch (error) {

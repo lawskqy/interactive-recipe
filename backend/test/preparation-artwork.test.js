@@ -23,7 +23,7 @@ const request = () => ({ item: { id: "s7o1", name: "layered drink", appearance: 
   references: [{ id: "s1o1", name: "prepared matcha", src: "/media/prepared.png", sourceStep: 0 },
     { id: "s6o1", name: "blueberry base", src: "/media/base.png", sourceStep: 5 }] });
 
-test("result generation attaches both named preparation images and caches by reference content", async (t) => {
+test("result generation attaches both named preparation images and is redrawn only when the recipe changes", async (t) => {
   const media = temporary(t);
   fs.writeFileSync(path.join(media, "prepared.png"), png);
   fs.writeFileSync(path.join(media, "base.png"), png);
@@ -48,9 +48,12 @@ test("result generation attaches both named preparation images and caches by ref
   assert.equal(parts[2].inlineData.data, png.toString("base64"));
   assert.equal((await artwork.render(request())).src, first.src);
   assert.equal(calls.length, 1);
-  fs.writeFileSync(path.join(media, "prepared.png"), fs.readFileSync(path.join(images, "water_seg.png")));
-  assert.notEqual((await artwork.render(request())).src, first.src);
-  assert.equal(calls.length, 2);
+  fs.writeFileSync(path.join(media, "prepared.png"), fs.readFileSync(path.join(images, "warm_water_seg.png")));
+  assert.equal((await artwork.render(request())).src, first.src, "Redrawn inputs do not redraw a saved result");
+  assert.equal(calls.length, 1);
+  const edited = { ...request(), recipe: { name: "blueberry matcha fizz", description: "Now with lemon." } };
+  assert.notEqual((await artwork.render(edited)).src, first.src);
+  assert.equal(calls.length, 2, "A changed recipe draws its result anew");
 });
 
 test("default background worker produces and caches transparent artwork without an external service", async (t) => {
@@ -95,17 +98,13 @@ test("saved originals are resegmented under a new URL without paid regeneration 
   const media = temporary(t);
   const input = await sharp({ create: { width: 64, height: 64, channels: 4, background: '#d7427c' } })
     .composite([{ input: await sharp({ create: { width: 30, height: 30, channels: 4, background: 'white' } }).png().toBuffer(), left: 17, top: 17 }]).png().toBuffer();
-  let prompt;
-  const artwork = createArtwork({ images, media, generate: async (options) => {
-    prompt = options.contents[0].parts[0].text;
-    return { candidates: [{ content: { parts: [{ inlineData: { mimeType: 'image/png', data: input.toString('base64') } }] } }] };
-  } });
+  const artwork = createArtwork({ images, media, generate: async () =>
+    ({ candidates: [{ content: { parts: [{ inlineData: { mimeType: 'image/png', data: input.toString('base64') } }] } }] }) });
   const options = { ...request(), references: [] };
   const first = await artwork.render(options);
-  const { backgroundRemoval, validation, ...sourceIdentity } = artwork.identity();
-  const legacyKey = 'step_' + hash({ ...sourceIdentity, prompt, references: [] });
+  const legacyKey = 'step_' + hash({ version: 4, recipe: hash(options.recipe), output: options.item.id });
   const original = path.join(media, legacyKey + '.png');
-  assert.deepEqual(fs.readFileSync(original), input, 'Source identity remains compatible with the old cache');
+  assert.deepEqual(fs.readFileSync(original), input, 'A result is saved under its recipe and output identity');
   const staleCutout = path.join(media, legacyKey + '_seg.png');
   await writePng(staleCutout, input);
   fs.unlinkSync(path.join(media, path.basename(first.src)));

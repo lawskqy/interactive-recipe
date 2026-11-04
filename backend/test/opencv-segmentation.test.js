@@ -20,6 +20,16 @@ async function fixture(background) {
   return { png, pixels, width, height };
 }
 
+test("single-object mode drops a utensil beside the glass but keeps the glass, its contents and handle", async () => {
+  const { png, width } = await fixture([253, 253, 253]);
+  const pixels = await sharp((await segmentImage(png, { single: true })).png).raw().toBuffer();
+  const alpha = (x, y) => pixels[(y * width + x) * 4 + 3];
+  assert.equal(alpha(10, 40), 0, "Detached utensil removed");
+  assert.ok(alpha(22, 50) > 200, "Glass outline kept");
+  assert.ok(alpha(40, 65) > 200, "Contents kept");
+  assert.ok(alpha(78, 50) > 200, "Handle kept");
+});
+
 test("OpenCV removes white, pink and pale colored backdrops while preserving glass, fruit and detached tools", async () => {
   for (const background of [[253, 253, 253], [215, 66, 124], [210, 230, 245]]) {
     const { png, width, height } = await fixture(background);

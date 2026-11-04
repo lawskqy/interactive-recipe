@@ -3,9 +3,9 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const { fail, createQueue } = require("./core");
 const MAX_IMAGE = 12 * 1024 * 1024;
-const MAX_CACHE = 128 * 1024 * 1024;
-const TTL = 7 * 24 * 60 * 60 * 1000;
+const MAX_CACHE = Number(process.env.ILLUSTRATION_CACHE_MB || 2048) * 1024 * 1024;
 const writes = createQueue(1);
+const managed = /^(step|ingredient)_[a-f0-9]{20}(_seg)?\.png$/;
 function validPng(bytes) {
   if (bytes.length < 45 || bytes.length > MAX_IMAGE || !bytes.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10]))) return false;
   let offset = 8, header = false, pixels = false;
@@ -25,29 +25,40 @@ function validPng(bytes) {
   }
   return false;
 }
+// Saved illustrations never expire by age; each reuse marks them recently used
+// so eviction under the size cap removes the least recently used first.
 async function cachedPng(file) {
   try {
     const stat = await fs.promises.stat(file);
-    return stat.size <= MAX_IMAGE && Date.now() - stat.mtimeMs < TTL && validPng(await fs.promises.readFile(file));
+    if (stat.size > MAX_IMAGE || !validPng(await fs.promises.readFile(file))) return false;
+    if (managed.test(path.basename(file))) { const now = new Date(); await fs.promises.utimes(file, now, now).catch(() => {}); }
+    return true;
   } catch { return false; }
 }
-async function writePng(file, bytes) {
+async function writePng(file, bytes, limit = MAX_CACHE) {
   if (!validPng(bytes)) fail("The illustration was incomplete or too large. Please retry.", 502);
   return writes(async () => {
     const root = path.resolve(path.dirname(file));
     await fs.promises.mkdir(root, { recursive: true });
     let size = 0;
+    const entries = [];
     for (const name of await fs.promises.readdir(root)) {
       // Only this cache's generated files can be evicted, never source artwork.
-      if (!/^(step|ingredient)_[a-f0-9]{20}(_seg)?\.png$/.test(name)) continue;
+      if (!managed.test(name)) continue;
       const target = path.resolve(root, name);
-      if (path.dirname(target) !== root) continue;
+      if (path.dirname(target) !== root || target === path.resolve(file)) continue;
       const stat = await fs.promises.lstat(target);
       if (!stat.isFile()) continue;
-      if (Date.now() - stat.mtimeMs >= TTL) await fs.promises.unlink(target);
-      else if (target !== path.resolve(file)) size += stat.size;
+      size += stat.size;
+      entries.push({ target, size: stat.size, used: stat.mtimeMs });
     }
-    if (size + bytes.length > MAX_CACHE) fail("Illustration storage is full. Please try after older images expire.", 507);
+    entries.sort((a, b) => a.used - b.used);
+    while (size + bytes.length > limit && entries.length) {
+      const oldest = entries.shift();
+      await fs.promises.rm(oldest.target, { force: true });
+      size -= oldest.size;
+    }
+    if (size + bytes.length > limit) fail("Illustration storage is full. Please retry.", 507);
     const temporary = file + "." + crypto.randomUUID() + ".tmp";
     try {
       await fs.promises.writeFile(temporary, bytes, { flag: "wx" });

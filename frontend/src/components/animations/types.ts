@@ -6,13 +6,16 @@ export interface SceneProps {
   clip: string; anchor: Anchor; openingRadiusY: number; floor?: number; color: string; resultColor: string;
   receiver?: string; implement?: string; source?: string;
   result?: string; resultImage: ReactNode; resultProgress: number;
+  // Inside half-width of the measured vessel at a scene height, about anchor.x.
+  insideAt?: (y: number) => number;
 }
+export type SceneGeometry = Pick<SceneProps, "anchor" | "openingRadiusY" | "floor" | "insideAt">;
 export interface ActionAnimation {
   caption: string;
   anchor: Anchor;
   container: RegExp;
   implement?: RegExp;
-  motion(timeline: ReturnType<typeof createTimeline>): void;
+  motion(timeline: ReturnType<typeof createTimeline>, geometry: SceneGeometry): void;
   Scene(props: SceneProps): ReactNode;
 }
 

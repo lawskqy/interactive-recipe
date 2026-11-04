@@ -1,6 +1,7 @@
 import { stagger } from "animejs";
 import { CupBack, CupFront } from "./Cup";
-import { StirringSpoon } from "./Spoon";
+import { StirringSpoon, spoonTip } from "./Spoon";
+import { swingRoom } from "./reach";
 import { CUP, type ActionAnimation } from "./types";
 
 const stir: ActionAnimation = {
@@ -8,10 +9,13 @@ const stir: ActionAnimation = {
   anchor: CUP,
   container: /cup|glass|mug|saucepan|jug|bowl/i,
   implement: /spoon|stirrer/i,
-  motion(tl) {
+  motion(tl, geometry) {
+    const tip = spoonTip(geometry, 5);
+    // The spoon bowl and the 5° tilt about the rim both widen the swept path.
+    const swing = swingRoom(geometry, tip, 15, 12 + (tip - geometry.anchor.y) * 0.09);
     tl.add(".stir-motion", { y: [-40, 0], opacity: [0, 1], duration: 500 }, 0);
     for (let i = 0; i < 8; i++) {
-      tl.add(".stir-motion", { x: [-15, 15, -15], y: [0, 5, 0], rotate: [-5, 5, -5], duration: 420 }, 500 + i * 420);
+      tl.add(".stir-motion", { x: [-swing, swing, -swing], y: [0, 5, 0], rotate: [-5, 5, -5], duration: 420 }, 500 + i * 420);
     }
     tl.add(".stir-swirl", { opacity: [0, 0.8], duration: 400 }, 500);
     for (let i = 0; i < 6; i++) {
@@ -33,7 +37,7 @@ const stir: ActionAnimation = {
       </CupBack>
       {resultImage}
       <g className="action-implement" visibility={resultProgress === 1 ? "hidden" : "visible"}>
-        <StirringSpoon src={implement} className="stir-motion" />
+        <StirringSpoon scene={props} src={implement} className="stir-motion" travel={5} />
       </g>
       <CupFront {...props} liquid={resultColor} />
     </>;

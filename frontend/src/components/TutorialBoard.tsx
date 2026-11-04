@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { describeStep, safeManifest, type Recipe, type StepAsset } from "../lib/recipe";
-import { loadAsset, plannedVisual, stepCues } from "../lib/preparation";
+import { loadAsset, plannedVisual, rootVessel, stepCues } from "../lib/preparation";
 import { useRecipePreparation } from "../lib/use-recipe-preparation";
 import Canvas from "./Canvas";
 export default function TutorialBoard({
@@ -33,7 +33,11 @@ export default function TutorialBoard({
     return () => controller.abort();
   }, []);
   const proposed = plan ? plannedVisual(plan, activeStep, manifest, assets, results) : describeStep(recipe, activeStep, manifest);
-  const pendingLibrary = JSON.stringify([...new Set([...proposed.ingredients, ...proposed.tools]
+  const vesselId = plan ? rootVessel(plan, activeStep) : undefined;
+  const vesselStep = plan && vesselId ? plan.steps.findIndex((step) => step.tools.includes(vesselId)) : -1;
+  const vesselAsset = plan && vesselStep >= 0
+    ? plannedVisual(plan, vesselStep, manifest, assets, results).tools.find((tool) => tool.id === vesselId) : undefined;
+  const pendingLibrary = JSON.stringify([...new Set([...proposed.ingredients, ...proposed.tools, ...(vesselAsset ? [vesselAsset] : [])]
     .filter((asset) => asset.src && !asset.segmented).map((asset) => asset.src!))]);
   useEffect(() => {
     const controller = new AbortController();
@@ -53,6 +57,7 @@ export default function TutorialBoard({
   const checked = (asset: StepAsset): StepAsset => asset.segmented ? asset :
     { ...asset, src: asset.src ? library[asset.src]?.src : undefined, segmented: !!(asset.src && library[asset.src]?.segmented) };
   const local = { ...proposed, ingredients: proposed.ingredients.map(checked), tools: proposed.tools.map(checked) };
+  const vessel = vesselAsset && checked(vesselAsset);
   return (
     <section className="tutorial-panel" aria-label="Step-by-step tutorial">
       <div className="tutorial-top">
@@ -79,6 +84,7 @@ export default function TutorialBoard({
         key={`${activeStep}:${results[activeStep]?.result || "local"}:${plan ? "planned" : "keywords"}`}
         visual={results[activeStep] || local}
         cues={plan ? stepCues(plan, activeStep) : undefined}
+        vessel={vessel?.segmented ? vessel : undefined}
         instruction={recipe.steps[activeStep]}
         illustrating={waiting}
       />

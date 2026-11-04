@@ -9,6 +9,26 @@ export interface PreparationPlan {
   steps: { index: number; inputs: string[]; tools: string[]; actions: PlannedAction[]; outputs: PlannedObject[] }[];
 }
 
+// The tool that physically holds a step's result: its container, or for a
+// container that is an earlier preparation, the tool that one was made in.
+export function rootVessel(plan: PreparationPlan, index: number): string | undefined {
+  const tools = new Set(plan.tools.map((tool) => tool.id));
+  const producer = new Map(plan.steps.flatMap((step, i) => step.outputs.map((output) => [output.id, i] as const)));
+  const seen = new Set<number>();
+  for (let step = index; !seen.has(step);) {
+    seen.add(step);
+    const { actions, inputs } = plan.steps[step];
+    const container = [...actions].reverse().find((action) => action.container)?.container ||
+      inputs.find((id) => producer.has(id));
+    if (!container) return undefined;
+    if (tools.has(container)) return container;
+    const from = producer.get(container);
+    if (from === undefined) return undefined;
+    step = from;
+  }
+  return undefined;
+}
+
 export function stepCues(plan: PreparationPlan, index: number): ActionCue[] {
   const names = Object.fromEntries([...plan.ingredients, ...plan.tools, ...plan.steps.flatMap((step) => step.outputs)]
     .map((item) => [item.id, item.name]));
@@ -146,7 +166,8 @@ export async function loadVisual(visual: StepVisual, signal: AbortSignal): Promi
 }
 
 export function cancelPreparation(id: string) {
-  return api(`preparations/${id}/cancel`, {}).catch(() => {
+  // keepalive lets the cancel outlive a reload or a closed tab.
+  return api(`preparations/${id}/cancel`, {}, undefined, true).catch(() => {
     // Unobserved server jobs also stop between tasks after their polling lease expires.
   });
 }

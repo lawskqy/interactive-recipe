@@ -265,6 +265,44 @@ test("cancellation stops subsequent generation, including cancellation racing th
   assert.throws(() => service.start(recipe, 0, early), /cancelled/);
 });
 
+test("a saved plan survives a restart and only a changed recipe is planned again", async (t) => {
+  const plans = require("node:fs").mkdtempSync(require("node:path").join(require("node:os").tmpdir(), "quiet-cup-plans-"));
+  t.after(() => require("node:fs").rmSync(plans, { recursive: true, force: true }));
+  let planned = 0;
+  const create = () => createPreparation({ plans, generate: async () => { planned++; return { text: JSON.stringify(makePlan()) }; }, render: fakeRender });
+  const first = create();
+  assert.equal((await finished(first, first.start(recipe, 0).id)).status, "complete");
+  assert.equal(planned, 1);
+  const restarted = create();
+  assert.equal((await finished(restarted, restarted.start(recipe, 0).id)).status, "complete");
+  assert.equal(planned, 1, "Restart reuses the saved plan");
+  const edited = { ...recipe, description: recipe.description + " With extra lemon." };
+  assert.equal((await finished(restarted, restarted.start(edited, 0).id)).status, "complete");
+  assert.equal(planned, 2, "An edited recipe is planned anew");
+});
+
+test("reopening a recipe takes over its unfinished job instead of hitting the job limit", async () => {
+  let release;
+  const blocked = new Promise((resolve) => { release = resolve; });
+  let calls = 0;
+  const service = createPreparation({ generate: async () => ({ text: JSON.stringify(makePlan()) }), render: async (request) => {
+    calls++;
+    await blocked;
+    return fakeRender(request);
+  } });
+  const orphans = [service.start(recipe, 6, randomUUID(), "recipe").id, service.start(recipe, 6, randomUUID(), "recipe").id];
+  const other = { ...recipe, id: "another-recipe" };
+  const unrelated = service.start(other, 0, randomUUID(), "recipe").id;
+  const reopened = service.start(recipe, 6, randomUUID(), "recipe").id;
+  for (const id of orphans) assert.equal(service.get(id).status, "cancelled");
+  assert.notEqual(service.get(unrelated).status, "cancelled");
+  release();
+  const job = await finished(service, reopened);
+  assert.equal(job.status, "complete");
+  assert.equal(Object.keys(job.visuals).length, recipe.steps.length);
+  assert.ok(calls > 0);
+});
+
 test("unobserved jobs stop after their lease instead of generating the rest of a recipe", async () => {
   let time = 0;
   let calls = 0;

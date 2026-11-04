@@ -1,5 +1,6 @@
 import { stagger } from "animejs";
 import { CupBack, CupFront } from "./Cup";
+import { stackOnFloor } from "./reach";
 import { CUP, type ActionAnimation } from "./types";
 
 // [offset from the vessel centre, stack row, tilt]
@@ -22,7 +23,7 @@ const addPieces: ActionAnimation = {
   Scene(props) {
     const { anchor, openingRadiusY, floor = 236, color, resultImage, resultProgress } = props;
     const step = Math.max(0, Math.min(16, (floor - 8 - (anchor.y + openingRadiusY + 10)) / 2));
-    const placed = pieces.map(([dx, row, angle]) => [anchor.x + dx * (row ? 1 : 0.85), floor - 8 - row * step, angle]);
+    const placed = stackOnFloor(props, pieces, floor - 8, step, 12);
     return <>
       <CupBack {...props} />
       {resultImage}

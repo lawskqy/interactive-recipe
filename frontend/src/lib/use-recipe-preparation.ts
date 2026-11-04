@@ -24,6 +24,12 @@ export function useRecipePreparation(recipe: Recipe, enabled: boolean, activeSte
       if (started && !finished && !cancelled) { cancelled = true; void cancelPreparation(id); }
     };
     cancelCurrent.current = cancel;
+    // A reload or closed tab never runs the effect cleanup.
+    const hidden = (event: PageTransitionEvent) => {
+      cancel();
+      if (event.persisted) window.addEventListener("pageshow", () => setRequest(old => ({ ...old, attempt: old.attempt + 1 })), { once: true });
+    };
+    window.addEventListener("pagehide", hidden);
     setPreparing(true); setStopped(false); setError(""); setProgress(null);
     void (async () => {
       // StrictMode's first cleanup runs before any paid request is submitted.
@@ -68,7 +74,7 @@ export function useRecipePreparation(recipe: Recipe, enabled: boolean, activeSte
         cancel();
       }
     }).finally(() => { if (!controller.signal.aborted) setPreparing(false); });
-    return () => { cancel(); cancelCurrent.current = null; };
+    return () => { window.removeEventListener("pagehide", hidden); cancel(); cancelCurrent.current = null; };
   }, [recipe, enabled, request]);
 
   return { results, assets, plan, progress, error, preparing, stopped,
