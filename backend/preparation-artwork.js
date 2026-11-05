@@ -3,14 +3,14 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const { removeBackground } = require("./background-removal");
 const { SEGMENTATION_VERSION } = require("./opencv-segmentation");
-const { fail, hash, safeName, imageReference, singleFlight, createQueue } = require("./core");
+const { fail, hash, safeName, imageReference, sharedFlight, createQueue } = require("./core");
 const { cachedPng, writePng } = require("./resources");
 const { isCutout } = require("./cutout-validation");
 
 const STYLE = "Watercolor and fine ink cafe illustration, muted sage and walnut object palette. One isolated object or preparation centered with generous empty margins; the entire object must fit inside the image. Use only a completely uniform pure white background, RGB (255,255,255), hex #FFFFFF, including openings through handles and gaps between wires. Render white materials naturally with clear fine ink outlines to distinguish them from the white background. Use neutral lighting with no background color cast. Use this white background even when reference images have colored or transparent backgrounds. No scenery, tabletop, text, labels, hands, border, cast shadow, background texture, glow or gradient. Preserve glass outlines, the entire container and the described contents. Show the described physical state, not an action or a future result.";
 
 function createArtwork({ generate, images, media, segment = removeBackground }) {
-  const single = singleFlight();
+  const single = sharedFlight();
   const queue = createQueue(2, 12, 60000);
   const resolve = (src) => imageReference(src, { images, media, assets: path.join(path.dirname(images), "assets") });
   const sourceIdentity = () => ({ version: 3, style: STYLE, model: process.env.IMAGE_MODEL || "gemini-2.5-flash-image",
@@ -22,13 +22,13 @@ function createArtwork({ generate, images, media, segment = removeBackground }) 
     try { return asset.src.startsWith("/media/") ? await cachedCutout(resolve(asset.src)) : await isCutout(resolve(asset.src)); }
     catch { return false; }
   };
-  async function ensureSegmented(src) {
+  async function ensureSegmented(src, signal) {
     const original = resolve(src);
     if (!fs.existsSync(original)) fail("The illustration could not be loaded. Please retry.", 404);
     if (await isCutout(original)) return { src, segmented: true };
     const digest = crypto.createHash("sha256").update(await fs.promises.readFile(original)).digest("hex");
     const key = (src.startsWith("/media/step_") ? "step_" : "ingredient_") + hash({ src, digest, backgroundRemoval: SEGMENTATION_VERSION, validation: 1 });
-    return single(key, () => queue(async () => {
+    return single(key, (flight) => queue(async () => {
       const target = path.join(media, key + "_seg.png");
       if (!(await cachedCutout(target))) {
         try { await segment(original, target); }
@@ -36,21 +36,21 @@ function createArtwork({ generate, images, media, segment = removeBackground }) 
       }
       if (!(await cachedCutout(target))) fail("Background removal is incomplete. Please retry.", 502);
       return { src: `/media/${key}_seg.png`, segmented: true };
-    }));
+    }, flight), signal);
   }
-  async function render({ item, kind, recipe, step, references, onProgress = () => {} }) {
+  async function render({ item, kind, recipe, step, references, onProgress = () => {}, signal }) {
     // Only raw ingredients/tools may use the bundled object library. A preparation
     // must use its own actual earlier result, never a similarly named stock image.
     if (kind === "object") {
       const stem = safeName(item.name);
       const file = fs.readdirSync(images).find((name) => name.endsWith("_seg.png") && safeName(name.slice(0, -8)) === stem);
-      if (file) return ensureSegmented("/images/" + file);
+      if (file) return ensureSegmented("/images/" + file, signal);
       const source = fs.readdirSync(images).find((name) => name.endsWith(".png") && safeName(name.slice(0, -4)) === stem);
       if (source) {
         const original = path.join(images, source);
         const digest = crypto.createHash("sha256").update(await fs.promises.readFile(original)).digest("hex");
         const key = "ingredient_" + hash({ stock: source, digest, backgroundRemoval: SEGMENTATION_VERSION, validation: 1 });
-        return single(key, () => queue(async () => {
+        return single(key, (flight) => queue(async () => {
           const cutout = path.join(media, key + "_seg.png");
           if (!(await cachedCutout(cutout))) {
             onProgress(`Removing the background from ${item.name}…`);
@@ -59,7 +59,7 @@ function createArtwork({ generate, images, media, segment = removeBackground }) 
           }
           if (!(await cachedCutout(cutout))) fail("Background removal could not complete. Please retry.", 502);
           return { src: `/media/${key}_seg.png`, segmented: true };
-        }));
+        }, flight), signal);
       }
     }
     const referenceData = [];
@@ -83,7 +83,7 @@ function createArtwork({ generate, images, media, segment = removeBackground }) 
     const oneObject = kind === "result";
     const cutoutKey = (oneObject ? "step_" : "ingredient_") + hash({ source: key, backgroundRemoval: SEGMENTATION_VERSION, validation: 1,
       ...(oneObject ? { single: 1 } : {}) });
-    return single(key, () => queue(async () => {
+    return single(key, (flight) => queue(async () => {
       const original = path.join(media, key + ".png");
       const cutout = path.join(media, cutoutKey + "_seg.png");
       if (await cachedCutout(cutout)) return { src: `/media/${cutoutKey}_seg.png`, segmented: true };
@@ -97,7 +97,7 @@ function createArtwork({ generate, images, media, segment = removeBackground }) 
         }
         const response = await generate({ model: process.env.IMAGE_MODEL || "gemini-2.5-flash-image",
           contents: [{ role: "user", parts }], config: { responseModalities: ["TEXT", "IMAGE"], maxOutputTokens: 8192,
-            abortSignal: AbortSignal.timeout(60000) } });
+            abortSignal: AbortSignal.any([flight, AbortSignal.timeout(60000)]) } });
         const image = response.candidates?.[0]?.content?.parts?.find((part) => part.inlineData?.mimeType === "image/png")?.inlineData;
         if (!image?.data || image.data.length > 17 * 1024 * 1024) fail("The assistant returned no usable PNG illustration. Please retry.", 502);
         await writePng(original, Buffer.from(image.data, "base64"));
@@ -121,7 +121,7 @@ function createArtwork({ generate, images, media, segment = removeBackground }) 
         }
         fail("Background removal could not complete. Try again; the saved illustration will be reused.", 502);
       }
-    }));
+    }, flight), signal);
   }
   return { render, available, identity, ensureSegmented };
 }

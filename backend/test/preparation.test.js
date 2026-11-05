@@ -303,6 +303,32 @@ test("reopening a recipe takes over its unfinished job instead of hitting the jo
   assert.ok(calls > 0);
 });
 
+test("a reopened recipe adopts drawings in flight; cancelling the last job aborts them", async () => {
+  const signals = [];
+  let release;
+  const blocked = new Promise((resolve) => { release = resolve; });
+  const service = createPreparation({ generate: async () => ({ text: JSON.stringify(makePlan()) }), render: async (request) => {
+    signals.push(request.signal);
+    await blocked;
+    return fakeRender(request);
+  } });
+  const first = service.start(recipe, 0, randomUUID(), "recipe").id;
+  await new Promise(setImmediate);
+  const started = signals.length;
+  assert.ok(started > 0);
+  const reopened = service.start(recipe, 0, randomUUID(), "recipe").id;
+  await new Promise(setImmediate);
+  assert.equal(service.get(first).status, "cancelled");
+  assert.equal(signals.length, started, "The reopened job joins the drawings already in flight");
+  assert.ok(signals.every((signal) => !signal.aborted));
+  service.cancel(reopened);
+  assert.ok(signals.every((signal) => signal.aborted), "Nobody is waiting, so paid work stops");
+  release();
+  assert.equal((await finished(service, reopened)).status, "cancelled");
+  const again = await finished(service, service.start(recipe, 0, randomUUID(), "recipe").id);
+  assert.equal(again.status, "complete", "A later request starts fresh work");
+});
+
 test("unobserved jobs stop after their lease instead of generating the rest of a recipe", async () => {
   let time = 0;
   let calls = 0;

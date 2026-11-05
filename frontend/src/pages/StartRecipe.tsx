@@ -31,6 +31,7 @@ export default function StartRecipe() {
   const [proposal, setProposal] = useState<Recipe | null>(null);
   const pending = useRef<Recipe | null>(null);
   const lastPending = useRef<Recipe | null>(null);
+  const lastHistory = useRef<Message[]>([]);
   const updateProposal = (next: Recipe | null) => {
     pending.current = next;
     setProposal(next);
@@ -123,7 +124,9 @@ export default function StartRecipe() {
     }
     controller.current = new AbortController();
     try {
-      const history = retry ? messages.slice(0, -1) : messages;
+      // A retry resends the conversation as it was, even if messages were added since.
+      const history = retry ? lastHistory.current : messages;
+      lastHistory.current = history;
       const response = await api<{ reply: string; recipe: unknown }>(
         "send-message",
         {

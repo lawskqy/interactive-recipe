@@ -25,11 +25,17 @@ export function useRecipePreparation(recipe: Recipe, enabled: boolean, activeSte
     };
     cancelCurrent.current = cancel;
     // A reload or closed tab never runs the effect cleanup.
+    const shown = () => setRequest(old => ({ ...old, attempt: old.attempt + 1 }));
     const hidden = (event: PageTransitionEvent) => {
       cancel();
-      if (event.persisted) window.addEventListener("pageshow", () => setRequest(old => ({ ...old, attempt: old.attempt + 1 })), { once: true });
+      if (event.persisted) window.addEventListener("pageshow", shown, { once: true });
     };
     window.addEventListener("pagehide", hidden);
+    // Loading many images can outlast the server's polling lease; keep the job
+    // marked as watched while this page is still waiting for it.
+    const lease = window.setInterval(() => {
+      if (started && !finished) api(`preparations/${id}`, undefined, controller.signal).catch(() => {});
+    }, 30000);
     setPreparing(true); setStopped(false); setError(""); setProgress(null);
     void (async () => {
       // StrictMode's first cleanup runs before any paid request is submitted.
@@ -73,8 +79,17 @@ export function useRecipePreparation(recipe: Recipe, enabled: boolean, activeSte
         setPreparing(false);
         cancel();
       }
-    }).finally(() => { if (!controller.signal.aborted) setPreparing(false); });
-    return () => { window.removeEventListener("pagehide", hidden); cancel(); cancelCurrent.current = null; };
+    }).finally(() => {
+      window.clearInterval(lease);
+      if (!controller.signal.aborted) setPreparing(false);
+    });
+    return () => {
+      window.removeEventListener("pagehide", hidden);
+      window.removeEventListener("pageshow", shown);
+      window.clearInterval(lease);
+      cancel();
+      cancelCurrent.current = null;
+    };
   }, [recipe, enabled, request]);
 
   return { results, assets, plan, progress, error, preparing, stopped,

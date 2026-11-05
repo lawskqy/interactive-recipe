@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { plannedAction } from "./artwork-fixtures";
+import { freezeClock, plannedAction } from "./artwork-fixtures";
 
 const ingredient = { id: "i1", name: "matcha powder", src: "/media/ingredient.png", segmented: true };
 const tool = { id: "t1", name: "whisk", src: "/media/tool.png", segmented: true };
@@ -31,7 +31,7 @@ test("opening a recipe starts one complete preparation and waits for artwork bef
     return route.fulfill({ json: snapshot(route.request().postDataJSON().id) });
   });
   await page.route("**/api/preparations/*", route => route.fulfill({ json: snapshot("job", ready) }));
-  await page.clock.install();
+  await freezeClock(page);
   await page.goto("/start/iced-matcha-latte");
   await expect(page.locator(".step-asset").filter({ hasText: "matcha powder" }).locator("img")).toBeVisible();
   await expect(page.getByRole("button", { name: "Preparing illustration…" })).toBeDisabled();

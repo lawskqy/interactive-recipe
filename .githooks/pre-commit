@@ -1,0 +1,3 @@
+#!/bin/sh
+node scripts/check-staged.cjs || exit 1
+node scripts/check-secrets.cjs > /dev/null || exit 1

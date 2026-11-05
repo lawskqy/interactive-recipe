@@ -52,11 +52,26 @@ export default function CookingActionScene({ cue, elapsed, playing, visual, resu
   }, [receiverLayout, anchor]);
   const resultImage = <ActionVessel id={`${clip}-result`} src={result} anchor={anchor} match={receiver}
     result opacity={resultProgress} onError={onResultError} />;
+  // Until the vessel is measured the scene geometry is provisional; building
+  // then would animate the fallback drawing and rebuild once it disappears.
+  const measuring = !!receiver && receiverLayout === undefined;
   useEffect(() => {
+    if (measuring) return;
     const scope = createScope({ root }).add(() => {
       const tl = createTimeline({ autoplay: false, defaults: { ease: "inOutSine" } });
       timeline.current = tl;
-      animation.motion(tl, { anchor, openingRadiusY, floor, insideAt });
+      // Fallback-only parts (e.g. a drawn liquid) are absent over real artwork.
+      const present = new Proxy(tl, {
+        get(target, property, receiver) {
+          if (property !== "add") return Reflect.get(target, property, receiver);
+          return (targets: unknown, ...rest: unknown[]) => {
+            if (typeof targets === "string" && !root.current?.querySelector(targets)) return present;
+            Reflect.apply(target.add, target, [targets, ...rest]);
+            return present;
+          };
+        },
+      });
+      animation.motion(present, { anchor, openingRadiusY, floor, insideAt });
       // One shared clock in Canvas drives every scene, pause, reset and reveal.
       tl.add({ duration: ACTION_DURATION }, 0);
       // Render every delayed track once so the initial and reset poses agree.
@@ -64,8 +79,10 @@ export default function CookingActionScene({ cue, elapsed, playing, visual, resu
       tl.seek(0, true);
     });
     return () => { timeline.current = null; scope.revert(); };
-  }, [animation, anchor, openingRadiusY, floor, insideAt]);
-  useEffect(() => { timeline.current?.seek(Math.min(elapsed, ACTION_DURATION), true); }, [elapsed, animation, insideAt]);
+  }, [animation, anchor, openingRadiusY, floor, insideAt, measuring]);
+  // Also runs right after a rebuild, so a paused scene keeps its pose.
+  useEffect(() => { timeline.current?.seek(Math.min(elapsed, ACTION_DURATION), true); },
+    [elapsed, animation, insideAt, openingRadiusY, floor, measuring]);
 
   return (
     <div ref={root} className={`cooking-scene action-scene ${playing ? "is-playing" : ""}`}

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { allStepVisuals } from "./artwork-fixtures";
+import { allStepVisuals, freezeClock } from "./artwork-fixtures";
 import recipes from "../public/recipes.json" with { type: "json" };
 
 test.beforeEach(async ({ page }) => {
@@ -28,7 +28,7 @@ test("AI results gather, burst and reveal with pause, replay and reset", async (
   page.on("request", (request) => {
     if (request.url().endsWith("/api/preparations")) requests++;
   });
-  await page.clock.install();
+  await freezeClock(page);
   await page.goto("/start/iced-matcha-latte");
 
   await expect(page.getByRole("button", { name: "Pause", exact: true })).toBeVisible();
@@ -80,7 +80,7 @@ test("AI transformation respects reduced motion, including changes during playba
 });
 
 test("supported action gradually reveals its generated artwork during the demonstration", async ({ page }) => {
-  await page.clock.install();
+  await freezeClock(page);
   await page.goto("/start/iced-matcha-latte");
 
   await expect(page.locator("[data-action=whisk]")).toBeVisible();
@@ -126,7 +126,7 @@ for (const [action, instruction, tool, moving] of [
         0: { ingredients: [{ name: "milk", src: "/media/milk.png" }], tools: [{ name: tool, src: "/media/tool.png" }], actions: [action], result: "/media/step.png" },
       }) } });
     });
-    await page.clock.install();
+    await freezeClock(page);
     await page.goto("/start/iced-matcha-latte");
 
     const scene = page.locator(`[data-action=${action}]`);

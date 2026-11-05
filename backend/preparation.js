@@ -80,7 +80,7 @@ function validatePlan(value, recipe) {
   return { ingredients, tools, steps };
 }
 
-async function requestPlan(generate, recipe) {
+async function requestPlan(generate, recipe, signal) {
   let correction = "";
   for (let attempt = 0; attempt < 2; attempt++) {
     const response = await generate({
@@ -93,7 +93,7 @@ async function requestPlan(generate, recipe) {
       config: {
         systemInstruction: PLANNER, responseMimeType: "application/json", responseJsonSchema: planSchema,
         maxOutputTokens: 16384,
-        abortSignal: AbortSignal.timeout(60000),
+        abortSignal: signal ? AbortSignal.any([signal, AbortSignal.timeout(60000)]) : AbortSignal.timeout(60000),
       },
     });
     try {
@@ -138,11 +138,23 @@ function createPreparation({ generate, render, available = async () => true, cac
     total: job.total, stepIndex: job.index, plan: job.plan, visuals: job.visuals, assets: { ...job.assets },
     warnings: [...job.warnings], error: job.error,
   });
+  // Work in flight belongs to the recipe's session, so a job reopened for the
+  // same recipe adopts it; it is aborted once no unfinished job wants it. After
+  // an error it is left to finish, so a retry can reuse what it draws.
+  function release(job) {
+    const session = sessions.get(job.key);
+    if (!session || job.status !== "cancelled") return;
+    if ([...jobs.values()].some((other) => other.key === job.key && !terminal(other))) return;
+    session.controller.abort();
+    session.controller = new AbortController();
+    session.epoch++;
+  }
   function stop(job) {
     job.controller.abort();
     job.status = "cancelled";
     job.message = "Illustration cancelled.";
     job.finished = now();
+    release(job);
   }
   function check(job) {
     if (now() - job.touched > 120000) job.controller.abort();
@@ -150,7 +162,8 @@ function createPreparation({ generate, render, available = async () => true, cac
   }
   async function planRecipe(session, job) {
     if (session.plan) return session.plan;
-    return single(session.key + ":plan", async () => {
+    const signal = session.controller.signal;
+    return single(session.key + ":" + session.epoch + ":plan", async () => {
       // The same recipe keeps its plan across restarts, so its saved drawings
       // keep their identities; a recipe changed in chat is planned anew.
       const file = plans && path.join(plans, hash({ version: 1, recipe: session.recipe }) + ".json");
@@ -160,7 +173,7 @@ function createPreparation({ generate, render, available = async () => true, cac
           return session.plan;
         } catch { /* missing or outdated: plan again */ }
       }
-      session.plan = await requestPlan(generate, session.recipe);
+      session.plan = await requestPlan(generate, session.recipe, signal);
       if (file) {
         await fs.promises.mkdir(plans, { recursive: true });
         const temporary = file + "." + crypto.randomUUID() + ".tmp";
@@ -176,10 +189,11 @@ function createPreparation({ generate, render, available = async () => true, cac
     let asset = session.assets.get(item.id);
     if (asset && (asset.referenceKey !== referenceKey || !(await available(asset)))) asset = null;
     if (!asset) {
-      asset = await single(session.key + ":" + item.id, () => {
+      const signal = session.controller.signal;
+      asset = await single(session.key + ":" + session.epoch + ":" + item.id, () => {
         check(job);
         return render({
-          ...options, item, recipe: session.recipe,
+          ...options, item, recipe: session.recipe, signal,
           onProgress: (message) => { if (!terminal(job)) job.message = message; },
         });
       });
@@ -277,7 +291,10 @@ function createPreparation({ generate, render, available = async () => true, cac
       job.status = job.controller.signal.aborted ? "cancelled" : "error";
       job.error = job.status === "error" ? publicError(error) : undefined;
       job.message = job.error || "Illustration cancelled.";
-    } finally { job.finished = now(); }
+    } finally {
+      job.finished = now();
+      release(job);
+    }
   }
   return {
     start(recipe, index, id = crypto.randomUUID(), mode = "results") {
@@ -292,14 +309,15 @@ function createPreparation({ generate, render, available = async () => true, cac
         if (existing.key !== key || existing.index !== index || existing.mode !== mode) fail("This illustration request belongs to another step or task.", 409);
         return snapshot(existing);
       }
+      const replaced = [];
       for (const [jobId, job] of jobs) {
         if (!terminal(job) && now() - job.touched > 120000) job.controller.abort();
         // Reopening the same recipe (e.g. after a reload whose cancel was lost)
         // takes over; finished artwork and in-flight drawings are shared.
-        if (!terminal(job) && job.key === key && job.mode === mode) stop(job);
+        if (!terminal(job) && job.key === key && job.mode === mode) replaced.push(job);
         if (terminal(job) && now() - job.finished > 1800000) jobs.delete(jobId);
       }
-      if ([...jobs.values()].filter((job) => !terminal(job)).length >= 2)
+      if ([...jobs.values()].filter((job) => !terminal(job) && !replaced.includes(job)).length >= 2)
         fail("Two preparations are already being illustrated. Wait or cancel one first.", 429);
       while (jobs.size >= 32) {
         const oldest = [...jobs.values()].find(terminal);
@@ -312,12 +330,13 @@ function createPreparation({ generate, render, available = async () => true, cac
           const unused = [...sessions.keys()].find((candidate) => ![...jobs.values()].some((job) => job.key === candidate && !terminal(job)));
           if (unused) sessions.delete(unused);
         }
-        session = { key, recipe: structuredClone(recipe), assets: new Map() };
+        session = { key, recipe: structuredClone(recipe), assets: new Map(), controller: new AbortController(), epoch: 0 };
         sessions.set(key, session);
       }
       const job = { id, key, index, mode, status: "planning", message: "Understanding the recipe and its preparations…",
         completed: 0, total: 0, visuals: {}, assets: {}, warnings: new Set(), controller: new AbortController(), touched: now() };
       jobs.set(id, job);
+      for (const old of replaced) stop(old);
       void run(session, job);
       return snapshot(job);
     },

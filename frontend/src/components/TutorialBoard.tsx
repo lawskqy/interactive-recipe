@@ -104,14 +104,14 @@ export default function TutorialBoard({
           disabled={activeStep === 0}
           onClick={() => onStep(activeStep - 1)}
         >
-          ← Previous
+          ← <span className="nav-word">Previous</span>
         </button>
         {activeStep < recipe.steps.length - 1 ? (
           <button
             className="primary-button"
             onClick={() => onStep(activeStep + 1)}
           >
-            Next step →
+<span>Next<span className="nav-word"> step</span> →</span>
           </button>
         ) : (
           <span className="completion-message">{completed.length === recipe.steps.length ? "Your cup is ready. Enjoy ♡" : `${completed.length} of ${recipe.steps.length} steps completed`}</span>

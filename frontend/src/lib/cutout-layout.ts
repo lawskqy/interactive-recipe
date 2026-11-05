@@ -4,6 +4,9 @@ export interface CutoutLayout {
   width: number; height: number;
   left: number; top: number; right: number; bottom: number;
   handleDown: boolean;
+  // Side a jug or mug's handle sticks out of, and the top corner of each side to pour from.
+  handleSide?: "left" | "right";
+  lips: { left: { x: number; y: number }; right: { x: number; y: number } };
   opening: { x: number; y: number; width: number; radiusY: number };
   body: { x: number; y: number; width: number; top: number };
   // Visible width of each measured row, in image pixels; row = image y × rowScale.
@@ -72,9 +75,48 @@ function measure(src: string): Promise<CutoutLayout | null> {
         while (first > bandTop && span(first - 1) >= span(peak) - 1) first--;
         while (last < bandBottom && span(last + 1) >= span(peak) - 1) last++;
         const body = Math.round((first + last) / 2);
+        // A handle is a loop: scanning out from the axis meets the body, a hole, then the handle again.
+        const opaque = (x: number, y: number) => data[(y * canvas.width + x) * 4 + 3] >= 64;
+        const looped = (y: number, step: number) => {
+          let phase = 0;
+          for (let x = Math.round(axis); x >= 0 && x < canvas.width; x += step) {
+            const solid = opaque(x, y);
+            if (phase === 0 && solid) phase = 1;
+            else if (phase === 1 && !solid) phase = 2;
+            else if (phase === 2 && solid) return true;
+          }
+          return false;
+        };
+        const height = bottom - top + 1;
+        let leftLoops = 0, rightLoops = 0, leftReach = 0, rightReach = 0;
+        for (let y = top + Math.round(height * 0.15); y <= bottom - Math.round(height * 0.1); y++) {
+          if (rows[y].right < rows[y].left) continue;
+          if (looped(y, -1)) leftLoops++;
+          if (looped(y, 1)) rightLoops++;
+          if (y >= top + height * 0.25 && y <= top + height * 0.85) {
+            leftReach = Math.max(leftReach, axis - rows[y].left);
+            rightReach = Math.max(rightReach, rows[y].right + 1 - axis);
+          }
+        }
+        const minimum = Math.max(3, height * 0.04);
+        const handleSide = rightLoops >= minimum && rightLoops > leftLoops * 1.5 ? "right"
+          : leftLoops >= minimum && leftLoops > rightLoops * 1.5 ? "left"
+          : rightReach > leftReach * 1.08 ? "right" : leftReach > rightReach * 1.08 ? "left" : undefined;
+        // The pouring lip reaches furthest up and outwards together, so a
+        // spout wins over a rounder, wider belly lower down.
+        const lip = (side: "left" | "right") => {
+          const reach = (y: number) => (side === "right" ? rows[y].right - axis : axis - rows[y].left) - (y - top);
+          let best = top;
+          for (let y = top; y <= top + Math.floor(height * 0.5); y++) {
+            if (rows[y].right < rows[y].left) continue;
+            if (rows[best].right < rows[best].left || reach(y) > reach(best)) best = y;
+          }
+          return { x: (side === "right" ? rows[best].right + 1 : rows[best].left) / scale, y: best / scale };
+        };
         resolve({ width: image.naturalWidth, height: image.naturalHeight,
           left: left / scale, top: top / scale, right: (right + 1) / scale, bottom: (bottom + 1) / scale,
           handleDown: widest(top) > widest(bottom - third + 1) * 1.3,
+          handleSide, lips: { left: lip("left"), right: lip("right") },
           opening: { x: axis / scale, y: rim / scale, width: rimWidth / scale, radiusY: radiusY / scale },
           halves: rows.map((_, y) => half(y) / scale),
           body: { x: (rows[body].left + rows[body].right + 1) / (2 * scale), y: body / scale,

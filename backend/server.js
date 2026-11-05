@@ -26,7 +26,7 @@ async function generateContent(options) {
     const started = performance.now();
     try { return await ai.models.generateContent(options); }
     finally { console.info(JSON.stringify({ stage: options.config?.responseModalities ? "image-generation" : "planning-or-chat", model: options.model, durationMs: Math.round(performance.now() - started) })); }
-  });
+  }, options.config?.abortSignal);
 }
 const origins = (
   process.env.ALLOWED_ORIGINS ||

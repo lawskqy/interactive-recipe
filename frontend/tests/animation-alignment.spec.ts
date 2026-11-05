@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { allStepVisuals } from "./artwork-fixtures";
+import { allStepVisuals, freezeClock } from "./artwork-fixtures";
 import sharp from "sharp";
 
 test.beforeEach(async ({ page }) => {
@@ -50,7 +50,7 @@ test("the result blends in during sifting in the same place despite different im
     0: { ingredients: [], tools: [{ name: "bowl", src: "/images/bowl_seg.png" }], actions: ["sift"],
       result: "/media/sift-result.png", resultName: "Sifted matcha" },
   }, 7) } }));
-  await page.clock.install();
+  await freezeClock(page);
   await page.goto("/start/pumpkin-spice-maple-matcha-latte");
 
   const output = page.locator(".generated-result");

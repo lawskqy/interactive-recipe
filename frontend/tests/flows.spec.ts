@@ -179,17 +179,22 @@ test("invalid AI recipe is rejected and duplicate sends are prevented", async ({
   page,
 }) => {
   let calls = 0;
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  // The first reply is held until the second send has been attempted.
   await page.route("**/api/send-message", async (route) => {
     calls++;
-    await new Promise((resolve) => setTimeout(resolve, 250));
+    await pending;
     await route.fulfill({ json: { reply: "Changed", recipe: { steps: [] } } });
   });
   await page.goto("/start/iced-matcha-latte");
   await page.getByRole("tab", { name: "Ask the companion" }).click();
   await page.getByLabel("Message your café companion").fill("Change it");
   await page.getByLabel("Message your café companion").press("Enter");
+  await expect.poll(() => calls).toBe(1);
   await page.getByLabel("Message your café companion").fill("Another change");
   await page.getByLabel("Message your café companion").press("Enter");
+  release();
   await expect(page.getByRole("alert")).toContainText("incomplete");
   expect(calls).toBe(1);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(

@@ -1,3 +1,11 @@
+import type { Page } from "@playwright/test";
+
+// install() alone keeps time flowing in real time; pausing makes the
+// animation advance only through clock.runFor().
+export async function freezeClock(page: Page) {
+  await page.clock.install();
+  await page.clock.pauseAt(Date.now() + 1000);
+}
 export function allStepVisuals<T>(visuals: Record<number, T>, count = 6): Record<number, T> {
   const fallback = Object.values(visuals)[0];
   return Object.fromEntries(Array.from({ length: count }, (_, index) => [index, visuals[index] ?? fallback]));
