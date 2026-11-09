@@ -8,6 +8,7 @@ const { cachedPng, writePng } = require("./resources");
 const { isCutout } = require("./cutout-validation");
 
 const STYLE = "Watercolor and fine ink cafe illustration, muted sage and walnut object palette. One isolated object or preparation centered with generous empty margins; the entire object must fit inside the image. Use only a completely uniform pure white background, RGB (255,255,255), hex #FFFFFF, including openings through handles and gaps between wires. Render white materials naturally with clear fine ink outlines to distinguish them from the white background. Use neutral lighting with no background color cast. Use this white background even when reference images have colored or transparent backgrounds. No scenery, tabletop, text, labels, hands, border, cast shadow, background texture, glow or gradient. Preserve glass outlines, the entire container and the described contents. Show the described physical state, not an action or a future result.";
+const PIECE_STYLE = "Watercolor and fine ink cafe illustration. The single item fills most of the frame, centered with even empty margins, seen from a slight angle. Use only a completely uniform pure white background, RGB (255,255,255), hex #FFFFFF. Clear fine ink outlines. Neutral lighting. No scenery, tabletop, text, labels, hands, border, cast shadow, background texture, glow or gradient.";
 
 function createArtwork({ generate, images, media, segment = removeBackground }) {
   const single = sharedFlight();
@@ -66,6 +67,31 @@ function createArtwork({ generate, images, media, segment = removeBackground }) 
     const loadReferences = async () => {
       for (const reference of references) referenceData.push({ ...reference, bytes: await fs.promises.readFile(resolve(reference.src)) });
     };
+    if (kind === "piece") {
+      const prompt = JSON.stringify({ ingredient: item.name, raw_appearance: item.appearance }) +
+        `\nDraw exactly ONE single raw piece of ${item.name} on its own: one berry, one leaf, one cube, one slice or one chunk.` +
+        " The piece is the only thing in the image. Absolutely no glass, cup, mug, bowl, plate, jar, package or any container," +
+        " no drink or liquid, no ice, no other fruit or garnish, and no second piece." + "\nStyle: " + PIECE_STYLE;
+      const key = "ingredient_" + hash({ version: 2, piece: true, name: item.name, appearance: item.appearance });
+      const cutoutKey = "ingredient_" + hash({ source: key, backgroundRemoval: SEGMENTATION_VERSION, validation: 1, single: 1 });
+      return single(key, (flight) => queue(async () => {
+        const original = path.join(media, key + ".png");
+        const cutout = path.join(media, cutoutKey + "_seg.png");
+        if (await cachedCutout(cutout)) return { src: `/media/${cutoutKey}_seg.png`, segmented: true };
+        if (!(await cachedPng(original))) {
+          onProgress(`Drawing a piece of ${item.name}…`);
+          const response = await generate({ model: process.env.IMAGE_MODEL || "gemini-2.5-flash-image",
+            contents: [{ role: "user", parts: [{ text: prompt }] }], config: { responseModalities: ["TEXT", "IMAGE"], maxOutputTokens: 8192,
+              abortSignal: AbortSignal.any([flight, AbortSignal.timeout(60000)]) } });
+          const image = response.candidates?.[0]?.content?.parts?.find((part) => part.inlineData?.mimeType === "image/png")?.inlineData;
+          if (!image?.data || image.data.length > 17 * 1024 * 1024) fail("The assistant returned no usable PNG illustration. Please retry.", 502);
+          await writePng(original, Buffer.from(image.data, "base64"));
+        }
+        await segment(original, cutout, item.name, { single: true });
+        if (!(await cachedCutout(cutout))) fail("Background removal could not complete. Please retry.", 502);
+        return { src: `/media/${cutoutKey}_seg.png`, segmented: true };
+      }, flight), signal);
+    }
     const prompt = JSON.stringify({
       subject: { name: item.name, appearance: item.appearance },
       ...(kind === "result" ? { recipe: recipe.name, current_step: step.instruction, actions: step.actions.map((action) => action.type),

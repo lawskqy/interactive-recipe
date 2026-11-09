@@ -208,6 +208,30 @@ function createPreparation({ generate, render, available = async () => true, cac
     job.assets[item.id] = ready;
     return ready;
   }
+  // A single berry, leaf or cube for each raw ingredient the step adds as pieces. It is optional:
+  // without it the animation draws its own piece, so a failure never fails the step.
+  async function pieces(session, step, raw, job) {
+    const ids = new Set(step.actions.filter((action) => action.type === "add-pieces").flatMap((action) => action.items));
+    await Promise.all([...ids].filter((id) => raw.has(id) && job.assets[id]).map(async (id) => {
+      const key = id + ":piece";
+      try {
+        let asset = session.assets.get(key);
+        if (asset && !(await available(asset))) asset = null;
+        if (!asset) {
+          const signal = session.controller.signal;
+          asset = await single(session.key + ":" + session.epoch + ":" + key, () => render({
+            kind: "piece", item: raw.get(id), references: [], recipe: session.recipe, signal,
+            onProgress: (message) => { if (!terminal(job)) job.message = message; },
+          }));
+          if (!asset.segmented) return;
+          session.assets.set(key, asset);
+        }
+        job.assets[id].piece = asset.src;
+      } catch (error) {
+        if (job.controller.signal.aborted) throw error;
+      }
+    }));
+  }
   async function run(session, job) {
     try {
       job.plan = await planRecipe(session, job);
@@ -235,6 +259,7 @@ function createPreparation({ generate, render, available = async () => true, cac
         }));
         const failed = completed.find((result) => result.status === "rejected");
         if (failed) throw failed.reason;
+        await pieces(session, step, raw, job);
         check(job);
         job.status = "complete";
         job.message = "Ingredients and tools ready.";
@@ -268,6 +293,7 @@ function createPreparation({ generate, render, available = async () => true, cac
           return { id, asset };
         }));
         for (const { id, asset } of used) (step.tools.includes(id) ? tools : ingredients).push(asset);
+        await pieces(session, step, raw, job);
         const results = [];
         for (const output of step.outputs) {
           job.message = `Illustrating ${output.name} (step ${index + 1})…`;

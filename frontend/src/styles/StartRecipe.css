@@ -392,10 +392,10 @@
     width: clamp(280px, 20vw, 340px);
   }
   .tutorial-panel .transformation-stage {
-    height: clamp(340px, 30dvh, 460px);
+    height: clamp(380px, 44dvh, 480px);
   }
   .tutorial-panel img.generated-result {
-    height: clamp(340px, 30dvh, 460px);
+    height: clamp(380px, 44dvh, 480px);
     max-height: none;
   }
   .tutorial-panel .step-transformation {
@@ -403,10 +403,11 @@
     height: 100%;
   }
   .tutorial-panel .action-scene {
-    max-width: 400px;
+    max-width: 540px;
   }
   .tutorial-panel .action-scene > svg {
-    height: 300px;
+    height: clamp(380px, 44dvh, 480px);
+    max-height: none;
   }
   .journal-panel {
     display: flex;

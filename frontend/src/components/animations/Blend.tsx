@@ -23,7 +23,7 @@ const blend: ActionAnimation = {
       <defs><clipPath id={`${clip}-jar`}><path d="M162 74H248L239 198H171Z" /></clipPath></defs>
       <g className="blend-body">
         <g className="receiver-content" style={{ opacity: 1 - resultProgress }}>
-          <ActionVessel src={receiver} anchor={anchor} fallback={<>
+          <ActionVessel src={receiver} anchor={anchor} closed fallback={<>
             <path d="M154 200H256L262 252H148Z" fill="#5c4a3d" stroke="#3f3129" strokeWidth="2" />
             <circle className="blend-light" cx="205" cy="228" r="7" fill="#e9a04b" opacity="0.2" />
             <path d="M160 72H250L240 200H170Z" fill="#eee4ce" fillOpacity="0.15" stroke="#b9aa8e" strokeWidth="2" />

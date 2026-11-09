@@ -7,7 +7,11 @@ export interface CutoutLayout {
   // Side a jug or mug's handle sticks out of, and the top corner of each side to pour from.
   handleSide?: "left" | "right";
   lips: { left: { x: number; y: number }; right: { x: number; y: number } };
+  // The taller end of a lying-down object, e.g. a knife's blade.
+  heavyEnd: "left" | "right";
   opening: { x: number; y: number; width: number; radiusY: number };
+  // A lid, cap or neck stands above the rim, e.g. a closed shaker.
+  lid: boolean;
   body: { x: number; y: number; width: number; top: number };
   // Visible width of each measured row, in image pixels; row = image y × rowScale.
   widths: number[]; rowScale: number;
@@ -42,14 +46,19 @@ function measure(src: string): Promise<CutoutLayout | null> {
         const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
         let left = canvas.width, top = canvas.height, right = -1, bottom = -1;
         const rows = Array.from({ length: canvas.height }, () => ({ left: canvas.width, right: -1 }));
+        const columns = Array.from({ length: canvas.width }, () => ({ top: canvas.height, bottom: -1 }));
         for (let y = 0; y < canvas.height; y++) for (let x = 0; x < canvas.width; x++) {
           if (data[(y * canvas.width + x) * 4 + 3] < 64) continue;
           left = Math.min(left, x); right = Math.max(right, x);
           top = Math.min(top, y); bottom = Math.max(bottom, y);
           rows[y].left = Math.min(rows[y].left, x);
           rows[y].right = Math.max(rows[y].right, x);
+          columns[x].top = Math.min(columns[x].top, y);
+          columns[x].bottom = Math.max(columns[x].bottom, y);
         }
         if (right < left) { resolve(null); return; }
+        const tallest = (from: number, to: number) => Math.max(...columns.slice(from, to).map(column => column.bottom - column.top));
+        const columnThird = Math.max(1, Math.floor((right - left + 1) / 3));
         const third = Math.max(1, Math.floor((bottom - top + 1) / 3));
         const widest = (start: number) => Math.max(...rows.slice(start, start + third).map(row => row.right - row.left));
         // The base has no handle or spout, so it gives the vessel's axis; widths
@@ -64,6 +73,9 @@ function measure(src: string): Promise<CutoutLayout | null> {
         for (let y = top; y <= top + Math.floor((bottom - top) * 0.4); y++) if (half(y) > half(rim)) rim = y;
         const rimWidth = Math.max(1, 2 * half(rim));
         const radiusY = Math.max(rimWidth * 0.055, Math.min(rimWidth * 0.16, rim - top));
+        const above = rows.slice(top, rim).filter(row => row.right >= row.left);
+        const lid = rim - top > (bottom - top) * 0.2 &&
+          above.reduce((sum, row) => sum + row.right - row.left + 1, 0) / above.length < rimWidth * 0.7;
         // The body band skips what changes between an empty vessel and its
         // result: foam, ice or garnish above the rim and a shadow at the base.
         const bandTop = Math.round(top + (bottom - top) * 0.45), bandBottom = top + Math.round((bottom - top) * 0.85);
@@ -117,7 +129,8 @@ function measure(src: string): Promise<CutoutLayout | null> {
           left: left / scale, top: top / scale, right: (right + 1) / scale, bottom: (bottom + 1) / scale,
           handleDown: widest(top) > widest(bottom - third + 1) * 1.3,
           handleSide, lips: { left: lip("left"), right: lip("right") },
-          opening: { x: axis / scale, y: rim / scale, width: rimWidth / scale, radiusY: radiusY / scale },
+          heavyEnd: tallest(right - columnThird + 1, right + 1) > tallest(left, left + columnThird) ? "right" : "left",
+          opening: { x: axis / scale, y: rim / scale, width: rimWidth / scale, radiusY: radiusY / scale }, lid,
           halves: rows.map((_, y) => half(y) / scale),
           body: { x: (rows[body].left + rows[body].right + 1) / (2 * scale), y: body / scale,
             width: Math.max(1, rows[body].right - rows[body].left + 1) / scale, top: bandTop / scale },

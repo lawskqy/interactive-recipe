@@ -29,7 +29,9 @@ export default function CookingActionScene({ cue, elapsed, playing, visual, resu
       asset.name.toLowerCase().split(/\s+/).some(word => word.length > 2 && sourceText.includes(word))) ||
     tools.find(asset => /pitcher|jug|measuring cup/i.test(asset.name));
   // A container that is an earlier preparation is shown as the tool holding it.
-  const vessel = byId(tools, cue.container) || holder || tools.find(asset => animation.container.test(asset.name));
+  const usable = (asset?: StepAsset) => asset && !animation.surface?.test(asset.name) ? asset : undefined;
+  const vessel = usable(byId(tools, cue.container)) || usable(holder) ||
+    tools.find(asset => animation.container.test(asset.name) && !animation.surface?.test(asset.name));
   // Keep the empty vessel underneath the result as its contents develop.
   const receiver = vessel?.src;
   const receiverLayout = useCutoutLayout(receiver);
@@ -100,7 +102,7 @@ export default function CookingActionScene({ cue, elapsed, playing, visual, resu
         <g className="action-content">
           <Scene clip={clip} anchor={anchor} openingRadiusY={openingRadiusY} floor={floor} color={color}
             resultColor={cue.resultColor || color} receiver={receiver}
-            implement={implement?.src} source={source?.src} result={result} resultImage={resultImage}
+            implement={implement?.src} source={source?.src} piece={source?.piece} subject={cue.context} result={result} resultImage={resultImage}
             resultProgress={resultProgress} insideAt={insideAt} />
         </g>
       </svg>

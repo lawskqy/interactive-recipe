@@ -1,5 +1,5 @@
 .step-assets {
-  --asset-size: 112px;
+  --asset-size: 88px;
   display: flex;
   gap: 20px 16px;
   flex-wrap: wrap;
@@ -32,12 +32,12 @@
 }
 @media (min-width: 1101px) {
   .step-assets {
-    --asset-size: 144px;
+    --asset-size: 100px;
   }
 }
 @media (max-width: 480px) {
   .step-assets {
-    --asset-size: 96px;
+    --asset-size: 72px;
     column-gap: 12px;
   }
 }
@@ -78,18 +78,18 @@
 }
 img.generated-result {
   width: 100%;
-  max-height: 340px;
+  max-height: 400px;
   object-fit: contain;
 }
 .transformation-stage {
   position: relative;
   display: grid;
   place-items: center;
-  height: 320px;
+  height: 400px;
   isolation: isolate;
 }
 .transformation-stage img.generated-result {
-  height: 300px;
+  height: 380px;
 }
 .step-transformation {
   position: absolute;

@@ -1,5 +1,5 @@
-.action-scene.cooking-scene { max-width: 390px; margin: auto; }
-.action-scene.cooking-scene > svg { display: block; width: 100%; height: auto; max-height: 300px; overflow: visible; }
+.action-scene.cooking-scene { max-width: 500px; margin: auto; }
+.action-scene.cooking-scene > svg { display: block; width: 100%; height: auto; max-height: 440px; overflow: visible; }
 .action-scene.cooking-scene p { margin: 8px 0 0; font-size: 24px; }
 .cooking-scene .whisk-motion { transform-origin: 180px 185px; }
 .cooking-scene .sieve-motion { transform-origin: 177px 110px; }
