@@ -1,6 +1,11 @@
 import ActionVessel from "../ActionVessel";
 import type { ActionAnimation } from "./types";
 
+function tint(hex: string, amount: number) {
+  const mix = (i: number) => Math.round(parseInt(hex.slice(i, i + 2), 16) * (1 - amount) + 0xf6 * amount);
+  return /^#[0-9a-f]{6}$/i.test(hex) ? `rgb(${mix(1)}, ${mix(3)}, ${mix(5)})` : hex;
+}
+
 const blend: ActionAnimation = {
   caption: "Blend until smooth",
   anchor: { x: 205, y: 72, width: 90, radiusY: 6 },
@@ -28,7 +33,7 @@ const blend: ActionAnimation = {
             <circle className="blend-light" cx="205" cy="228" r="7" fill="#e9a04b" opacity="0.2" />
             <path d="M160 72H250L240 200H170Z" fill="#eee4ce" fillOpacity="0.15" stroke="#b9aa8e" strokeWidth="2" />
             <g clipPath={`url(#${clip}-jar)`}>
-              <path d="M150 120Q205 110 260 120V210H150Z" fill={color} />
+              <path d="M150 120Q205 110 260 120V210H150Z" fill={tint(resultColor, 0.55)} />
               {[[182, 182], [204, 190], [226, 178], [194, 160], [218, 156], [204, 136]].map(([cx, cy], i) =>
                 <circle key={i} className="blend-chunk" cx={cx} cy={cy} r={9 - i % 2 * 2} fill={color}
                   stroke="#00000026" strokeWidth="1.5" style={{ transformBox: "fill-box", transformOrigin: "center" }} />)}

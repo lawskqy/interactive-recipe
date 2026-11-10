@@ -1,10 +1,9 @@
+import ActionCutout from "../ActionCutout";
 import { CupBack, CupFront } from "./Cup";
 import { CUP, type ActionAnimation } from "./types";
 
-const isGreen = (hex: string) => {
-  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
-  return g > r && g > b;
-};
+const RIM = /slice|wedge|wheel|twist|peel|lemon|lime|orange|grapefruit|pineapple|cherry|strawberr|berry|apple|peach|cucumber/i;
+const SIZE = 34;
 
 const garnish: ActionAnimation = {
   caption: "Finish with a garnish",
@@ -17,29 +16,32 @@ const garnish: ActionAnimation = {
     tl.add(".garnish-ripple", { scale: [0.3, 1.3], opacity: [0, 0.6, 0], duration: 900 }, 2850);
   },
   Scene(props) {
-    const { color, resultColor, resultImage, resultProgress } = props;
-    const leaf = isGreen(color);
-    const [x, y] = leaf ? [222, 178] : [246, 160];
+    const { anchor, openingRadiusY, color, resultColor, subject, piece, source, resultImage, resultProgress } = props;
+    const art = piece || source;
+    const rim = RIM.test(subject);
+    const [x, y] = rim ? [anchor.x + anchor.width / 2 - 6, anchor.y - 4] : [anchor.x + 12, anchor.y + openingRadiusY + 8];
+    const garnishPiece = <g transform={`translate(${x} ${y})`} style={{ opacity: 1 - resultProgress }}>
+      <g className="garnish-piece" opacity="0">
+        <ActionCutout src={art} x={-SIZE / 2} y={-SIZE / 2} width={SIZE} height={SIZE} fallback={rim ? <>
+          <circle r="17" fill={color} stroke="#00000030" strokeWidth="1.5" />
+          <circle r="13" fill="#fff7e2" opacity="0.35" />
+          {[0, 60, 120].map(angle => <path key={angle} d="M-13 0H13" stroke="#fff7e2" strokeWidth="1.3" opacity="0.8"
+            transform={`rotate(${angle})`} />)}
+        </> : <>
+          <path d="M-18 4Q-6 -14 18 -6Q6 12 -18 4Z" fill={color} stroke="#00000030" strokeWidth="1.5" />
+          <path d="M-14 3Q2 -3 14 -5" fill="none" stroke="#ffffff" strokeOpacity="0.5" strokeWidth="1.2" />
+        </>} />
+      </g>
+    </g>;
     return <>
       <CupBack {...props} liquid={resultColor}>
-        {leaf && <ellipse className="garnish-ripple" cx="222" cy="184" rx="20" ry="4" fill="none" stroke="#fff7e2" strokeWidth="1.5"
-          opacity="0" style={{ transformOrigin: "222px 184px" }} />}
+        {!rim && <ellipse className="garnish-ripple" cx={x} cy={y + 6} rx="20" ry="4" fill="none" stroke="#fff7e2" strokeWidth="1.5"
+          opacity="0" style={{ transformOrigin: `${x}px ${y + 6}px` }} />}
       </CupBack>
       {resultImage}
-      <g transform={`translate(${x} ${y})`} style={{ opacity: 1 - resultProgress }}>
-        <g className="garnish-piece" opacity="0">
-          {leaf ? <>
-            <path d="M-18 4Q-6 -14 18 -6Q6 12 -18 4Z" fill={color} stroke="#00000030" strokeWidth="1.5" />
-            <path d="M-14 3Q2 -3 14 -5" fill="none" stroke="#ffffff" strokeOpacity="0.5" strokeWidth="1.2" />
-          </> : <>
-            <circle r="17" fill={color} stroke="#00000030" strokeWidth="1.5" />
-            <circle r="13" fill="#fff7e2" opacity="0.35" />
-            {[0, 60, 120].map(angle => <path key={angle} d="M-13 0H13" stroke="#fff7e2" strokeWidth="1.3" opacity="0.8"
-              transform={`rotate(${angle})`} />)}
-          </>}
-        </g>
-      </g>
+      {!rim && garnishPiece}
       <CupFront {...props} liquid={resultColor} />
+      {rim && garnishPiece}
     </>;
   },
 };

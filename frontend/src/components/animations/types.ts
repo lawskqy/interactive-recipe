@@ -27,4 +27,6 @@ export const BOWL: Anchor = { x: 180, y: 193, width: 182, radiusY: 22 };
 export const CUP: Anchor = { x: 205, y: 166, width: 96, radiusY: 8 };
 // A pitcher tilts about its lip, so a poured stream always leaves from here.
 export const POUR_LIP = { x: 172, y: 76 };
+export const STRAINER = { half: 44, depth: 40, lift: 52 };
+export const SPOON = { bowl: { x: 200, y: 118 }, length: 112, thickness: 30 };
 export const PAN: Anchor = { x: 180, y: 180, width: 170, radiusY: 17 };

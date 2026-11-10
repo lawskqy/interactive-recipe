@@ -37,3 +37,4 @@ frontend/playwright-report/
 /docs/session-*.md
 /scripts/segmentation/
 /output/
+frontend/public/lab-art.json
