@@ -1,7 +1,7 @@
 import { stagger } from "animejs";
 import { CupBack, CupFront } from "./Cup";
-import { StirringSpoon, spoonTip } from "./Spoon";
-import { swingRoom } from "./reach";
+import { StirringSpoon } from "./Spoon";
+import { spoonTip, swingRoom } from "./reach";
 import { CUP, type ActionAnimation } from "./types";
 
 const pieces = [[180, 186, 10], [204, 182, -14], [228, 188, 20], [194, 198, -6], [218, 200, 12], [170, 200, 30]];

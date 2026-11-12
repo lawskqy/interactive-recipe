@@ -1,8 +1,6 @@
 import ActionCutout from "../ActionCutout";
-import { toolTip } from "./reach";
-import type { SceneGeometry, SceneProps } from "./types";
-
-export const spoonTip = (scene: SceneGeometry, travel = 0) => toolTip(scene, 236, 0.75, 10, travel);
+import { spoonTip } from "./reach";
+import type { SceneProps } from "./types";
 
 export function StirringSpoon({ scene, src, className, travel = 0 }: {
   scene: SceneProps; src?: string; className: string; travel?: number;

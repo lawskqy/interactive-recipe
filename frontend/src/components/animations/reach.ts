@@ -27,3 +27,5 @@ export function toolTip({ anchor, openingRadiusY, floor }: SceneGeometry, fallba
   const shallowest = anchor.y + openingRadiusY + 6;
   return Math.min(bottom - 4 - travel, Math.max(shallowest, Math.min(bottom - clearance, anchor.y + (bottom - anchor.y) * depth)));
 }
+
+export const spoonTip = (scene: SceneGeometry, travel = 0) => toolTip(scene, 236, 0.75, 10, travel);

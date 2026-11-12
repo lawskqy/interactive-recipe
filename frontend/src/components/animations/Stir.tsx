@@ -1,7 +1,7 @@
 import { stagger } from "animejs";
 import { CupBack, CupFront } from "./Cup";
-import { StirringSpoon, spoonTip } from "./Spoon";
-import { swingRoom } from "./reach";
+import { StirringSpoon } from "./Spoon";
+import { spoonTip, swingRoom } from "./reach";
 import { CUP, type ActionAnimation } from "./types";
 
 const stir: ActionAnimation = {
