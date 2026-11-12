@@ -5,7 +5,7 @@ const { writePng } = require("./resources");
 const queue = createQueue(1, 12, 60000);
 let worker;
 
-function processImage(input) {
+function processImage(input, single) {
   if (!worker) {
     worker = new Worker(path.join(__dirname, "background-removal-worker.js"));
     worker.unref();
@@ -36,14 +36,14 @@ function processImage(input) {
     current.once("message", message);
     current.once("error", error);
     current.once("exit", exit);
-    try { current.postMessage({ input }); } catch (reason) { error(reason); }
+    try { current.postMessage({ input, single }); } catch (reason) { error(reason); }
   });
 }
 
-async function removeBackground(input, output) {
+async function removeBackground(input, output, _name, { single = false } = {}) {
   // Pixel processing stays off Express's event loop; writes retain the cache's
   // PNG validation, size limit, expiry policy and atomic rename.
-  return queue(async () => writePng(output, await processImage(input)));
+  return queue(async () => writePng(output, await processImage(input, single)));
 }
 
 module.exports = { removeBackground };

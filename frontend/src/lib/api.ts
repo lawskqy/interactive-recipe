@@ -1,6 +1,6 @@
 const base = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 export function mediaUrl(value: string): string {
-  if (!/^\/(?:images|media)\/[\w().-]+\.(?:png|webp)$/.test(value))
+  if (!/^\/(?:images|media|assets)\/[\w().-]+\.(?:png|webp)$/.test(value))
     throw new Error("The server returned an invalid image reference.");
   return `${base}${value}`;
 }
@@ -8,6 +8,7 @@ export async function api<T>(
   route: string,
   payload: unknown,
   signal?: AbortSignal,
+  keepalive = false,
 ): Promise<T> {
   const timeout = AbortSignal.timeout(180_000);
   const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
@@ -17,6 +18,7 @@ export async function api<T>(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
       signal: combined,
+      keepalive,
     });
     const data = await response.json();
     if (!response.ok)

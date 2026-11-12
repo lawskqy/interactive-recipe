@@ -11,8 +11,8 @@ test("malformed manifests and missing tutorial covers keep all recipes usable", 
   await page.route("**/thumbnails/*", (route) => route.fulfill({ status: 404 }));
   await page.route("**/images/*", (route) => route.fulfill({ status: 404 }));
   await page.goto("/start/iced-matcha-latte");
-  await expect(page.locator(".cover-preview")).toHaveJSProperty("naturalWidth", 480);
-  await expect(page.locator(".cover-preview")).toHaveAttribute("src", /recipe-placeholder|^data:/);
+  await expect(page.locator(".cooking-scene")).toBeVisible();
+  await expect(page.locator(".illustration-stage img")).toHaveCount(0);
   await page.getByRole("button", { name: "Next step" }).click();
   await expect(page.locator(".step-counter")).toHaveText("Step 2 of 6");
   expect(errors).toEqual([]);

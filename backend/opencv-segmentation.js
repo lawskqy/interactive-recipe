@@ -24,7 +24,25 @@ function backgroundColors(data, width, height) {
     .map((group) => group.sum.map((value) => Math.round(value / group.count)));
 }
 
-async function segmentImage(input) {
+// Keep the largest object and any pieces whose centre lies within its bounds
+// (ice, bubbles, a garnish on the rim); drop separate items beside it.
+function keepMainObject(cv, matte, keep) {
+  const labels = keep(new cv.Mat()), stats = keep(new cv.Mat()), centroids = keep(new cv.Mat());
+  const count = cv.connectedComponentsWithStats(matte, labels, stats, centroids, 8, cv.CV_32S);
+  let main = 0;
+  for (let i = 1; i < count; i++) if (!main || stats.intAt(i, cv.CC_STAT_AREA) > stats.intAt(main, cv.CC_STAT_AREA)) main = i;
+  if (!main) return;
+  const left = stats.intAt(main, cv.CC_STAT_LEFT), top = stats.intAt(main, cv.CC_STAT_TOP);
+  const right = left + stats.intAt(main, cv.CC_STAT_WIDTH), bottom = top + stats.intAt(main, cv.CC_STAT_HEIGHT);
+  const kept = new Uint8Array(count);
+  for (let i = 1; i < count; i++) {
+    const x = centroids.doubleAt(i, 0), y = centroids.doubleAt(i, 1);
+    kept[i] = x >= left && x <= right && y >= top && y <= bottom ? 1 : 0;
+  }
+  for (let p = 0; p < matte.rows * matte.cols; p++) if (!kept[labels.data32S[p]]) matte.data[p] = 0;
+}
+
+async function segmentImage(input, { single = false } = {}) {
   const { data: original, info: full } = await sharp(input, { limitInputPixels: 16777216 })
     .toColourspace("srgb").ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const count = full.width * full.height;
@@ -114,6 +132,7 @@ async function segmentImage(input) {
     cv.grabCut(src, mask, new cv.Rect(), bg, fg, 3, cv.GC_INIT_WITH_MASK);
     const matte = keep(new cv.Mat(height, width, cv.CV_8UC1));
     for (let p = 0; p < width * height; p++) matte.data[p] = mask.data[p] === cv.GC_FGD || mask.data[p] === cv.GC_PR_FGD ? 255 : 0;
+    if (single) keepMainObject(cv, matte, keep);
     const alpha = await sharp(Buffer.from(matte.data), { raw: { width, height, channels: 1 } })
       .resize(full.width, full.height, { kernel: "linear" }).greyscale().raw().toBuffer();
     visible = 0;

@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "test": "node --test",
+    "check:actions": "node scripts/check-actions.js",
     "start": "node server.js"
   },
   "keywords": [],

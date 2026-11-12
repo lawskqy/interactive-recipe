@@ -26,7 +26,7 @@ async function generateContent(options) {
     const started = performance.now();
     try { return await ai.models.generateContent(options); }
     finally { console.info(JSON.stringify({ stage: options.config?.responseModalities ? "image-generation" : "planning-or-chat", model: options.model, durationMs: Math.round(performance.now() - started) })); }
-  });
+  }, options.config?.abortSignal);
 }
 const origins = (
   process.env.ALLOWED_ORIGINS ||
@@ -51,7 +51,8 @@ function client() {
 function createApp({ generate = generateContent, artwork } = {}) {
   const app = express();
   const renderer = artwork || createArtwork({ generate, images: IMAGE_DIR, media: MEDIA_DIR });
-  const preparation = createPreparation({ generate, render: renderer.render, available: renderer.available, cacheIdentity: renderer.identity });
+  const preparation = createPreparation({ generate, render: renderer.render, available: renderer.available, cacheIdentity: renderer.identity,
+    plans: generate === generateContent ? path.join(MEDIA_DIR, "plans") : undefined });
   app.disable("x-powered-by");
   app.use((req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
@@ -129,8 +130,17 @@ function createApp({ generate = generateContent, artwork } = {}) {
     buckets.set(key, bucket);
     next();
   });
+  app.post("/api/artwork/segment", async (req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.json(await renderer.ensureSegmented(req.body.src));
+  });
   app.post("/api/preparations", (req, res) => {
-    res.status(202).json(preparation.start(req.body.recipe, req.body.index, req.body.id));
+    if (req.body.scope !== undefined && !["step", "recipe"].includes(req.body.scope)) fail("Invalid preparation scope.");
+    res.status(202).json(preparation.start(req.body.recipe, req.body.index, req.body.id,
+      req.body.scope === "recipe" ? "recipe" : "results"));
+  });
+  app.post("/api/preparation-assets", (req, res) => {
+    res.status(202).json(preparation.start(req.body.recipe, req.body.index, req.body.id, "objects"));
   });
   app.get("/api/preparations/:id", (req, res) => {
     res.setHeader("Cache-Control", "no-store");

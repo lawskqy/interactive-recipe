@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import Collection from "./pages/Collection";
 import StartRecipe from "./pages/StartRecipe";
+import AnimationLab from "./pages/AnimationLab";
 function RecipeRoute() {
   const { name } = useParams();
   return <StartRecipe key={name} />;
@@ -20,6 +21,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Collection />} />
         <Route path="/collection" element={<Collection />} />
+        <Route path="/animations" element={<AnimationLab />} />
         <Route path="/start/:name" element={<RecipeRoute />} />
         <Route
           path="*"

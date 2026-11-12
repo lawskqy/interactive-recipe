@@ -55,10 +55,11 @@ function validateRecipe(r) {
 function imageReference(value, directories) {
   if (
     typeof value !== "string" ||
-    !/^\/(images|media)\/[\w().-]+\.(png|webp)$/.test(value)
+    !/^\/(images|media|assets)\/[\w().-]+\.(png|webp)$/.test(value)
   )
     fail("Invalid image reference.");
   const [, kind, filename] = value.split("/");
+  if (!directories[kind]) fail("Invalid image reference.");
   const root = path.resolve(directories[kind]);
   const resolved = path.resolve(root, filename);
   if (path.dirname(resolved) !== root) fail("Invalid image reference.");
@@ -76,21 +77,62 @@ function singleFlight() {
     return tasks.get(key);
   };
 }
+// Joined work runs once and is aborted only when every caller that passed a
+// signal has abandoned it; callers without a signal keep it running.
+function sharedFlight() {
+  const flights = new Map();
+  return (key, task, signal) => {
+    if (signal?.aborted) return Promise.reject(signal.reason);
+    let flight = flights.get(key);
+    if (!flight || flight.controller.signal.aborted) {
+      const created = { controller: new AbortController(), holders: 0, settled: false };
+      created.promise = Promise.resolve()
+        .then(() => task(created.controller.signal))
+        .finally(() => {
+          created.settled = true;
+          if (flights.get(key) === created) flights.delete(key);
+        });
+      flights.set(key, created);
+      flight = created;
+    }
+    const joined = flight;
+    joined.holders++;
+    return new Promise((resolve, reject) => {
+      const abandon = () => {
+        if (--joined.holders === 0 && !joined.settled) joined.controller.abort(signal.reason);
+        reject(signal.reason);
+      };
+      signal?.addEventListener("abort", abandon, { once: true });
+      joined.promise.then(resolve, reject).finally(() => signal?.removeEventListener("abort", abandon));
+    });
+  };
+}
 function createQueue(limit = 2, maxWaiting = 12, waitTimeout = 30000) {
   let active = 0;
   const waiting = [];
-  return async (task) => {
+  return async (task, signal) => {
+    signal?.throwIfAborted();
     if (active >= limit) {
       if (waiting.length >= maxWaiting)
         fail("The illustration queue is full. Please try again shortly.", 429);
       await new Promise((resolve, reject) => {
+        const remove = () => {
+          const position = waiting.indexOf(entry);
+          if (position !== -1) waiting.splice(position, 1);
+        };
+        const abort = () => {
+          clearTimeout(timer);
+          remove();
+          reject(signal.reason);
+        };
         const entry = () => {
           clearTimeout(timer);
+          signal?.removeEventListener("abort", abort);
           resolve();
         };
         const timer = setTimeout(() => {
-          const position = waiting.indexOf(entry);
-          if (position !== -1) waiting.splice(position, 1);
+          remove();
+          signal?.removeEventListener("abort", abort);
           const error = new Error(
             "The illustration queue is busy. Please try again shortly.",
           );
@@ -98,6 +140,7 @@ function createQueue(limit = 2, maxWaiting = 12, waitTimeout = 30000) {
           error.publicMessage = true;
           reject(error);
         }, waitTimeout);
+        signal?.addEventListener("abort", abort, { once: true });
         waiting.push(entry);
       });
     } else active++;
@@ -147,6 +190,7 @@ module.exports = {
   validateRecipe,
   imageReference,
   singleFlight,
+  sharedFlight,
   createQueue,
   recipeSchema,
 };

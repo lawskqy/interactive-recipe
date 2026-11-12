@@ -47,7 +47,15 @@ test("cache rejects truncated images and writes atomically; request allowance pe
   assert.ok(await cachedPng(file));
   assert.equal(fs.readdirSync(dir).some((name) => name.endsWith(".tmp")), false);
   fs.utimesSync(file, new Date(0), new Date(0));
-  assert.equal(await cachedPng(file), false);
+  assert.ok(await cachedPng(file), "Old illustrations stay reusable");
+  assert.ok(fs.statSync(file).mtimeMs > Date.now() - 60000, "Reuse marks the file recently used");
+  const older = path.join(dir, "step_11111111111111111111.png"), newer = path.join(dir, "step_22222222222222222222.png");
+  await writePng(older, png);
+  fs.utimesSync(older, new Date(1000), new Date(1000));
+  await writePng(newer, png);
+  await writePng(path.join(dir, "step_33333333333333333333.png"), png, png.length * 2.5);
+  assert.equal(fs.existsSync(older), false, "A full cache evicts the least recently used illustration");
+  assert.ok(fs.existsSync(newer));
   consumeBudget(dir, 2);
   consumeBudget(dir, 2);
   assert.throws(() => consumeBudget(dir, 2), /allowance/);

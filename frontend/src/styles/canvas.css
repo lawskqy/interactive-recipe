@@ -1,5 +1,5 @@
 .step-assets {
-  --asset-size: 112px;
+  --asset-size: 88px;
   display: flex;
   gap: 20px 16px;
   flex-wrap: wrap;
@@ -32,12 +32,12 @@
 }
 @media (min-width: 1101px) {
   .step-assets {
-    --asset-size: 144px;
+    --asset-size: 100px;
   }
 }
 @media (max-width: 480px) {
   .step-assets {
-    --asset-size: 96px;
+    --asset-size: 72px;
     column-gap: 12px;
   }
 }
@@ -52,6 +52,20 @@
   width: 100%;
   text-align: center;
 }
+.result-placeholder {
+  text-align: center;
+  color: var(--muted);
+}
+.object-progress {
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+.result-placeholder > span {
+  display: block;
+  font-size: 64px;
+  color: var(--brass);
+}
 .cover-preview {
   width: 240px;
   aspect-ratio: 1;
@@ -62,20 +76,20 @@
   margin: auto;
   box-shadow: 0 10px 30px #0003;
 }
-.generated-result {
+img.generated-result {
   width: 100%;
-  max-height: 340px;
+  max-height: 400px;
   object-fit: contain;
 }
 .transformation-stage {
   position: relative;
   display: grid;
   place-items: center;
-  height: 320px;
+  height: 400px;
   isolation: isolate;
 }
-.transformation-stage .generated-result {
-  height: 300px;
+.transformation-stage img.generated-result {
+  height: 380px;
 }
 .step-transformation {
   position: absolute;
@@ -107,7 +121,7 @@
   max-width: 310px;
   text-align: center;
 }
-.action-scene svg {
+.action-scene > svg {
   width: 100%;
   height: 230px;
 }
@@ -205,4 +219,14 @@
 .preparation-progress progress {
   width: 100%;
   accent-color: var(--sage);
+}
+
+.result-still {
+  display: block;
+  width: 100%;
+  max-width: 390px;
+  height: auto;
+  max-height: 300px;
+  margin: auto;
+  overflow: visible;
 }

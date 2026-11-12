@@ -22,12 +22,15 @@ export interface StepAsset {
   src?: string;
   sourceStep?: number;
   segmented?: boolean;
+  // Cutout of one single piece (one berry, one leaf) for animations that drop pieces.
+  piece?: string;
 }
 export interface StepVisual {
   ingredients: StepAsset[];
   tools: StepAsset[];
   actions: string[];
   result?: string;
+  resultSegmented?: boolean;
   resultName?: string;
   outputs?: StepAsset[];
 }

@@ -6,6 +6,7 @@ const {
   imageReference,
   validateRecipe,
   singleFlight,
+  sharedFlight,
   createQueue,
   safeName,
 } = require("../core");
@@ -174,4 +175,47 @@ test("queued generation expires without blocking later work", async () => {
   release("done");
   await first;
   assert.equal(await queue(async () => "next"), "next");
+});
+
+test("an abandoned queued task never runs and gives up its place", async () => {
+  const queue = createQueue(1, 1, 1000);
+  let release;
+  const first = queue(() => new Promise((resolve) => { release = resolve; }));
+  const controller = new AbortController();
+  let ran = false;
+  const abandoned = queue(async () => { ran = true; }, controller.signal);
+  controller.abort();
+  await assert.rejects(abandoned);
+  const next = queue(async () => "next");
+  release("done");
+  await first;
+  assert.equal(await next, "next");
+  assert.equal(ran, false);
+  const aborted = new AbortController();
+  aborted.abort();
+  await assert.rejects(queue(async () => { ran = true; }, aborted.signal));
+  assert.equal(ran, false);
+});
+
+test("shared work runs once and stops only when every caller has left", async () => {
+  const shared = sharedFlight();
+  let calls = 0, signal, finish;
+  const task = (flight) => { calls++; signal = flight; return new Promise((resolve) => { finish = resolve; }); };
+  const a = new AbortController(), b = new AbortController();
+  const first = shared("k", task, a.signal);
+  const second = shared("k", task, b.signal);
+  await new Promise(setImmediate);
+  a.abort();
+  await assert.rejects(first);
+  assert.equal(signal.aborted, false, "Another caller still wants the work");
+  b.abort();
+  await assert.rejects(second);
+  assert.equal(signal.aborted, true);
+  assert.equal(calls, 1);
+  assert.equal(await shared("k", async () => "fresh"), "fresh", "Later callers start fresh work");
+  finish();
+  let kept;
+  const unattended = shared("u", (flight) => { kept = flight; return "done"; });
+  assert.equal(await unattended, "done");
+  assert.equal(kept.aborted, false, "Callers without a signal never abort shared work");
 });
