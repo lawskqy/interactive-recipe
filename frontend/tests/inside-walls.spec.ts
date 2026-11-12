@@ -37,7 +37,7 @@ const tools = [
 ];
 const pieces = [
   { type: "add-ice", selector: ".ice-cube", vessels: ["mug", "tapered glass", "glass"] },
-  { type: "add-pieces", selector: ".piece-drop", vessels: ["mug", "tapered glass", "glass", "bowl"] },
+  { type: "add-pieces", selector: "[class^=piece-drop-]", vessels: ["mug", "tapered glass", "glass", "bowl"] },
   { type: "mash", selector: ".mash-piece", vessels: ["mug", "tapered glass", "glass", "bowl"] },
 ];
 
